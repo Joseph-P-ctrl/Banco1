@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voucher de Abono - CLI-00123456</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f3f5f7;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #2c3e50;
+        }
+        .page {
+            max-width: 820px;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #d0d8e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .header {
+            background: #1e5da8;
+            color: #ffffff;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand-title {
+            margin: 0;
+            font-size: 34px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .brand-subtitle {
+            margin: 6px 0 0;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+        .emision {
+            font-size: 12px;
+            text-align: right;
+        }
+        .content {
+            padding: 28px 30px;
+        }
+        .section-title {
+            margin: 0 0 20px;
+            color: #1e5da8;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .box {
+            background: #e8f1f8;
+            border: 1px solid #d0d8e0;
+            border-radius: 8px;
+            padding: 16px 18px;
+        }
+        .box-title {
+            margin: 0 0 12px;
+            color: #1e5da8;
+            font-size: 15px;
+            font-weight: 700;
+            border-bottom: 2px solid #1e5da8;
+            padding-bottom: 8px;
+        }
+        .row {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .row strong {
+            display: inline-block;
+            width: 155px;
+        }
+        .monto {
+            margin-top: 20px;
+            border: 2px solid #1e5da8;
+            border-radius: 8px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+        .monto-label {
+            color: #1e5da8;
+            font-weight: 700;
+            font-size: 20px;
+        }
+        .monto-value {
+            color: #1e5da8;
+            font-weight: 800;
+            font-size: 34px;
+        }
+        .footer {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            padding: 18px 30px 24px;
+            border-top: 1px solid #e1e6eb;
+        }
+        .footer .brand {
+            color: #1e5da8;
+            font-weight: 700;
+            margin-top: 6px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div>
+                <h1 class="brand-title">Ensa</h1>
+                <p class="brand-subtitle">ABONO RECIBIDO</p>
+            </div>
+            <div class="emision">Fecha de emisión: 20/02/2026 12:54</div>
+        </div>
+        <div class="content">
+            <h2 class="section-title">DATOS DE ABONO RECIBIDO</h2>
+            <div class="box">
+                <h3 class="box-title">REFERENCIA DEL CLIENTE</h3>
+                <div class="row"><strong>Referencia:</strong> CLI-00123456</div>
+                <div class="row"><strong>Fecha Operación:</strong> 20/02/2026</div>
+                <div class="row"><strong>Nº Operación:</strong> OP-2026-001234</div>
+                <div class="row"><strong>Descripción:</strong> Pago de servicios eléctricos</div>
+            </div>
+            <div class="monto">
+                <div class="monto-label">MONTO A CONFIRMAR:</div>
+                <div class="monto-value">S/ 1,250.50</div>
+            </div>
+        </div>
+        <div class="footer">
+            <div>Este documento es una confirmación de abono recibido.</div>
+            <div>Para mayor información, contacte con el área de recaudación al correo recaudacionensa@distriluz.com.pe</div>
+            <span class="brand">ENSA © 2026</span>
+        </div>
+    </div>
+</body>
+</html>
