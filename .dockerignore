@@ -1,0 +1,21 @@
+# Ignore common editor and operating system files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Ignore the virtual environment directory (if you're using one)
+venv/
+
+# Ignore any log files or data files
+logs/
+data/
+
+# Ignore any local configuration files
+.env
+config.ini
+
+# Ignore any sensitive or secret files
+secrets/
+**/flask_session/

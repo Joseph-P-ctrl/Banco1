@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resultado Bancos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+ 
+</head>
+
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
+    
+       </header>
+    <nav  class="bg-body-tertiary">
+  
+        <ul class="nav nav-pills justify-content-center mb-3 "  id="pills-tab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link " href="/">Home</a>
+            </li>
+            <li class="nav-item">
+                            <a class="nav-link " href="/basedatos">Base de Datos</a>
+            </li>
+                        <li class="nav-item">
+                                <a class="nav-link" href="/asiento">Asientos</a>
+                        </li>
+                        <li class="nav-item">
+                                <a class="nav-link" href="/correos">Correos</a>
+                        </li>
+            <li class="nav-item">
+                                <a class="nav-link active" href="/upload">Resultados</a>
+              </li>
+           
+          </ul>
+       </nav>
+    <div class="container text-center pb-4">
+        <div class="row">
+                   
+    <div class="row">
+        
+        <div class="col">
+            <form action="/upload" method="POST">
+                <button type="submit"  class="btn btn-success btn-lg">Movimientos</button>
+            </form>
+            
+        </div>
+
+        <div class="col">
+            <form action="/download_recaudos" method="POST">
+                <button type="submit"  class="btn btn-success btn-lg">Recaudos</button>
+            </form>
+            
+        </div>
+        
+    </div>
+            <div class="col">
+                <div class="card">
+
+                
+                <h1>Estado de cuenta</h1>
+                <label for="movimientos"></label>
+                {% if data.movements.message   %}
+                <span>{{data.movements.message   }}</span>
+                <ul>
+                    {% for item in data.movements.items %}
+                      <li>{{ item["monto"] }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+            </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+
+                <div class="card">
+        <!-- Transferencias-->
+        <h1>Resumen Transfers</h1>
+        <label for="tranfers"></label>
+        {% if data.transfers.message  %}
+        <span class="error">Error {{data.transfers.message}}</span>
+        
+        <table>
+            <thead>
+                <tr>
+                    <td>Fecha</td>
+                    <td>Ordenante</td>
+                    <td>Monto</td>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in data.transfers.items %}
+            <tr>
+                <td>{{ item["fecha"] }}</td>
+                <td>{{ item["ordenante"] }}</td>
+                <td>{{ item["monto"] }}</td>
+            </tr>
+              
+            {% endfor %}
+    
+                
+            </tbody>
+        </table>
+        
+        
+        {% endif %}        
+    </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col">
+
+                <div class="card">
+    <!--Providers-->
+    <h1>Resumen Providers</h1>
+    <label for="providers"></label>
+    {% if data.providers.message  %}
+    <span class="error">Error: {{data.providers.message}}</span>
+    <table>
+        <thead>
+            <tr>
+                <td>Fecha</td>
+                <td>Ordenante</td>
+                <td>Monto</td>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in data.providers.items %}
+        <tr>
+            <td>{{ item["fecha"] }}</td>
+            <td>{{ item["ordenante"] }}</td>
+            <td>{{ item["monto"] }}</td>
+        </tr>
+          
+        {% endfor %}
+
+            
+        </tbody>
+    </table>
+    
+    
+    {% endif %}
+</div>
+            </div>
+        </div>
+    
+    
+        <div class="row">
+            <div class="col">
+                <div class="card">
+    <!--Interbanks-->
+    <h1>Resumen Interbancarios</h1>
+    <label for="interbanks"></label>
+    {% if data.interbanks.message  %}
+    <span class="error">Error {{data.interbanks.message}}</span>
+    
+    <table>
+        <thead>
+            <tr>
+                <td>Ordenante</td>
+                <td>Monto</td>
+                <td>Operacion</td>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in data.interbanks.items %}
+        <tr>
+            <td>{{ item["ordenante"] }}</td>
+            <td>{{ item["monto"] }}</td>
+            <td>{{ item["operacion"] }}</td>
+        </tr>
+          
+        {% endfor %}
+
+            
+        </tbody>
+    </table>
+
+    
+    
+    {% endif %}            
+</div>
+            </div>
+        </div>
+       
+        
+ 
+    
+    
+    
+        </div>
+    
+
+</body>
+</html>

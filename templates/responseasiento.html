@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Resultado Asientos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
+    <style>
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            width: 50px;
+            height: 50px;
+        }
+    </style>
+    <script>
+window.addEventListener("load", function() {
+  var form = document.querySelector("form");
+  var loader = document.getElementById("loader");
+  var spinner;
+
+  form.addEventListener("submit", function() {
+    // Muestra el spinner y comienza la animación
+    spinner = new Spinner().spin(loader);
+    loader.style.display = "inline-block";
+    
+    // Desactiva el botón de descarga
+    document.getElementById("submit").setAttribute("disabled", "true");
+  });
+
+  // Detecta cuando la descarga del archivo ha finalizado
+  form.addEventListener("submit", function() {
+    setTimeout(function() {
+      // Detiene la animación y oculta el spinner después de un breve retraso
+      spinner.stop();
+      loader.style.display = "none";
+      
+      // Habilita el botón de descarga
+      document.getElementById("submit").removeAttribute("disabled");
+    }, 1000); // Puedes ajustar el tiempo de espera según tus necesidades
+  });
+});
+
+    </script>
+
+</head>
+
+<body>
+    <header>
+        <!-- <img src="../imagenes/logos.jpeg" width="400px" height="400px" alt=""> -->
+        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
+    
+    
+       </header>
+       
+    <div class="container text-center">
+                        <div class="col">
+                            <form action="/download_asientos" method="POST" onsubmit="startSpinner()">
+                                <button type="submit" id="submit" class="btn btn-primary btn-lg">Download File</button>
+                              </form>
+                              
+                              <div id="loader" class="loader"></div>
+
+
+                        <div class="col">
+                            <div class="card p-3">
+                                <h5>Correos detectados</h5>
+                                {% if emails %}
+                                    <ul>
+                                    {% for e in emails %}
+                                        <li>{{ e }}</li>
+                                    {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p>No se detectaron correos.</p>
+                                {% endif %}
+                                <form action="/correos" method="GET">
+                                    <button type="submit" class="btn btn-success mt-2">Ir a Correos para Enviar Manualmente</button>
+                                </form>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+
+                <div class="card">
+
+
+                    <div class="row">
+                        <div class="col">
+                            <!-- <form action="/upload" method="POST">
+                                <button type="submit" id="submit" class="btn btn-primary btn-lg">Download File</button>
+                            </form> -->
+
+                            <form action="/download_asientos" method="POST" onsubmit="startSpinner()">
+                                <button type="submit" id="submit" class="btn btn-primary btn-lg">Download File</button>
+                              </form>
+                              
+                              <div id="loader" class="loader"></div>
+
+                        </div>
+                        <div class="col">
+                            <form action="/" method="GET">
+
+                                <button type="submit" class="btn btn-secondary btn-lg">Regresar</button>
+                            </form>
+
+                        </div>
+                    </div>
+
+
+                    <label for="movimientos"></label>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <!-- <th>N</th> -->
+                                <!-- <th>N°</th> -->
+                                <th>Interrupción</th>
+                                <th>Suministro</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in data %}
+                            <tr>
+                                <!-- <td>{{ index  }}</td> -->
+                                <!-- <td>{{ index }}</td> -->
+                                <td>{{ item["interrupcion"] }}</td>
+                                <td>{{ item["suministro"] }}</td>
+                                <td>{{ item["fec ini"] }}</td>
+                                <td>{{ item["fec fin"] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+    </div>
+
+
+</body>
+
+</html>

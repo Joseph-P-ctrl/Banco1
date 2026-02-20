@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Correos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .floating-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10000;
+            min-width: 500px;
+            max-width: 700px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideDown 0.5s ease-out;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .floating-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .alert-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        
+        .alert-body {
+            background: white;
+            padding: 25px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .warning-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .email-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .email-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .email-list::-webkit-scrollbar-track {
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+        
+        .email-list::-webkit-scrollbar-thumb {
+            background: #f5576c;
+            border-radius: 10px;
+        }
+        
+        .email-list::-webkit-scrollbar-thumb:hover {
+            background: #dc3545;
+        }
+        
+        .email-item {
+            padding: 8px 12px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #f5576c;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .stats-box {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .stats-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .stats-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .stats-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .close-btn-float {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .close-btn-float:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+<header>
+    <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
+</header>
+<nav class="bg-body-tertiary">
+    <ul class="nav nav-pills justify-content-center mb-3">
+        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/basedatos">Base de Datos</a></li>
+        <li class="nav-item"><a class="nav-link" href="/asiento">Asientos</a></li>
+        <li class="nav-item"><a class="nav-link active" href="/correos">Correos</a></li>
+    </ul>
+</nav>
+
+<div class="container text-center">
+    <h1>Correos</h1>
+
+    {% if emails is defined %}
+        <div class="card p-3 mt-3">
+            <h5>Correos detectados</h5>
+            
+            <!-- Información de vouchers disponibles -->
+            {% if total_vouchers is defined and total_vouchers > 0 %}
+                <div class="alert alert-info mt-2" role="alert">
+                    <strong>📄 Vouchers disponibles:</strong> {{ total_vouchers }} voucher(s) se adjuntarán automáticamente a los correos correspondientes.
+                </div>
+            {% elif total_vouchers is defined and total_vouchers == 0 %}
+                <div class="alert alert-warning mt-2" role="alert">
+                    <strong>⚠️ Sin vouchers:</strong> No hay vouchers generados. Los correos se enviarán sin adjuntos PDF.
+                    <br><small>Procesa un asiento primero para generar vouchers automáticamente.</small>
+                </div>
+            {% endif %}
+            
+            {% if emails %}
+                <!-- Barra de búsqueda -->
+                <div class="mb-3">
+                    <input type="text" id="searchBox" class="form-control" placeholder="🔍 Buscar correo..." onkeyup="filterEmails()">
+                    <small class="text-muted">Escribe para filtrar correos en tiempo real</small>
+                </div>
+                
+                <form action="/send_emails" method="POST">
+                    <div class="alert alert-secondary text-start" role="alert">
+                        El envío es manual. Selecciona los correos a enviar y confirma antes de continuar.
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div><strong>Total:</strong> <span id="emailCount">{{ total_emails }}</span> correos</div>
+                        <div><strong>Página:</strong> {{ page }} de {{ total_pages }}</div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-3">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px; text-align:center;">
+                                        <input type="checkbox" id="check-all" onclick="toggleAll(this)">
+                                    </th>
+                                    <th>Correo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for e in page_emails %}
+                                <tr>
+                                    <td style="text-align:center;">
+                                        <input type="checkbox" name="selected_emails" value="{{ e }}">
+                                    </td>
+                                    <td style="text-align:left;">{{ e }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if total_pages > 1 %}
+                        <nav aria-label="Paginación de correos" class="mb-3">
+                            <ul class="pagination justify-content-center mb-0">
+                                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                                    <a class="page-link" href="/correos?page={{ page-1 }}">Anterior</a>
+                                </li>
+                                {% for p in range(1, total_pages + 1) %}
+                                    {% if p == page or p <= 2 or p > total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                                        <li class="page-item {% if p == page %}active{% endif %}">
+                                            <a class="page-link" href="/correos?page={{ p }}">{{ p }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                                    <a class="page-link" href="/correos?page={{ page+1 }}">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    {% endif %}
+
+                    <div class="form-check mb-3 text-start">
+                        <input class="form-check-input" type="checkbox" id="manual_confirm" name="manual_confirm" value="yes" required>
+                        <label class="form-check-label" for="manual_confirm">
+                            Confirmo que deseo enviar manualmente solo los correos seleccionados.
+                        </label>
+                    </div>
+
+                    <button class="btn btn-success" type="submit">Enviar seleccionados</button>
+                </form>
+            {% else %}
+                <p>No se detectaron correos en el archivo.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="card p-3 mt-3">
+            <h5>Correos detectados</h5>
+            <p>No hay correos para mostrar. Procesa Asientos para generar los correos automáticamente.</p>
+        </div>
+    {% endif %}
+
+    {% if mensaje_exito %}
+        {% set is_error_message = ('Error' in mensaje_exito) or ('error' in mensaje_exito) %}
+        {% set is_warning_message = ('NO ENVIADOS' in mensaje_exito) or ('⚠️' in mensaje_exito) %}
+        <div class="floating-overlay" id="floatingOverlay" onclick="closeFloatingAlert()"></div>
+        <div class="floating-alert" id="floatingAlert">
+            <div class="alert-header {% if is_warning_message or is_error_message %}warning-header{% endif %}">
+                {% if is_error_message %}
+                    ❌ Error de Envío
+                {% elif is_warning_message %}
+                    ⚠️ Reporte de Envío
+                {% else %}
+                    ✅ Envío Completado
+                {% endif %}
+            </div>
+            <div class="alert-body">
+                {% set lines = mensaje_exito.split('\n') %}
+                {% for line in lines %}
+                    {% if 'Enviados:' in line %}
+                        {% set parts = line.split('.') %}
+                        {% for part in parts %}
+                            {% if 'Enviados:' in part %}
+                                <span class="stats-box stats-success">{{ part.strip() }}</span>
+                            {% elif 'Fallidos:' in part %}
+                                <span class="stats-box stats-danger">{{ part.strip() }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    {% elif 'CORREOS NO ENVIADOS' in line %}
+                        <div class="email-list">
+                            <h5 style="color: #f5576c; margin-bottom: 15px;">
+                                <strong>{{ line }}</strong>
+                            </h5>
+                    {% elif line.startswith('•') %}
+                            <div class="email-item">{{ line.replace('•', '📧') }}</div>
+                    {% elif line.strip() and not line.startswith('✅') and not line.startswith('⚠️') %}
+                        {% if 'Revisa' in line %}
+                            <p style="margin-top: 15px; color: #6c757d; font-size: 0.9rem;">{{ line }}</p>
+                        {% elif '... y' in line %}
+                            <p style="margin-top: 10px; font-style: italic; color: #6c757d;">{{ line }}</p>
+                        {% elif line.strip() %}
+                            <p>{{ line }}</p>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if 'NO ENVIADOS' in mensaje_exito %}
+                        </div>
+                {% endif %}
+                <div style="text-align: center;">
+                    <button class="close-btn-float" onclick="closeFloatingAlert()">Entendido</button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function closeFloatingAlert() {
+    document.getElementById('floatingAlert').style.display = 'none';
+    document.getElementById('floatingOverlay').style.display = 'none';
+}
+
+function toggleAll(source) {
+    const checkboxes = document.querySelectorAll('input[name="selected_emails"]:not([style*="display: none"])');
+    checkboxes.forEach((checkbox) => {
+        if (checkbox.closest('tr').style.display !== 'none') {
+            checkbox.checked = source.checked;
+        }
+    });
+}
+
+function filterEmails() {
+    const searchText = document.getElementById('searchBox').value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach((row) => {
+        const email = row.cells[1].textContent.toLowerCase();
+        if (email.includes(searchText)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('emailCount').textContent = visibleCount;
+}
+</script>
+
+</body>
+</html>
