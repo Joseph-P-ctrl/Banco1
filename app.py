@@ -280,7 +280,7 @@ def count_vouchers_in_folder():
             return 0
         total = 0
         for filename in os.listdir(base_dir):
-            if filename.lower().endswith('.pdf'):
+            if filename.lower().endswith('.html'):
                 total += 1
         return total
     except Exception:
@@ -293,7 +293,7 @@ def find_latest_voucher_for_email(recipient_email):
         return None
 
     encoded_email = recipient.replace('@', '_').replace('.', '_')
-    expected_suffix = f"_{encoded_email}.pdf"
+    expected_suffix = f"_{encoded_email}.html"
 
     try:
         base_dir = vouchers_path()
@@ -303,7 +303,7 @@ def find_latest_voucher_for_email(recipient_email):
         candidate_paths = []
         for filename in os.listdir(base_dir):
             filename_lower = filename.lower()
-            if not filename_lower.endswith('.pdf'):
+            if not filename_lower.endswith('.html'):
                 continue
             if filename_lower.endswith(expected_suffix):
                 candidate_paths.append(os.path.join(base_dir, filename))
@@ -716,7 +716,11 @@ def send_emails():
     
     default_body = """{saludo}
 
-Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre. Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual Distriluz: https://servicios.distriluz.com.pe/oficinavirtual.
+Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre.
+
+Se adjunta el voucher en HTML.
+
+Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual Distriluz: https://servicios.distriluz.com.pe/oficinavirtual.
 
 En esta plataforma, podrá registrarse como Cliente Empresa para gestionar la cancelación de los suministros afiliados a su representada y agregar otros suministros. Podrá adjuntar la constancia del pago o transferencia realizada para completar el proceso.
 
@@ -843,7 +847,7 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                     msg['Bcc'] = sender
                     msg.set_content(body_personalizado)
                     
-                    # Adjuntar voucher PDF si existe para este email
+                    # Adjuntar voucher HTML si existe para este email
                     voucher_attached = False
                     
                     logging.info(f"Procesando email: {recipient} -> buscando voucher para: {recipient_lower}")
@@ -853,13 +857,17 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                         logging.info(f"Voucher encontrado para {recipient_lower}: {voucher_path}")
                         
                         if voucher_path and os.path.exists(voucher_path):
-                            with open(voucher_path, 'rb') as pdf_file:
-                                pdf_data = pdf_file.read()
-                                pdf_filename = os.path.basename(voucher_path)
-                                msg.add_attachment(pdf_data, maintype='application', 
-                                                 subtype='pdf', filename=pdf_filename)
+                            with open(voucher_path, 'rb') as html_file:
+                                html_data = html_file.read()
+                                html_filename = os.path.basename(voucher_path)
+                                msg.add_attachment(
+                                    html_data,
+                                    maintype='text',
+                                    subtype='html',
+                                    filename=html_filename
+                                )
                             voucher_attached = True
-                            logging.info(f"✅ Voucher {pdf_filename} adjuntado a {recipient}")
+                            logging.info(f"✅ Voucher {html_filename} adjuntado a {recipient}")
                         else:
                             logging.warning(f"⚠️ Archivo de voucher NO existe: {voucher_path}")
                     else:
@@ -883,14 +891,14 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                             if voucher_attached and voucher_info:
                                 voucher_path = voucher_info.get('filepath')
                                 if voucher_path and os.path.exists(voucher_path):
-                                    with open(voucher_path, 'rb') as pdf_file:
-                                        pdf_data = pdf_file.read()
-                                        pdf_filename = os.path.basename(voucher_path)
+                                    with open(voucher_path, 'rb') as html_file:
+                                        html_data = html_file.read()
+                                        html_filename = os.path.basename(voucher_path)
                                         sender_copy.add_attachment(
-                                            pdf_data,
-                                            maintype='application',
-                                            subtype='pdf',
-                                            filename=pdf_filename
+                                            html_data,
+                                            maintype='text',
+                                            subtype='html',
+                                            filename=html_filename
                                         )
 
                             smtp.send_message(sender_copy)
