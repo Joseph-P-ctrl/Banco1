@@ -1,5 +1,12 @@
 import os
 from datetime import datetime
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.pdfgen import canvas
 import pandas as pd
 
 class VoucherService:
@@ -11,7 +18,7 @@ class VoucherService:
     
     def generar_voucher_cliente(self, datos_cliente):
         """
-        Genera un voucher en HTML para un cliente específico.
+        Genera un voucher en PDF para un cliente específico.
         
         Args:
             datos_cliente: dict con las claves:
@@ -25,170 +32,137 @@ class VoucherService:
                 - asiento: número de asiento (opcional)
         
         Returns:
-            str: ruta del archivo HTML generado
+            str: ruta del archivo PDF generado
         """
         # Sanitizar el nombre del archivo
         email = datos_cliente.get('email', 'sin_email')
         referencia = datos_cliente.get('referencia', 'sin_ref')
-        safe_filename = f"voucher_{referencia}_{email.replace('@', '_').replace('.', '_')}.html"
+        safe_filename = f"voucher_{referencia}_{email.replace('@', '_').replace('.', '_')}.pdf"
         filepath = os.path.join(self.output_dir, safe_filename)
+        
+        # Crear el PDF con tamaño A4
+        c = canvas.Canvas(filepath, pagesize=A4)
+        width, height = A4
+        
+        # Colores corporativos modernos
+        color_header = colors.HexColor('#1e5da8')  # Azul corporativo
+        color_light_blue = colors.HexColor('#e8f1f8')  # Azul claro para fondos
+        color_text_dark = colors.HexColor('#2c3e50')
+        color_border = colors.HexColor('#d0d8e0')
+        
+        # ==== ENCABEZADO PRINCIPAL ====
+        c.setFillColor(color_header)
+        c.rect(0, height - 120, width, 120, fill=True, stroke=False)
+        
+        # Logo DISTRILUZ (izquierda)
+        logo_path = 'static/images/logos.jpeg'
+        if os.path.exists(logo_path):
+            try:
+                c.drawImage(logo_path, 40, height - 105, width=100, height=80, preserveAspectRatio=True, mask='auto')
+            except:
+                pass
+        
+        # Título y fecha (derecha)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(160, height - 50, "Ensa")
+        
+        
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(160, height - 88, "ABONO RECIBIDO")
+        
+        # Fecha de emisión
+        c.setFont("Helvetica", 10)
         fecha_emision = datetime.now().strftime("%d/%m/%Y %H:%M")
-        descripcion = str(datos_cliente.get('descripcion', 'Pago de servicios'))
-        if len(descripcion) > 120:
-            descripcion = descripcion[:120] + "..."
-
+        c.drawRightString(width - 40, height - 50, f"Fecha de emisión: {fecha_emision}")
+        
+        y_position = height - 160
+        
+        # ==== TÍTULO DEL DOCUMENTO ====
+        c.setFillColor(color_header)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, y_position, "DATOS DE ABONO RECIBIDO")
+        
+        y_position -= 35
+        
+        # ==== REFERENCIA DEL CLIENTE CON DATOS DE OPERACIÓN (Caja consolidada) ====
+        box_y = y_position - 125
+        c.setFillColor(color_light_blue)
+        c.setStrokeColor(color_border)
+        c.setLineWidth(1)
+        c.roundRect(40, box_y, width - 80, 135, 5, fill=True, stroke=True)
+        
+        c.setFillColor(color_header)
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y_position, "REFERENCIA DEL CLIENTE")
+        
+        y_position -= 20
+        c.setStrokeColor(color_header)
+        c.setLineWidth(1.5)
+        c.line(50, y_position, width - 50, y_position)
+        
+        y_position -= 22
+        c.setFillColor(color_text_dark)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(50, y_position, "Referencia:")
+        c.setFont("Helvetica", 9)
+        c.drawString(170, y_position, str(datos_cliente.get('referencia', 'N/A')))
+        
+        y_position -= 20
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(50, y_position, "Fecha Operación:")
+        c.setFont("Helvetica", 9)
+        c.drawString(170, y_position, str(datos_cliente.get('fecha', 'N/A')))
+        
+        y_position -= 20
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(50, y_position, "Nº Operación:")
+        c.setFont("Helvetica", 9)
+        c.drawString(170, y_position, str(datos_cliente.get('operacion_numero', 'N/A')))
+        
+        y_position -= 20
+        c.setFont("Helvetica-Bold", 9)
+        c.drawString(50, y_position, "Descripción:")
+        c.setFont("Helvetica", 9)
+        texto_desc = str(datos_cliente.get('descripcion', 'Pago de servicios'))
+        if len(texto_desc) > 55:
+            texto_desc = texto_desc[:55] + "..."
+        c.drawString(170, y_position, texto_desc)
+        
+        y_position -= 35
+        
+        # ==== MONTO A CONFIRMAR (Caja destacada) ====
+        c.setFillColor(color_header)
+        c.setStrokeColor(color_header)
+        c.setLineWidth(2)
+        c.roundRect(40, y_position - 55, width - 80, 65, 8, fill=False, stroke=True)
+        
+        c.setFillColor(colors.HexColor('#f8f9fa'))
+        c.roundRect(41, y_position - 54, width - 82, 63, 7, fill=True, stroke=False)
+        
+        c.setFillColor(color_header)
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(60, y_position - 20, "MONTO A CONFIRMAR:")
+        
+        c.setFont("Helvetica-Bold", 26)
         monto = datos_cliente.get('monto', 0)
         monto_str = f"S/ {monto:,.2f}" if isinstance(monto, (int, float)) else str(monto)
-
-        referencia_valor = str(datos_cliente.get('referencia', 'N/A'))
-        fecha_operacion_valor = str(datos_cliente.get('fecha', 'N/A'))
-        operacion_numero_valor = str(datos_cliente.get('operacion_numero', 'N/A'))
-
-        html_content = f"""<!DOCTYPE html>
-<html lang=\"es\">
-<head>
-    <meta charset=\"UTF-8\" />
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
-    <title>Voucher de Abono - {referencia_valor}</title>
-    <style>
-        body {{
-            margin: 0;
-            background: #f3f5f7;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #2c3e50;
-        }}
-        .page {{
-            max-width: 820px;
-            margin: 20px auto;
-            background: #ffffff;
-            border: 1px solid #d0d8e0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }}
-        .header {{
-            background: #1e5da8;
-            color: #ffffff;
-            padding: 24px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }}
-        .brand-title {{
-            margin: 0;
-            font-size: 34px;
-            font-weight: 700;
-            line-height: 1;
-        }}
-        .brand-subtitle {{
-            margin: 6px 0 0;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: .5px;
-        }}
-        .emision {{
-            font-size: 12px;
-            text-align: right;
-        }}
-        .content {{
-            padding: 28px 30px;
-        }}
-        .section-title {{
-            margin: 0 0 20px;
-            color: #1e5da8;
-            font-size: 22px;
-            font-weight: 700;
-        }}
-        .box {{
-            background: #e8f1f8;
-            border: 1px solid #d0d8e0;
-            border-radius: 8px;
-            padding: 16px 18px;
-        }}
-        .box-title {{
-            margin: 0 0 12px;
-            color: #1e5da8;
-            font-size: 15px;
-            font-weight: 700;
-            border-bottom: 2px solid #1e5da8;
-            padding-bottom: 8px;
-        }}
-        .row {{
-            margin: 8px 0;
-            font-size: 14px;
-        }}
-        .row strong {{
-            display: inline-block;
-            width: 155px;
-        }}
-        .monto {{
-            margin-top: 20px;
-            border: 2px solid #1e5da8;
-            border-radius: 8px;
-            padding: 14px 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f9fa;
-        }}
-        .monto-label {{
-            color: #1e5da8;
-            font-weight: 700;
-            font-size: 20px;
-        }}
-        .monto-value {{
-            color: #1e5da8;
-            font-weight: 800;
-            font-size: 34px;
-        }}
-        .footer {{
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 12px;
-            padding: 18px 30px 24px;
-            border-top: 1px solid #e1e6eb;
-        }}
-        .footer .brand {{
-            color: #1e5da8;
-            font-weight: 700;
-            margin-top: 6px;
-            display: block;
-        }}
-    </style>
-</head>
-<body>
-    <div class=\"page\">
-        <div class=\"header\">
-            <div>
-                <h1 class=\"brand-title\">Ensa</h1>
-                <p class=\"brand-subtitle\">ABONO RECIBIDO</p>
-            </div>
-            <div class=\"emision\">Fecha de emisión: {fecha_emision}</div>
-        </div>
-        <div class=\"content\">
-            <h2 class=\"section-title\">DATOS DE ABONO RECIBIDO</h2>
-            <div class=\"box\">
-                <h3 class=\"box-title\">REFERENCIA DEL CLIENTE</h3>
-                <div class=\"row\"><strong>Referencia:</strong> {referencia_valor}</div>
-                <div class=\"row\"><strong>Fecha Operación:</strong> {fecha_operacion_valor}</div>
-                <div class=\"row\"><strong>Nº Operación:</strong> {operacion_numero_valor}</div>
-                <div class=\"row\"><strong>Descripción:</strong> {descripcion}</div>
-            </div>
-            <div class=\"monto\">
-                <div class=\"monto-label\">MONTO A CONFIRMAR:</div>
-                <div class=\"monto-value\">{monto_str}</div>
-            </div>
-        </div>
-        <div class=\"footer\">
-            <div>Este documento es una confirmación de abono recibido.</div>
-            <div>Para mayor información, contacte con el área de recaudación al correo recaudacionensa@distriluz.com.pe</div>
-            <span class=\"brand\">ENSA © 2026</span>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-        with open(filepath, 'w', encoding='utf-8') as html_file:
-            html_file.write(html_content)
+        c.drawRightString(width - 60, y_position - 25, monto_str)
+        
+        # ==== PIE DE PÁGINA ====
+        y_position = 70
+        c.setFillColor(colors.HexColor('#95a5a6'))
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(width/2, y_position, "Este documento es una confirmación de abono recibido.")
+        c.drawCentredString(width/2, y_position - 12, "Para mayor información, contacte con el área de recaudación al correo")
+        c.drawCentredString(width/2, y_position - 24, "recaudacionensa@distriluz.com.pe")
+        
+        c.setFillColor(color_header)
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(width/2, y_position - 44, " ENSA © 2026")
+        
+        # Guardar el PDF
+        c.save()
         
         return filepath
     
