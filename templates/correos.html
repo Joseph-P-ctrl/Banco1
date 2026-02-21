@@ -164,12 +164,12 @@
             <!-- Información de vouchers disponibles -->
             {% if total_vouchers is defined and total_vouchers > 0 %}
                 <div class="alert alert-info mt-2" role="alert">
-                    <strong>📄 Vouchers disponibles:</strong> {{ total_vouchers }} voucher(s) se adjuntarán automáticamente a los correos correspondientes.
+                    <strong>📄 Vouchers disponibles:</strong> {{ total_vouchers }} voucher(s) se enviarán en formato HTML dentro del correo correspondiente.
                 </div>
             {% elif total_vouchers is defined and total_vouchers == 0 %}
                 <div class="alert alert-warning mt-2" role="alert">
-                    <strong>⚠️ Sin vouchers:</strong> No hay vouchers generados. Los correos se enviarán sin adjuntos PDF.
-                    <br><small>Procesa un asiento primero para generar vouchers automáticamente.</small>
+                    <strong>⚠️ Sin vouchers:</strong> No hay datos de voucher preparados. Los correos se enviarán con texto estándar.
+                    <br><small>Procesa un asiento primero para preparar los datos del voucher en HTML.</small>
                 </div>
             {% endif %}
             

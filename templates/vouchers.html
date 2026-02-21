@@ -76,11 +76,15 @@
                             </p>
                         </div>
                         <div>
-                            <a href="/voucher/{{ voucher.filepath.split('/')[-1] if '/' in voucher.filepath else voucher.filepath.split('\\')[-1] }}" 
-                               class="btn btn-sm btn-outline-primary" 
-                               target="_blank">
-                                📥 Descargar
-                            </a>
+                            {% if voucher.filepath %}
+                                <a href="/voucher/{{ voucher.filepath.split('/')[-1] if '/' in voucher.filepath else voucher.filepath.split('\\')[-1] }}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   target="_blank">
+                                    📥 Descargar
+                                </a>
+                            {% else %}
+                                <span class="badge bg-secondary">Voucher HTML</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

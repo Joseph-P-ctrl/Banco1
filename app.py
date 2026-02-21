@@ -44,6 +44,14 @@ CUENTA = "MOVIMIENT"
 MOVIMIENTOS = "MOVIMIENTOS"
 ASIENTO= "EXPORT"
 
+COMPANY_KEYWORDS = {
+    'SAC', 'S.A.C', 'SRL', 'S.R.L', 'SA', 'S.A', 'EIRL', 'E.I.R.L',
+    'GERENCIA', 'DIRECCION', 'DIREC', 'REGIONAL', 'MUNICIPALIDAD',
+    'MINISTERIO', 'GOBIERNO', 'UNIDAD', 'LOGISTICA', 'AGRICULTURA',
+    'POLICIAL', 'HOSPITAL', 'UNIVERSIDAD', 'COLEGIO', 'EMPRESA',
+    'SERVICIOS', 'AREA', 'OFICINA'
+}
+
 
 def _smtp_key_path():
     return files_path('smtp_credentials.key')
@@ -250,6 +258,160 @@ def collect_emails_without_voucher_using_clientes(df_movimientos, clientes_email
             emails.add(clean_email)
     return sorted(emails)
 
+
+def build_voucher_data_without_pdf(df_movimientos, clientes_email_map=None):
+    if df_movimientos is None or len(df_movimientos) == 0:
+        return []
+
+    no_voucher_mask = get_no_voucher_mask(df_movimientos)
+    if len(no_voucher_mask) == 0:
+        return []
+
+    voucher_records_by_email = {}
+
+    for index, row in df_movimientos.loc[no_voucher_mask].iterrows():
+        referencia = str(row.get('Referencia', row.get('referencia', f'REF-{index}'))).strip()
+
+        email = ''
+        if 'Correo' in row and pd.notna(row['Correo']) and str(row['Correo']).strip():
+            email = extract_single_email(row['Correo'])
+        elif 'Correos' in row and pd.notna(row['Correos']) and str(row['Correos']).strip():
+            email = extract_single_email(str(row['Correos']).split(',')[0])
+        elif clientes_email_map and referencia.upper() in clientes_email_map:
+            email = extract_single_email(clientes_email_map[referencia.upper()])
+
+        if not email:
+            continue
+
+        nombre_cliente = ''
+        for candidate_col in [
+            'Nombre Cliente', 'Nombre', 'Cliente', 'Razón Social', 'Razon Social',
+            'Titular', 'Nombre y Apellido'
+        ]:
+            if candidate_col in row and pd.notna(row[candidate_col]) and str(row[candidate_col]).strip():
+                nombre_cliente = str(row[candidate_col]).strip()
+                break
+
+        if not nombre_cliente:
+            local_part = email.split('@')[0]
+            name_tokens = [token for token in re.split(r'[._\-]+', local_part) if token and not token.isdigit()]
+            if name_tokens:
+                nombre_cliente = ' '.join(token.capitalize() for token in name_tokens[:3])
+
+        if not nombre_cliente:
+            nombre_cliente = 'Cliente'
+
+        fecha_value = row.get('Fecha', row.get('fecha', ''))
+        if isinstance(fecha_value, pd.Timestamp):
+            fecha_value = fecha_value.strftime('%d/%m/%Y')
+
+        voucher_records_by_email[email] = {
+            'email': email,
+            'referencia': referencia,
+            'monto': row.get('Monto', row.get('monto', 0)),
+            'nombre_cliente': nombre_cliente,
+            'fecha': fecha_value,
+            'descripcion': row.get('Descripción operación', row.get('descripcion', 'Operación bancaria')),
+            'operacion_numero': row.get('Operación - Número', row.get('operacion', 'N/A')),
+            'filepath': ''
+        }
+
+    return list(voucher_records_by_email.values())
+
+
+def is_company_name(nombre_cliente):
+    nombre = str(nombre_cliente or '').strip()
+    if not nombre:
+        return False
+
+    nombre_upper = nombre.upper()
+    has_company_word = any(word in nombre_upper for word in COMPANY_KEYWORDS)
+    has_digits = bool(re.search(r'\d', nombre_upper))
+    return has_company_word or has_digits
+
+
+def build_saludo_cliente(nombre_cliente):
+    nombre = str(nombre_cliente or '').strip()
+    if not nombre or nombre.lower() == 'cliente':
+        return 'Estimado Cliente,'
+    if is_company_name(nombre):
+        return 'Estimado Cliente,'
+    return f'Estimado {nombre},'
+
+
+def build_voucher_email_text(saludo):
+    return f"""{saludo}
+
+Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre:
+
+Se adjunta el voucher.
+
+Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual Distriluz: https://servicios.distriluz.com.pe/oficinavirtual.
+
+En esta plataforma, podrá registrarse como Cliente Empresa para gestionar la cancelación de los suministros afiliados a su representada y agregar otros suministros. Podrá adjuntar la constancia del pago o transferencia realizada para completar el proceso.
+
+Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.
+"""
+
+
+def build_voucher_email_html(saludo, voucher_info=None):
+    referencia = str((voucher_info or {}).get('referencia', '') or 'N/A')
+    fecha = str((voucher_info or {}).get('fecha', '') or 'N/A')
+    operacion = str((voucher_info or {}).get('operacion_numero', '') or 'N/A')
+    descripcion = str((voucher_info or {}).get('descripcion', '') or 'Operación bancaria')
+    monto = (voucher_info or {}).get('monto', 0)
+
+    try:
+        if isinstance(monto, str):
+            monto_clean = monto.replace(',', '').strip()
+            monto_value = float(monto_clean) if monto_clean else 0.0
+        else:
+            monto_value = float(monto)
+        monto_text = f"S/ {monto_value:,.2f}"
+    except Exception:
+        monto_text = str(monto or 'S/ 0.00')
+
+    return f"""
+<html>
+  <body style="font-family: Arial, sans-serif; color: #222; line-height: 1.5; font-size: 12px;">
+    <div style="max-width: 760px; margin: 0 auto; border: 1px solid #e6e6e6; border-radius: 8px; overflow: hidden;">
+      <div style="background: #1e5da8; color: #fff; padding: 14px 18px; font-size: 18px; font-weight: 700;">
+        ENSA - Voucher de Abono Recibido
+      </div>
+
+      <div style="padding: 18px;">
+        <p style="margin: 0 0 14px 0;">{saludo}</p>
+
+        <p style="margin: 0 0 12px 0;">Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre:</p>
+
+        <div style="border: 1px solid #d9e2ef; background: #f7fbff; border-radius: 8px; padding: 12px; margin: 0 0 12px 0;">
+          <div><strong>Referencia:</strong> {referencia}</div>
+          <div><strong>Fecha:</strong> {fecha}</div>
+          <div><strong>Número de operación:</strong> {operacion}</div>
+          <div><strong>Descripción:</strong> {descripcion}</div>
+          <div style="margin-top: 6px;"><strong>Monto:</strong> {monto_text}</div>
+        </div>
+
+        <p style="margin: 0 0 12px 0;">Se adjunta el voucher.</p>
+
+        <p style="margin: 0 0 12px 0; font-size: 12px;">
+          Para proceder con sus recibos, le invitamos a
+          <span style="font-size: 12px; font-weight: 700; color: #1e5da8;">acceder a nuestra plataforma de Oficina Virtual Distriluz</span>:
+          <a href="https://servicios.distriluz.com.pe/oficinavirtual" style="font-size: 12px; color: #1e5da8;">https://servicios.distriluz.com.pe/oficinavirtual</a>.
+        </p>
+
+        <p style="margin: 0 0 12px 0;">
+          En esta plataforma, podrá registrarse como Cliente Empresa para gestionar la cancelación de los suministros afiliados a su representada y agregar otros suministros.
+          <span style="font-size: 12px; font-weight: 700; color: #1e5da8;">Podrá adjuntar la constancia del pago o transferencia realizada para completar el proceso.</span>
+        </p>
+
+        <p style="margin: 0;">Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.</p>
+      </div>
+    </div>
+  </body>
+</html>
+"""
+
 def save_emails_cache(emails):
     try:
         cache_path = files_path('emails_cache.json')
@@ -338,8 +500,6 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
     # Obtener información de vouchers disponibles
     vouchers_generados = session.get('vouchers_generados', [])
     total_vouchers = len(vouchers_generados)
-    if total_vouchers == 0:
-        total_vouchers = count_vouchers_in_folder()
     
     return render_template(
         'correos.html',
@@ -531,18 +691,16 @@ def asiento_procesar():
                 emails = collect_emails_without_voucher_using_clientes(asientoService.df_movimientos, clientes_email_map)
                 guardaAsientos(asientoService.df_movimientos)
                 
-                # GENERAR VOUCHERS PARA CADA CLIENTE
+                # PREPARAR INFORMACIÓN DE VOUCHERS EN HTML (SIN GENERAR PDF)
                 try:
-                    voucher_service = VoucherService(output_dir=vouchers_path())
-                    vouchers_generados = voucher_service.generar_vouchers_desde_dataframe(
+                    vouchers_generados = build_voucher_data_without_pdf(
                         asientoService.df_movimientos, 
                         clientes_email_map
                     )
-                    # Guardar información de vouchers en sesión
                     session['vouchers_generados'] = vouchers_generados
-                    logging.info(f'Vouchers generados: {len(vouchers_generados)}')
+                    logging.info(f'Vouchers HTML preparados: {len(vouchers_generados)}')
                 except Exception as ve:
-                    logging.error(f'Error generando vouchers: {str(ve)}')
+                    logging.error(f'Error preparando vouchers HTML: {str(ve)}')
                     session['vouchers_generados'] = []
                 
                 # guardar en session para uso posterior y redirigir al flujo de correos
@@ -689,42 +847,6 @@ def send_emails():
         logging.warning(f"OUTLOOK_SMTP_SECURITY inválido ('{smtp_security}'). Usando 'starttls'.")
         smtp_security = 'starttls'
 
-    company_keywords = {
-        'SAC', 'S.A.C', 'SRL', 'S.R.L', 'SA', 'S.A', 'EIRL', 'E.I.R.L',
-        'GERENCIA', 'DIRECCION', 'DIREC', 'REGIONAL', 'MUNICIPALIDAD',
-        'MINISTERIO', 'GOBIERNO', 'UNIDAD', 'LOGISTICA', 'AGRICULTURA',
-        'POLICIAL', 'HOSPITAL', 'UNIVERSIDAD', 'COLEGIO', 'EMPRESA',
-        'SERVICIOS', 'AREA', 'OFICINA'
-    }
-
-    def build_saludo(nombre_cliente):
-        nombre = str(nombre_cliente or '').strip()
-        if not nombre or nombre.lower() == 'cliente':
-            return 'Estimado(a) cliente,'
-
-        nombre_upper = nombre.upper()
-        has_company_word = any(word in nombre_upper for word in company_keywords)
-        has_digits = bool(re.search(r'\d', nombre_upper))
-        words = [w for w in re.split(r'\s+', nombre.strip()) if w]
-        looks_like_person = len(words) >= 2 and not has_company_word and not has_digits
-
-        if has_company_word or has_digits:
-            return f'Estimados señores de {nombre},'
-        if looks_like_person:
-            return f'Estimado(a) {nombre},'
-        return f'Estimado(a) {nombre},'
-    
-    default_body = """{saludo}
-
-Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre. Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual Distriluz: https://servicios.distriluz.com.pe/oficinavirtual.
-
-En esta plataforma, podrá registrarse como Cliente Empresa para gestionar la cancelación de los suministros afiliados a su representada y agregar otros suministros. Podrá adjuntar la constancia del pago o transferencia realizada para completar el proceso.
-
-Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.
-"""
-    
-    body = os.environ.get('OUTLOOK_BODY', default_body)
-
     if not sender or not password:
         return render_correos_page(
             emails=emails,
@@ -734,8 +856,7 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
 
     sent_ok = []
     sent_fail = []
-    sent_with_voucher = []
-    sent_without_voucher = []
+    sent_with_voucher_html = []
     
     try:
         # Conexión SMTP configurable (ssl | starttls | auto)
@@ -806,14 +927,6 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                     recipient_lower = recipient.strip().lower()
                     voucher_info = vouchers_por_email.get(recipient_lower)
 
-                    if not voucher_info:
-                        voucher_info = find_latest_voucher_for_email(recipient_lower)
-                        if voucher_info:
-                            vouchers_por_email[recipient_lower] = voucher_info
-                            logging.info(
-                                f"Voucher recuperado desde carpeta para {recipient_lower}: {voucher_info.get('filepath')}"
-                            )
-
                     nombre_cliente = ''
                     if voucher_info:
                         nombre_cliente = str(voucher_info.get('nombre_cliente', '')).strip()
@@ -827,13 +940,9 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                     if not nombre_cliente:
                         nombre_cliente = 'Cliente'
 
-                    saludo = build_saludo(nombre_cliente)
-                    body_personalizado = (
-                        body
-                        .replace('{saludo}', saludo)
-                        .replace('{cliente_nombre}', nombre_cliente)
-                        .replace('{cliente_email}', recipient)
-                    )
+                    saludo = build_saludo_cliente(nombre_cliente)
+                    body_text = build_voucher_email_text(saludo)
+                    body_html = build_voucher_email_html(saludo, voucher_info)
 
                     msg = EmailMessage()
                     msg['Subject'] = subject
@@ -841,29 +950,10 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                     msg['To'] = recipient
                     # Agregar BCC para que el remitente reciba una copia de cada correo
                     msg['Bcc'] = sender
-                    msg.set_content(body_personalizado)
-                    
-                    # Adjuntar voucher PDF si existe para este email
-                    voucher_attached = False
-                    
-                    logging.info(f"Procesando email: {recipient} -> buscando voucher para: {recipient_lower}")
-                    
-                    if voucher_info:
-                        voucher_path = voucher_info.get('filepath')
-                        logging.info(f"Voucher encontrado para {recipient_lower}: {voucher_path}")
-                        
-                        if voucher_path and os.path.exists(voucher_path):
-                            with open(voucher_path, 'rb') as pdf_file:
-                                pdf_data = pdf_file.read()
-                                pdf_filename = os.path.basename(voucher_path)
-                                msg.add_attachment(pdf_data, maintype='application', 
-                                                 subtype='pdf', filename=pdf_filename)
-                            voucher_attached = True
-                            logging.info(f"✅ Voucher {pdf_filename} adjuntado a {recipient}")
-                        else:
-                            logging.warning(f"⚠️ Archivo de voucher NO existe: {voucher_path}")
-                    else:
-                        logging.warning(f"⚠️ NO se encontró voucher para: {recipient_lower}")
+                    msg.set_content(body_text)
+                    msg.add_alternative(body_html, subtype='html')
+
+                    logging.info(f"Procesando email HTML: {recipient}")
                     
                     smtp.send_message(msg)
 
@@ -874,24 +964,13 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                             sender_copy['Subject'] = f"Copia de envío: {subject}"
                             sender_copy['From'] = sender
                             sender_copy['To'] = sender
-                            sender_copy.set_content(
+                            sender_copy_text = (
                                 f"Se envió un correo a: {recipient}\n"
                                 f"Asunto: {subject}\n\n"
-                                f"Contenido enviado:\n\n{body_personalizado}"
+                                f"Contenido enviado:\n\n{body_text}"
                             )
-
-                            if voucher_attached and voucher_info:
-                                voucher_path = voucher_info.get('filepath')
-                                if voucher_path and os.path.exists(voucher_path):
-                                    with open(voucher_path, 'rb') as pdf_file:
-                                        pdf_data = pdf_file.read()
-                                        pdf_filename = os.path.basename(voucher_path)
-                                        sender_copy.add_attachment(
-                                            pdf_data,
-                                            maintype='application',
-                                            subtype='pdf',
-                                            filename=pdf_filename
-                                        )
+                            sender_copy.set_content(sender_copy_text)
+                            sender_copy.add_alternative(body_html, subtype='html')
 
                             smtp.send_message(sender_copy)
                         except Exception as sender_copy_ex:
@@ -900,13 +979,8 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
                             )
 
                     sent_ok.append(recipient)
-                    
-                    if voucher_attached:
-                        sent_with_voucher.append(recipient)
-                        logging.info(f"📧 Email enviado con voucher a: {recipient}")
-                    else:
-                        sent_without_voucher.append(recipient)
-                        logging.info(f"📧 Email enviado SIN voucher a: {recipient}")
+                    sent_with_voucher_html.append(recipient)
+                    logging.info(f"📧 Email enviado con voucher HTML a: {recipient}")
                         
                 except Exception as send_ex:
                     logging.error(f"Error enviando a {recipient}: {send_ex}")
@@ -930,11 +1004,9 @@ Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención
         else:
             message = f"✅ Envío finalizado. Enviados: {len(sent_ok)}. Fallidos: {len(sent_fail)}."
         
-        # Información de vouchers adjuntados
-        if len(sent_with_voucher) > 0:
-            message += f"\n📄 Con voucher adjunto: {len(sent_with_voucher)}"
-        if len(sent_without_voucher) > 0:
-            message += f"\n⚠️ Sin voucher adjunto: {len(sent_without_voucher)}"
+        # Información de vouchers HTML enviados
+        if len(sent_with_voucher_html) > 0:
+            message += f"\n📄 Con voucher HTML en el correo: {len(sent_with_voucher_html)}"
         
         if len(emails_no_enviados) > 0:
             message += f"\n\n⚠️ CORREOS NO ENVIADOS ({len(emails_no_enviados)}):\n"
