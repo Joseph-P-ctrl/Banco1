@@ -411,7 +411,17 @@ def load_account_features():
             }
         ],
         'activity': [],
-        'sessions': []
+        'sessions': [],
+        'security': {
+            'skip_password_when_possible': False,
+            'enhanced_browsing': False,
+            'recovery_phone': '',
+            'recovery_email': '',
+            'two_factor_phone': '',
+            'backup_codes': 0,
+            'google_prompt_devices': 0
+        },
+        'third_party_apps': []
     }
 
     features_path = _account_features_path()
@@ -426,7 +436,7 @@ def load_account_features():
             return default_payload
 
         merged = default_payload.copy()
-        for key in ['password', 'devices', 'activity', 'sessions']:
+        for key in ['password', 'devices', 'activity', 'sessions', 'security', 'third_party_apps']:
             value = payload.get(key)
             if key == 'password' and isinstance(value, dict):
                 password_payload = default_payload['password'].copy()
@@ -438,6 +448,12 @@ def load_account_features():
                 merged['activity'] = value
             elif key == 'sessions' and isinstance(value, list):
                 merged['sessions'] = value
+            elif key == 'security' and isinstance(value, dict):
+                security_payload = default_payload['security'].copy()
+                security_payload.update(value)
+                merged['security'] = security_payload
+            elif key == 'third_party_apps' and isinstance(value, list):
+                merged['third_party_apps'] = value
 
         return merged
     except Exception as ex:
@@ -563,6 +579,74 @@ def save_account_password(new_password):
 def get_account_password_updated_at():
     payload = load_account_features()
     return str(payload.get('password', {}).get('updated_at', '')).strip()
+
+
+def get_account_password_value():
+    payload = load_account_features()
+    encrypted_value = str(payload.get('password', {}).get('value_encrypted', '')).strip()
+    if not encrypted_value:
+        return ''
+
+    try:
+        fernet = _get_fernet()
+        return fernet.decrypt(encrypted_value.encode('utf-8')).decode('utf-8')
+    except Exception:
+        return ''
+
+
+def _security_activity_items(limit=5):
+    payload = load_account_features()
+    security_keywords = ['seguridad', 'contraseña', 'sesión', 'correo', 'dispositivo', 'autenticación']
+
+    filtered = []
+    for item in payload.get('activity', []):
+        action_value = str(item.get('action', '')).strip()
+        detail_value = str(item.get('detail', '')).strip()
+        haystack = f"{action_value} {detail_value}".lower()
+        if any(keyword in haystack for keyword in security_keywords):
+            filtered.append(item)
+        if len(filtered) >= max(int(limit or 0), 1):
+            break
+    return filtered
+
+
+def _group_sessions_summary(sessions_list):
+    summary = {}
+    for item in sessions_list:
+        os_family = str(item.get('os_family', '')).strip() or 'Otro'
+        summary[os_family] = summary.get(os_family, 0) + 1
+    return summary
+
+
+def _default_third_party_apps():
+    now_text = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+    return [
+        {'id': 1, 'name': 'Alibaba.com', 'description': 'B2B marketplace', 'connected_at': now_text},
+        {'id': 2, 'name': 'AliExpress', 'description': 'Shopping app', 'connected_at': now_text},
+        {'id': 3, 'name': 'Canva', 'description': 'Diseño colaborativo', 'connected_at': now_text}
+    ]
+
+
+def _sanitize_int(value, default_value=0):
+    try:
+        return int(str(value).strip())
+    except Exception:
+        return int(default_value)
+
+
+def _deactivate_other_sessions(payload, current_session_id):
+    sessions_list = payload.get('sessions', [])
+    affected = 0
+    current_clean = str(current_session_id or '').strip()
+
+    for item in sessions_list:
+        session_id_value = str(item.get('session_id', '')).strip()
+        if session_id_value and session_id_value != current_clean and bool(item.get('active', False)):
+            item['active'] = False
+            affected += 1
+
+    payload['sessions'] = sessions_list
+    return affected
 
 def extract_emails_from_df(df):
     emails = set()
@@ -937,6 +1021,31 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
     }
     google_config = load_google_config()
     general_settings = load_general_settings()
+    account_features = load_account_features()
+
+    if not account_features.get('third_party_apps'):
+        account_features['third_party_apps'] = _default_third_party_apps()
+        save_account_features(account_features)
+
+    feature_security = account_features.get('security', {})
+    sessions_list = account_features.get('sessions', [])
+    active_sessions = len([item for item in sessions_list if bool(item.get('active', False))])
+    third_party_total = len(account_features.get('third_party_apps', []))
+
+    security_panel = {
+        'recovery_phone': str(feature_security.get('recovery_phone', '')).strip(),
+        'recovery_email': str(feature_security.get('recovery_email', '')).strip(),
+        'two_factor_phone': str(feature_security.get('two_factor_phone', '')).strip(),
+        'backup_codes': max(_sanitize_int(feature_security.get('backup_codes', 0), 0), 0),
+        'google_prompt_devices': max(_sanitize_int(feature_security.get('google_prompt_devices', 0), 0), 0),
+        'skip_password_when_possible': bool(feature_security.get('skip_password_when_possible', False)),
+        'enhanced_browsing': bool(feature_security.get('enhanced_browsing', False)),
+        'sessions_total': len(sessions_list),
+        'active_sessions': active_sessions,
+        'third_party_total': third_party_total,
+        'password_updated_at': get_account_password_updated_at()
+    }
+
     photo_path = _profile_photo_path()
     has_profile_photo = os.path.exists(photo_path)
     profile_photo_version = general_settings.get('perfil', {}).get('foto_version', 0)
@@ -955,6 +1064,7 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
         smtp_config=smtp_config,
         google_config=google_config,
         general_settings=general_settings,
+        security_panel=security_panel,
         has_profile_photo=has_profile_photo,
         profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
     )
@@ -1202,7 +1312,42 @@ def correos():
 @app.route('/gestor_contrasenas', methods=['GET'])
 def gestor_contrasenas():
     add_account_activity('Gestor de contraseñas', 'Apertura de panel')
-    return render_template('gestor_contrasenas.html')
+    message = session.pop('password_manager_message', None)
+    updated_at = get_account_password_updated_at()
+    return render_template(
+        'gestor_contrasenas.html',
+        message=message,
+        password_updated_at=updated_at
+    )
+
+
+@app.route('/gestor_contrasenas/cambiar', methods=['POST'])
+def gestor_contrasenas_cambiar():
+    current_password = request.form.get('current_password', '').strip()
+    new_password = request.form.get('new_password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+
+    if len(new_password) < 6:
+        session['password_manager_message'] = 'La nueva contraseña debe tener al menos 6 caracteres.'
+        return redirect(url_for('gestor_contrasenas'))
+
+    if new_password != confirm_password:
+        session['password_manager_message'] = 'La confirmación no coincide con la nueva contraseña.'
+        return redirect(url_for('gestor_contrasenas'))
+
+    existing_password = get_account_password_value()
+    if existing_password and current_password != existing_password:
+        session['password_manager_message'] = 'La contraseña actual no es correcta.'
+        return redirect(url_for('gestor_contrasenas'))
+
+    try:
+        save_account_password(new_password)
+        add_account_activity('Gestor de contraseñas', 'Contraseña actualizada desde gestor')
+        session['password_manager_message'] = '✅ Contraseña actualizada correctamente desde el gestor.'
+    except Exception as ex:
+        session['password_manager_message'] = f'Error actualizando contraseña: {ex}'
+
+    return redirect(url_for('gestor_contrasenas'))
 
 
 @app.route('/mi_contrasena', methods=['GET'])
@@ -1234,6 +1379,161 @@ def mi_contrasena_guardar():
         session['password_message'] = f'Error guardando contraseña: {ex}'
 
     return redirect(url_for('mi_contrasena'))
+
+
+@app.route('/seguridad_inicio_sesion', methods=['GET'])
+def seguridad_inicio_sesion():
+    add_account_activity('Seguridad e inicio de sesión', 'Apertura de panel')
+
+    settings = load_general_settings()
+    payload = load_account_features()
+    secure_smtp = load_secure_smtp_credentials()
+
+    security_settings = settings.get('seguridad', {})
+    feature_security = payload.get('security', {})
+    sessions_list = payload.get('sessions', [])
+    profile_data = settings.get('perfil', {})
+
+    connected_sender = str(secure_smtp.get('sender', '')).strip() or get_connected_account_email()
+
+    if not payload.get('third_party_apps'):
+        payload['third_party_apps'] = _default_third_party_apps()
+        save_account_features(payload)
+
+    recovery_email = str(feature_security.get('recovery_email', '')).strip()
+    recovery_phone = str(feature_security.get('recovery_phone', '')).strip()
+
+    if not recovery_email:
+        recovery_email = str(profile_data.get('correo_alterno', '')).strip() or connected_sender
+    if not recovery_phone:
+        recovery_phone = str(profile_data.get('telefono', '')).strip()
+
+    security_view = {
+        'two_factor_enabled': bool(security_settings.get('doble_factor', False)),
+        'skip_password_when_possible': bool(feature_security.get('skip_password_when_possible', False)),
+        'enhanced_browsing': bool(feature_security.get('enhanced_browsing', False)),
+        'recovery_email': recovery_email,
+        'recovery_phone': recovery_phone,
+        'two_factor_phone': str(feature_security.get('two_factor_phone', '')).strip(),
+        'backup_codes': max(_sanitize_int(feature_security.get('backup_codes', 0), 0), 0),
+        'google_prompt_devices': max(_sanitize_int(feature_security.get('google_prompt_devices', 0), 0), 0)
+    }
+
+    sessions_summary = _group_sessions_summary(sessions_list)
+    devices_total = sum(sessions_summary.values())
+    message = session.pop('security_message', None)
+
+    return render_template(
+        'seguridad_inicio_sesion.html',
+        message=message,
+        security=security_view,
+        password_updated_at=get_account_password_updated_at(),
+        security_activity=_security_activity_items(limit=8),
+        sessions_summary=sessions_summary,
+        devices_total=devices_total,
+        third_party_apps=payload.get('third_party_apps', []),
+        connected_sender=connected_sender
+    )
+
+
+@app.route('/seguridad_inicio_sesion/guardar', methods=['POST'])
+def seguridad_inicio_sesion_guardar():
+    settings = load_general_settings()
+    payload = load_account_features()
+
+    security_settings = settings.get('seguridad', {})
+    feature_security = payload.get('security', {})
+
+    two_factor_enabled = request.form.get('two_factor_enabled', '').strip().lower() == 'on'
+    skip_password = request.form.get('skip_password_when_possible', '').strip().lower() == 'on'
+    enhanced_browsing = request.form.get('enhanced_browsing', '').strip().lower() == 'on'
+
+    recovery_phone = request.form.get('recovery_phone', '').strip()
+    recovery_email = request.form.get('recovery_email', '').strip().lower()
+    two_factor_phone = request.form.get('two_factor_phone', '').strip()
+    backup_codes = max(_sanitize_int(request.form.get('backup_codes', '0'), 0), 0)
+    google_prompt_devices = max(_sanitize_int(request.form.get('google_prompt_devices', '0'), 0), 0)
+
+    security_settings['doble_factor'] = two_factor_enabled
+    settings['seguridad'] = security_settings
+
+    feature_security['skip_password_when_possible'] = skip_password
+    feature_security['enhanced_browsing'] = enhanced_browsing
+    feature_security['recovery_phone'] = recovery_phone
+    feature_security['recovery_email'] = recovery_email
+    feature_security['two_factor_phone'] = two_factor_phone
+    feature_security['backup_codes'] = backup_codes
+    feature_security['google_prompt_devices'] = google_prompt_devices
+    payload['security'] = feature_security
+
+    try:
+        save_general_settings(settings)
+        save_account_features(payload)
+        add_account_activity('Seguridad e inicio de sesión', 'Opciones de acceso y recuperación actualizadas')
+        session['security_message'] = '✅ Configuración de seguridad guardada correctamente.'
+    except Exception as ex:
+        session['security_message'] = f'Error guardando configuración de seguridad: {ex}'
+
+    return redirect(url_for('seguridad_inicio_sesion'))
+
+
+@app.route('/seguridad_inicio_sesion/cerrar_otras_sesiones', methods=['POST'])
+def seguridad_cerrar_otras_sesiones():
+    payload = load_account_features()
+    current_session_id = str(session.get('account_session_id', '')).strip()
+
+    affected = _deactivate_other_sessions(payload, current_session_id)
+    save_account_features(payload)
+
+    add_account_activity('Seguridad e inicio de sesión', f'Otras sesiones cerradas: {affected}')
+    session['security_message'] = f'✅ Se cerraron {affected} sesión(es) en otros dispositivos.'
+    return redirect(url_for('seguridad_inicio_sesion'))
+
+
+@app.route('/seguridad_inicio_sesion/conexion/agregar', methods=['POST'])
+def seguridad_conexion_agregar():
+    app_name = request.form.get('app_name', '').strip()
+    app_description = request.form.get('app_description', '').strip()
+
+    if not app_name:
+        session['security_message'] = 'Ingresa el nombre de la aplicación a conectar.'
+        return redirect(url_for('seguridad_inicio_sesion'))
+
+    payload = load_account_features()
+    third_party_apps = payload.get('third_party_apps', [])
+    next_id = max([_sanitize_int(item.get('id', 0), 0) for item in third_party_apps], default=0) + 1
+
+    third_party_apps.append({
+        'id': next_id,
+        'name': app_name,
+        'description': app_description or 'Integración personalizada',
+        'connected_at': pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+    })
+
+    payload['third_party_apps'] = third_party_apps
+    save_account_features(payload)
+
+    add_account_activity('Seguridad e inicio de sesión', f'Conexión de tercero agregada: {app_name}')
+    session['security_message'] = '✅ Aplicación conectada correctamente.'
+    return redirect(url_for('seguridad_inicio_sesion'))
+
+
+@app.route('/seguridad_inicio_sesion/conexion/eliminar/<int:app_id>', methods=['POST'])
+def seguridad_conexion_eliminar(app_id):
+    payload = load_account_features()
+    third_party_apps = payload.get('third_party_apps', [])
+    kept = [item for item in third_party_apps if _sanitize_int(item.get('id', 0), 0) != int(app_id)]
+
+    if len(kept) == len(third_party_apps):
+        session['security_message'] = 'No se encontró la conexión seleccionada.'
+        return redirect(url_for('seguridad_inicio_sesion'))
+
+    payload['third_party_apps'] = kept
+    save_account_features(payload)
+
+    add_account_activity('Seguridad e inicio de sesión', f'Conexión de tercero eliminada: id={app_id}')
+    session['security_message'] = '✅ Conexión eliminada correctamente.'
+    return redirect(url_for('seguridad_inicio_sesion'))
 
 
 @app.route('/dispositivos', methods=['GET'])
@@ -1606,13 +1906,40 @@ def configuracion_perfil():
 @app.route('/configuracion_seguridad', methods=['POST'])
 def configuracion_seguridad():
     settings = load_general_settings()
+    payload = load_account_features()
+
     settings['seguridad']['doble_factor'] = request.form.get('doble_factor', '').strip().lower() == 'on'
     settings['seguridad']['cerrar_sesiones'] = request.form.get('cerrar_sesiones', '').strip().lower() == 'on'
 
+    feature_security = payload.get('security', {}) if isinstance(payload.get('security', {}), dict) else {}
+
+    feature_security['recovery_phone'] = request.form.get('recovery_phone', '').strip()
+    feature_security['recovery_email'] = request.form.get('recovery_email', '').strip().lower()
+    feature_security['two_factor_phone'] = request.form.get('two_factor_phone', '').strip()
+    feature_security['backup_codes'] = max(_sanitize_int(request.form.get('backup_codes', '0'), 0), 0)
+    feature_security['google_prompt_devices'] = max(_sanitize_int(request.form.get('google_prompt_devices', '0'), 0), 0)
+    feature_security['skip_password_when_possible'] = request.form.get('skip_password_when_possible', '').strip().lower() == 'on'
+    feature_security['enhanced_browsing'] = request.form.get('enhanced_browsing', '').strip().lower() == 'on'
+    payload['security'] = feature_security
+
+    security_action = request.form.get('security_action', '').strip().lower()
+    closed_sessions = 0
+    if security_action == 'close_other_sessions':
+        current_session_id = str(session.get('account_session_id', '')).strip()
+        closed_sessions = _deactivate_other_sessions(payload, current_session_id)
+
     try:
         save_general_settings(settings)
-        add_account_activity('Seguridad', 'Preferencias de seguridad actualizadas')
-        session['config_message'] = '✅ Configuración de Seguridad guardada correctamente.'
+        save_account_features(payload)
+        if closed_sessions > 0:
+            add_account_activity('Seguridad', f'Preferencias actualizadas y {closed_sessions} sesión(es) cerradas')
+            session['config_message'] = f'✅ Seguridad guardada y {closed_sessions} sesión(es) cerradas en otros dispositivos.'
+        elif security_action == 'close_other_sessions':
+            add_account_activity('Seguridad', 'Preferencias actualizadas y sin sesiones adicionales para cerrar')
+            session['config_message'] = '✅ Seguridad guardada. No había sesiones adicionales activas para cerrar.'
+        else:
+            add_account_activity('Seguridad', 'Preferencias de seguridad actualizadas')
+            session['config_message'] = '✅ Configuración de Seguridad guardada correctamente.'
     except Exception as ex:
         session['config_message'] = f'Error guardando Seguridad: {ex}'
 

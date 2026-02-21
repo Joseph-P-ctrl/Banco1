@@ -13,27 +13,54 @@
         .site-row { border-top: 1px solid #eef2f7; padding: 14px 0; }
         .muted { color: #6b7280; }
         .back-link { text-decoration: none; color: #334155; font-weight: 600; }
+        .hidden-row { display: none !important; }
     </style>
 </head>
 <body>
     <div class="topbar d-flex justify-content-between align-items-center">
-        <a href="/correos" class="back-link">← Volver</a>
+        <a href="/correos?open_config=1&panel=seguridad" class="back-link">← Volver</a>
         <h3 class="m-0">Gestor de contraseñas</h3>
         <span class="muted">⚙️</span>
     </div>
 
     <div class="container py-4" style="max-width: 1100px;">
-        <p class="muted mb-3">Consulta, cambia o quita las contraseñas guardadas. Esta es una vista de ejemplo.</p>
+        <p class="muted mb-3">Consulta y actualiza la contraseña de acceso de tu cuenta desde este gestor.</p>
+
+        {% if message %}
+        <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
 
         <div class="card-box p-4 mb-4">
             <div class="row align-items-center">
                 <div class="col-md-7">
                     <h4>Revisión de contraseñas</h4>
-                    <p class="muted mb-3">Algunas contraseñas podrían estar expuestas en brechas de seguridad. Debes cambiarlas de inmediato.</p>
-                    <a href="#" class="btn btn-link p-0">Cambiar contraseñas</a>
+                    <p class="muted mb-2">Si sospechas de una exposición, cambia la contraseña inmediatamente.</p>
+                    <p class="muted mb-3">Última actualización: <strong>{{ password_updated_at if password_updated_at else 'Sin registro' }}</strong></p>
+                    <a href="#cambiar-contrasena" class="btn btn-link p-0">Cambiar contraseñas</a>
                 </div>
                 <div class="col-md-5 text-center muted" style="font-size: 72px;">📋</div>
             </div>
+        </div>
+
+        <div id="cambiar-contrasena" class="card-box p-4 mb-4">
+            <h4 class="mb-3">Cambiar contraseña</h4>
+            <form method="POST" action="/gestor_contrasenas/cambiar" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Contraseña actual</label>
+                    <input type="password" class="form-control" name="current_password" placeholder="Si ya tienes una">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nueva contraseña</label>
+                    <input type="password" class="form-control" name="new_password" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Confirmar nueva</label>
+                    <input type="password" class="form-control" name="confirm_password" required>
+                </div>
+                <div class="col-12 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Guardar nueva contraseña</button>
+                </div>
+            </form>
         </div>
 
         <div class="card-box p-4">
@@ -42,21 +69,36 @@
                 <div class="col-md-6">
                     <div class="d-flex align-items-center gap-2">
                         <span class="muted">🔎</span>
-                        <input class="search-line" placeholder="Buscar contraseñas">
+                        <input id="siteSearch" class="search-line" placeholder="Buscar contraseñas" oninput="filterSites()">
                     </div>
                 </div>
             </div>
 
-            <div class="site-row d-flex justify-content-between align-items-center">
+            <div class="site-row d-flex justify-content-between align-items-center site-item" data-name="account.xiaomi.com">
                 <span>account.xiaomi.com</span><span class="muted">›</span>
             </div>
-            <div class="site-row d-flex justify-content-between align-items-center">
+            <div class="site-row d-flex justify-content-between align-items-center site-item" data-name="amazon.com">
                 <span>amazon.com</span><span class="muted">›</span>
             </div>
-            <div class="site-row d-flex justify-content-between align-items-center">
+            <div class="site-row d-flex justify-content-between align-items-center site-item" data-name="office.com">
                 <span>office.com</span><span class="muted">›</span>
             </div>
         </div>
     </div>
+
+    <script>
+        function filterSites() {
+            const input = document.getElementById('siteSearch');
+            const query = (input ? input.value : '').trim().toLowerCase();
+            document.querySelectorAll('.site-item').forEach((row) => {
+                const name = (row.getAttribute('data-name') || '').toLowerCase();
+                if (!query || name.includes(query)) {
+                    row.classList.remove('hidden-row');
+                } else {
+                    row.classList.add('hidden-row');
+                }
+            });
+        }
+    </script>
 </body>
 </html>

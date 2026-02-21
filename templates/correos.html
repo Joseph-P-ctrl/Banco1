@@ -164,6 +164,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             width: min(860px, 94vw);
+            max-height: 92vh;
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
@@ -183,11 +184,14 @@
         .config-modal-body {
             padding: 0;
             text-align: left;
+            max-height: calc(92vh - 64px);
+            overflow: hidden;
         }
 
         .settings-layout {
             display: grid;
             grid-template-columns: 300px 1fr;
+            height: calc(92vh - 64px);
             min-height: 480px;
         }
 
@@ -195,6 +199,7 @@
             background: #eef1f5;
             padding: 16px;
             border-right: 1px solid #d9dfe8;
+            overflow-y: auto;
         }
 
         .settings-title {
@@ -248,6 +253,7 @@
 
         .settings-content {
             padding: 20px;
+            overflow-y: auto;
         }
 
         .settings-note {
@@ -563,16 +569,55 @@
                     <form action="/configuracion_seguridad" method="POST">
                         <div id="sec-password" class="settings-note mb-2">
                             <strong>Mi contraseña</strong><br>
-                            Administra el acceso y las credenciales de la cuenta.
+                            Administra el acceso y las credenciales de la cuenta.<br>
+                            <small class="text-muted">Última actualización: {{ security_panel.password_updated_at if security_panel is defined and security_panel.password_updated_at else 'Sin registro' }}</small>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/mi_contrasena" target="_blank">Administrar contraseña</a>
+                            </div>
                         </div>
                         <div id="sec-devices" class="settings-note mb-2">
                             <strong>Dispositivos</strong><br>
-                            Controla sesiones y equipos vinculados.
+                            Controla sesiones y equipos vinculados.<br>
+                            <small class="text-muted">
+                                Sesiones activas: {{ security_panel.active_sessions if security_panel is defined else 0 }}
+                                de {{ security_panel.sessions_total if security_panel is defined else 0 }}
+                            </small>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/dispositivos" target="_blank">Ver dispositivos</a>
+                            </div>
                         </div>
                         <div id="sec-manager" class="settings-note mb-2">
                             <strong>Gestor de contraseñas</strong><br>
-                            Configura recordatorios y políticas de claves.
+                            Configura recordatorios y políticas de claves.<br>
+                            <small class="text-muted">Conexiones de terceros: {{ security_panel.third_party_total if security_panel is defined else 0 }}</small>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/gestor_contrasenas" target="_blank">Abrir gestor</a>
+                            </div>
                         </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono de recuperación</label>
+                                <input type="text" class="form-control" name="recovery_phone" value="{{ security_panel.recovery_phone if security_panel is defined else '' }}" placeholder="Ej. 964116858">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Correo de recuperación</label>
+                                <input type="email" class="form-control" name="recovery_email" value="{{ security_panel.recovery_email if security_panel is defined else '' }}" placeholder="recuperacion@dominio.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono para 2FA</label>
+                                <input type="text" class="form-control" name="two_factor_phone" value="{{ security_panel.two_factor_phone if security_panel is defined else '' }}" placeholder="Ej. 954837316">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Códigos alternativos</label>
+                                <input type="number" min="0" class="form-control" name="backup_codes" value="{{ security_panel.backup_codes if security_panel is defined else 0 }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Google Prompt</label>
+                                <input type="number" min="0" class="form-control" name="google_prompt_devices" value="{{ security_panel.google_prompt_devices if security_panel is defined else 0 }}">
+                            </div>
+                        </div>
+
                         <div class="form-check mb-2 mt-3">
                             <input class="form-check-input" type="checkbox" id="doble_factor" name="doble_factor" {% if general_settings is defined and general_settings.seguridad.doble_factor %}checked{% endif %}>
                             <label class="form-check-label" for="doble_factor">Habilitar doble factor (2FA)</label>
@@ -581,8 +626,17 @@
                             <input class="form-check-input" type="checkbox" id="cerrar_sesiones" name="cerrar_sesiones" {% if general_settings is defined and general_settings.seguridad.cerrar_sesiones %}checked{% endif %}>
                             <label class="form-check-label" for="cerrar_sesiones">Cerrar sesiones en otros dispositivos</label>
                         </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="skip_password_when_possible" name="skip_password_when_possible" {% if security_panel is defined and security_panel.skip_password_when_possible %}checked{% endif %}>
+                            <label class="form-check-label" for="skip_password_when_possible">Saltar contraseña cuando sea posible</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="enhanced_browsing" name="enhanced_browsing" {% if security_panel is defined and security_panel.enhanced_browsing %}checked{% endif %}>
+                            <label class="form-check-label" for="enhanced_browsing">Navegación segura mejorada</label>
+                        </div>
                         <div class="d-flex justify-content-end mt-3">
-                            <button type="submit" class="btn btn-success">Guardar seguridad</button>
+                            <button type="submit" name="security_action" value="save" class="btn btn-success me-2">Guardar seguridad</button>
+                            <button type="submit" name="security_action" value="close_other_sessions" class="btn btn-outline-danger">Guardar y cerrar otras sesiones</button>
                         </div>
                     </form>
                 </div>
@@ -871,27 +925,27 @@ function submitAvatarUpload() {
 
 function quickAccess(type) {
     if (type === 'password') {
-        window.open('/mi_contrasena', '_blank');
+        window.open('/seguridad_inicio_sesion?back_to=seguridad', '_blank');
         return;
     }
 
     if (type === 'devices') {
-        window.open('/dispositivos', '_blank');
+        window.open('/dispositivos?back_to=seguridad', '_blank');
         return;
     }
 
     if (type === 'manager') {
-        window.open('/gestor_contrasenas', '_blank');
+        window.open('/gestor_contrasenas?back_to=seguridad', '_blank');
         return;
     }
 
     if (type === 'activity') {
-        window.open('/mi_actividad', '_blank');
+        window.open('/mi_actividad?back_to=seguridad', '_blank');
         return;
     }
 
     if (type === 'email') {
-        window.open('/correo_electronico', '_blank');
+        window.open('/correo_electronico?back_to=seguridad', '_blank');
         return;
     }
 
@@ -910,6 +964,24 @@ function quickAccess(type) {
         }, 100);
     }
 }
+
+function initConfigFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const openConfig = params.get('open_config');
+    const panel = params.get('panel');
+
+    if (openConfig === '1') {
+        openConfigModal();
+        if (panel) {
+            const navButton = document.querySelector(`.settings-nav-item[data-panel="${panel}"]`);
+            if (navButton) {
+                showSettingsPanel(panel, navButton);
+            }
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initConfigFromQuery);
 </script>
 
 </body>
