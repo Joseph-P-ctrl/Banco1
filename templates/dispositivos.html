@@ -6,8 +6,15 @@
   <title>Tus dispositivos</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background: #f1f5f9; color: #0f172a; }
-    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; }
+    body { background: #edf1f7; color: #0f172a; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .sidebar { background: #e9eef5; border-right: 1px solid #d8dee9; padding: 12px; }
+    .brand { font-weight: 700; margin: 6px 8px 12px; }
+    .nav-pill { border-radius: 999px; padding: 9px 12px; display: block; color: #1f2937; text-decoration: none; font-weight: 600; margin-bottom: 6px; }
+    .nav-pill.active { background: #fff; }
+    .main { padding: 8px 22px 24px; }
+    .top-search { background: #fff; border: 1px solid #dbe3ef; border-radius: 999px; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #64748b; max-width: 420px; }
+    .center-wrap { max-width: 1120px; margin: 24px auto; }
     .card-soft { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
     .session-item { border-top: 1px solid #eef2f7; padding: 14px 0; }
     .session-item:first-child { border-top: none; }
@@ -16,19 +23,31 @@
     .chip-ok { background: #dcfce7; color: #166534; }
     .chip-off { background: #fee2e2; color: #991b1b; }
     .icon-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; }
+    .footer-mini { color: #64748b; font-size: 12px; margin-top: 24px; display: flex; gap: 14px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: auto; } }
   </style>
 </head>
 <body>
-  <div class="topbar py-3">
-    <div class="container" style="max-width: 1120px;">
-      <div class="d-flex justify-content-between align-items-center">
-        <h2 class="m-0">Tus dispositivos</h2>
-        <a class="btn btn-outline-secondary" href="/correos?open_config=1&panel=seguridad">Volver</a>
-      </div>
-    </div>
-  </div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">ENSA Cuenta</div>
+      <a class="nav-pill" href="/correos">Inicio</a>
+      <a class="nav-pill" href="/informacion_personal">Información personal</a>
+      <a class="nav-pill" href="/seguridad_inicio_sesion">Seguridad e inicio de sesión</a>
+      <a class="nav-pill" href="/mi_contrasena">Contraseña ENSA</a>
+      <a class="nav-pill active" href="/dispositivos">Conexiones de terceros</a>
+      <a class="nav-pill" href="/datos_privacidad">Datos y privacidad</a>
+      <a class="nav-pill" href="/contactos_compartir">Contactos y compartir</a>
+    </aside>
 
-  <div class="container py-4" style="max-width: 1120px;">
+    <main class="main">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="top-search">🔎&nbsp;&nbsp;Buscar en tu cuenta ENSA</div>
+        <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos?open_config=1&panel=seguridad">Volver</a></div>
+      </div>
+
+  <div class="center-wrap">
+    <h2 class="mb-2">Tus dispositivos</h2>
     <p class="meta mb-3">Tienes sesión iniciada en estos dispositivos o has iniciado sesión recientemente. Total de sesiones detectadas: <strong>{{ total_sessions }}</strong>.</p>
 
     {% if message %}
@@ -118,6 +137,10 @@
         </table>
       </div>
     </div>
+
+    <div class="footer-mini"><span>Privacidad</span><span>Términos</span><span>Ayuda</span></div>
+  </div>
+  </main>
   </div>
 </body>
 </html>

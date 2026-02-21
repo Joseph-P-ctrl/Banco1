@@ -36,19 +36,19 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <div class="brand">Google Cuenta</div>
+      <div class="brand">ENSA Cuenta</div>
       <a class="nav-pill" href="/correos">Inicio</a>
       <a class="nav-pill" href="/informacion_personal">Información personal</a>
       <a class="nav-pill active" href="/seguridad_inicio_sesion">Seguridad e inicio de sesión</a>
-      <a class="nav-pill" href="/mi_contrasena">Contraseña de Google</a>
+      <a class="nav-pill" href="/mi_contrasena">Contraseña ENSA</a>
       <a class="nav-pill" href="/dispositivos">Conexiones de terceros</a>
-      <a class="nav-pill" href="/mi_actividad">Datos y privacidad</a>
-      <a class="nav-pill" href="/correos">Contactos y compartir</a>
+      <a class="nav-pill" href="/datos_privacidad">Datos y privacidad</a>
+      <a class="nav-pill" href="/contactos_compartir">Contactos y compartir</a>
     </aside>
 
     <main class="main">
       <div class="d-flex justify-content-between align-items-center">
-        <div class="top-search">🔎&nbsp;&nbsp;Buscar en la cuenta de Google</div>
+        <div class="top-search">🔎&nbsp;&nbsp;Buscar en tu cuenta ENSA</div>
         <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos">Volver</a></div>
       </div>
 
@@ -87,7 +87,7 @@
         </div>
 
         <div class="panel-card">
-          <div class="panel-head">Cómo inicias sesión en Google</div>
+          <div class="panel-head">Cómo inicias sesión en ENSA</div>
 
           <div class="row-item">
             <div>
@@ -126,7 +126,7 @@
               <div class="row-head">Teléfono para verificación en dos pasos</div>
               <div class="row-value">{{ security.two_factor_phone if security.two_factor_phone else 'Sin configurar' }}</div>
             </div>
-            <a class="btn btn-sm btn-outline-primary" href="#form-seguridad">Editar</a>
+            <a class="btn btn-sm btn-outline-primary" href="#ajustes-seguridad">Editar</a>
           </div>
 
           <div class="row-item">
@@ -134,7 +134,7 @@
               <div class="row-head">Teléfono de recuperación</div>
               <div class="row-value">{{ security.recovery_phone if security.recovery_phone else 'Sin configurar' }}</div>
             </div>
-            <a class="btn btn-sm btn-outline-primary" href="#form-seguridad">Editar</a>
+            <a class="btn btn-sm btn-outline-primary" href="#ajustes-seguridad">Editar</a>
           </div>
 
           <div class="row-item">
@@ -142,16 +142,73 @@
               <div class="row-head">Correo de recuperación</div>
               <div class="row-value">{{ security.recovery_email if security.recovery_email else connected_sender }}</div>
             </div>
-            <a class="btn btn-sm btn-outline-primary" href="#form-seguridad">Editar</a>
+            <a class="btn btn-sm btn-outline-primary" href="#ajustes-seguridad">Editar</a>
           </div>
 
           <div class="row-item">
             <div class="actions-line">
-              <a class="btn btn-sm btn-outline-secondary" href="#form-seguridad">Contactos de recuperación</a>
-              <a class="btn btn-sm btn-outline-secondary" href="#form-seguridad">Authenticator</a>
-              <a class="btn btn-sm btn-outline-secondary" href="#form-seguridad">Códigos alternativos</a>
+              <a class="btn btn-sm btn-outline-secondary" href="#ajustes-seguridad">Contactos de recuperación</a>
+              <a class="btn btn-sm btn-outline-secondary" href="#ajustes-seguridad">Authenticator</a>
+              <a class="btn btn-sm btn-outline-secondary" href="#ajustes-seguridad">Códigos alternativos</a>
             </div>
             <span></span>
+          </div>
+        </div>
+
+        <div class="panel-card" id="ajustes-seguridad">
+          <div class="panel-head">Ajustes rápidos de seguridad</div>
+          <div class="p-3">
+            <form method="POST" action="/seguridad_inicio_sesion/guardar" class="row g-3">
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="two_factor_enabled" name="two_factor_enabled" {% if security.two_factor_enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="two_factor_enabled">Activar verificación en dos pasos</label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="skip_password_when_possible" name="skip_password_when_possible" {% if security.skip_password_when_possible %}checked{% endif %}>
+                  <label class="form-check-label" for="skip_password_when_possible">Saltar contraseña cuando sea posible</label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="enhanced_browsing" name="enhanced_browsing" {% if security.enhanced_browsing %}checked{% endif %}>
+                  <label class="form-check-label" for="enhanced_browsing">Navegación segura mejorada</label>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Teléfono verificación 2 pasos</label>
+                <input class="form-control" name="two_factor_phone" value="{{ security.two_factor_phone }}" placeholder="Ej. 954 837 316">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Teléfono de recuperación</label>
+                <input class="form-control" name="recovery_phone" value="{{ security.recovery_phone }}" placeholder="Ej. 964 116 858">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Correo de recuperación</label>
+                <input class="form-control" name="recovery_email" value="{{ security.recovery_email if security.recovery_email else connected_sender }}" placeholder="correo@dominio.com">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Códigos alternativos</label>
+                <input class="form-control" type="number" min="0" name="backup_codes" value="{{ security.backup_codes }}">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Dispositivos de verificación</label>
+                <input class="form-control" type="number" min="0" name="device_prompt_count" value="{{ security.device_prompt_count }}">
+              </div>
+
+              <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-success">Guardar configuración</button>
+              </div>
+            </form>
           </div>
         </div>
 
@@ -218,63 +275,6 @@
                 <div class="col-md-4"><input class="form-control" name="app_name" placeholder="Nombre de app" required></div>
                 <div class="col-md-6"><input class="form-control" name="app_description" placeholder="Descripción"></div>
                 <div class="col-md-2 d-grid"><button type="submit" class="btn btn-primary btn-sm">Agregar</button></div>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="panel-card" id="form-seguridad">
-          <div class="panel-head">Configuración avanzada de seguridad</div>
-          <div class="p-3">
-            <form method="POST" action="/seguridad_inicio_sesion/guardar" class="row g-3">
-              <div class="col-12">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="two_factor_enabled" name="two_factor_enabled" {% if security.two_factor_enabled %}checked{% endif %}>
-                  <label class="form-check-label" for="two_factor_enabled">Activar verificación en dos pasos</label>
-                </div>
-              </div>
-
-              <div class="col-12">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="skip_password_when_possible" name="skip_password_when_possible" {% if security.skip_password_when_possible %}checked{% endif %}>
-                  <label class="form-check-label" for="skip_password_when_possible">Saltar contraseña cuando sea posible</label>
-                </div>
-              </div>
-
-              <div class="col-12">
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="enhanced_browsing" name="enhanced_browsing" {% if security.enhanced_browsing %}checked{% endif %}>
-                  <label class="form-check-label" for="enhanced_browsing">Navegación segura mejorada</label>
-                </div>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Teléfono verificación 2 pasos</label>
-                <input class="form-control" name="two_factor_phone" value="{{ security.two_factor_phone }}" placeholder="Ej. 954 837 316">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Teléfono de recuperación</label>
-                <input class="form-control" name="recovery_phone" value="{{ security.recovery_phone }}" placeholder="Ej. 964 116 858">
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Correo de recuperación</label>
-                <input class="form-control" name="recovery_email" value="{{ security.recovery_email if security.recovery_email else connected_sender }}" placeholder="correo@dominio.com">
-              </div>
-
-              <div class="col-md-3">
-                <label class="form-label">Códigos alternativos</label>
-                <input class="form-control" type="number" min="0" name="backup_codes" value="{{ security.backup_codes }}">
-              </div>
-
-              <div class="col-md-3">
-                <label class="form-label">Dispositivos Google Prompt</label>
-                <input class="form-control" type="number" min="0" name="google_prompt_devices" value="{{ security.google_prompt_devices }}">
-              </div>
-
-              <div class="col-12 d-flex justify-content-end">
-                <button type="submit" class="btn btn-success">Guardar configuración</button>
               </div>
             </form>
           </div>

@@ -5,38 +5,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Correo electrónico</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #edf1f7; color: #0f172a; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .sidebar { background: #e9eef5; border-right: 1px solid #d8dee9; padding: 12px; }
+    .brand { font-weight: 700; margin: 6px 8px 12px; }
+    .nav-pill { border-radius: 999px; padding: 9px 12px; display: block; color: #1f2937; text-decoration: none; font-weight: 600; margin-bottom: 6px; }
+    .nav-pill.active { background: #fff; }
+    .main { padding: 8px 22px 24px; }
+    .top-search { background: #fff; border: 1px solid #dbe3ef; border-radius: 999px; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #64748b; max-width: 420px; }
+    .center-wrap { max-width: 760px; margin: 24px auto; }
+    .title { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: #64748b; margin-bottom: 14px; }
+    .panel-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+    .panel-head { padding: 14px 16px; border-bottom: 1px solid #eef2f7; font-weight: 700; }
+    .panel-body { padding: 16px; }
+    .footer-mini { color: #64748b; font-size: 12px; margin-top: 24px; display: flex; gap: 14px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: auto; } }
+  </style>
 </head>
-<body class="bg-light">
-  <div class="container py-4" style="max-width: 760px;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="m-0">Correo electrónico</h2>
-      <a class="btn btn-outline-secondary" href="/correos">Volver</a>
-    </div>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">ENSA Cuenta</div>
+      <a class="nav-pill" href="/correos">Inicio</a>
+      <a class="nav-pill" href="/informacion_personal">Información personal</a>
+      <a class="nav-pill" href="/seguridad_inicio_sesion">Seguridad e inicio de sesión</a>
+      <a class="nav-pill" href="/mi_contrasena">Contraseña ENSA</a>
+      <a class="nav-pill" href="/dispositivos">Conexiones de terceros</a>
+      <a class="nav-pill" href="/datos_privacidad">Datos y privacidad</a>
+      <a class="nav-pill active" href="/correo_electronico">Contactos y compartir</a>
+    </aside>
 
-    {% if message %}
-      <div class="alert alert-info">{{ message }}</div>
-    {% endif %}
+    <main class="main">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="top-search">🔎&nbsp;&nbsp;Buscar en tu cuenta ENSA</div>
+        <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos?open_config=1&panel=correo">Volver</a></div>
+      </div>
 
-    <div class="card p-4">
-      <p class="text-muted">Gestiona las credenciales del usuario de envío.</p>
-      <form method="POST" action="/correo_electronico/guardar">
-        <div class="mb-3">
-          <label class="form-label">Usuario</label>
-          <input type="email" class="form-control" name="sender" value="{{ sender }}" required>
+      <div class="center-wrap">
+        <div class="title">Correo electrónico</div>
+        <div class="sub">Administra la cuenta de envío principal usada para reportes y notificaciones.</div>
+
+        {% if message %}
+          <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
+
+        <div class="panel-card">
+          <div class="panel-head">Configuración de correo</div>
+          <div class="panel-body">
+            <form method="POST" action="/correo_electronico/guardar">
+              <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <input type="email" class="form-control" name="sender" value="{{ sender }}" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <input type="password" class="form-control" name="password" placeholder="••••••••">
+                <small class="text-muted">Déjala vacía para mantener la actual.</small>
+              </div>
+              <div class="mb-3 text-muted small">
+                Servidor: {{ smtp_host }} | Puerto: {{ smtp_port }} | Seguridad: {{ smtp_security|upper }}
+              </div>
+              <div class="d-flex justify-content-end">
+                <button class="btn btn-primary" type="submit">Guardar correo</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Contraseña</label>
-          <input type="password" class="form-control" name="password" placeholder="••••••••">
-          <small class="text-muted">Déjala vacía para mantener la actual.</small>
+
+        <div class="panel-card">
+          <div class="panel-body d-flex justify-content-between align-items-center">
+            <div>
+              <strong>Contactos y compartir</strong>
+              <div class="text-muted">Conecta este correo con contactos, familia y preferencias de compartición.</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/contactos_compartir">Abrir módulo</a>
+          </div>
         </div>
-        <div class="mb-3 text-muted small">
-          Servidor: {{ smtp_host }} | Puerto: {{ smtp_port }} | Seguridad: {{ smtp_security|upper }}
-        </div>
-        <div class="d-flex justify-content-end">
-          <button class="btn btn-primary" type="submit">Guardar correo</button>
-        </div>
-      </form>
-    </div>
+
+        <div class="footer-mini"><span>Privacidad</span><span>Términos</span><span>Ayuda</span></div>
+      </div>
+    </main>
   </div>
 </body>
 </html>

@@ -419,9 +419,55 @@ def load_account_features():
             'recovery_email': '',
             'two_factor_phone': '',
             'backup_codes': 0,
-            'google_prompt_devices': 0
+            'device_prompt_count': 0
         },
-        'third_party_apps': []
+        'third_party_apps': [],
+        'contacts_share': {
+            'family': {
+                'enabled': False,
+                'invites_remaining': 5,
+                'group_name': 'Mi grupo familiar'
+            },
+            'preferences': {
+                'sync_interactions': True,
+                'sync_device_contacts': True,
+                'share_location': False,
+                'profile_visible': True
+            },
+            'contacts': [
+                {
+                    'id': 1,
+                    'name': 'Contacto soporte',
+                    'email': '',
+                    'phone': '',
+                    'source': 'Manual',
+                    'blocked': False
+                }
+            ],
+            'profiles': [
+                {
+                    'id': 1,
+                    'name': 'Perfil principal',
+                    'description': 'Visible para servicios internos'
+                }
+            ]
+        },
+        'privacy_center': {
+            'search_personalization': True,
+            'play_personalization': True,
+            'web_activity': True,
+            'play_history': True,
+            'youtube_history': True,
+            'maps_timeline': False,
+            'ads_personalized': True,
+            'partner_ads': False,
+            'legacy_plan_created': False,
+            'delete_account_requested_at': '',
+            'service_emails_enabled': True,
+            'fit_data_enabled': True,
+            'voice_match_enabled': False,
+            'download_requests': 0
+        }
     }
 
     features_path = _account_features_path()
@@ -436,7 +482,7 @@ def load_account_features():
             return default_payload
 
         merged = default_payload.copy()
-        for key in ['password', 'devices', 'activity', 'sessions', 'security', 'third_party_apps']:
+        for key in ['password', 'devices', 'activity', 'sessions', 'security', 'third_party_apps', 'contacts_share', 'privacy_center']:
             value = payload.get(key)
             if key == 'password' and isinstance(value, dict):
                 password_payload = default_payload['password'].copy()
@@ -454,6 +500,36 @@ def load_account_features():
                 merged['security'] = security_payload
             elif key == 'third_party_apps' and isinstance(value, list):
                 merged['third_party_apps'] = value
+            elif key == 'contacts_share' and isinstance(value, dict):
+                contacts_default = default_payload['contacts_share']
+                merged_contacts = {
+                    'family': contacts_default['family'].copy(),
+                    'preferences': contacts_default['preferences'].copy(),
+                    'contacts': contacts_default['contacts'][:],
+                    'profiles': contacts_default['profiles'][:]
+                }
+
+                family_value = value.get('family', {})
+                if isinstance(family_value, dict):
+                    merged_contacts['family'].update(family_value)
+
+                preferences_value = value.get('preferences', {})
+                if isinstance(preferences_value, dict):
+                    merged_contacts['preferences'].update(preferences_value)
+
+                contacts_value = value.get('contacts', [])
+                if isinstance(contacts_value, list):
+                    merged_contacts['contacts'] = contacts_value
+
+                profiles_value = value.get('profiles', [])
+                if isinstance(profiles_value, list):
+                    merged_contacts['profiles'] = profiles_value
+
+                merged['contacts_share'] = merged_contacts
+            elif key == 'privacy_center' and isinstance(value, dict):
+                privacy_payload = default_payload['privacy_center'].copy()
+                privacy_payload.update(value)
+                merged['privacy_center'] = privacy_payload
 
         return merged
     except Exception as ex:
@@ -647,6 +723,166 @@ def _deactivate_other_sessions(payload, current_session_id):
 
     payload['sessions'] = sessions_list
     return affected
+
+
+def _next_numeric_id(items):
+    if not isinstance(items, list):
+        return 1
+    return max([_sanitize_int(item.get('id', 0), 0) for item in items], default=0) + 1
+
+
+def _ensure_contacts_share(payload, settings=None):
+    if settings is None:
+        settings = load_general_settings()
+
+    contacts_share = payload.get('contacts_share', {})
+    if not isinstance(contacts_share, dict):
+        contacts_share = {}
+
+    family = contacts_share.get('family', {})
+    if not isinstance(family, dict):
+        family = {}
+
+    preferences = contacts_share.get('preferences', {})
+    if not isinstance(preferences, dict):
+        preferences = {}
+
+    contacts = contacts_share.get('contacts', [])
+    if not isinstance(contacts, list):
+        contacts = []
+
+    profiles = contacts_share.get('profiles', [])
+    if not isinstance(profiles, list):
+        profiles = []
+
+    family_defaults = {
+        'enabled': False,
+        'invites_remaining': 5,
+        'group_name': 'Mi grupo familiar'
+    }
+    for key, default_value in family_defaults.items():
+        if key not in family:
+            family[key] = default_value
+
+    pref_defaults = {
+        'sync_interactions': True,
+        'sync_device_contacts': True,
+        'share_location': False,
+        'profile_visible': True
+    }
+    for key, default_value in pref_defaults.items():
+        if key not in preferences:
+            preferences[key] = default_value
+
+    support_email = str(settings.get('contactos', {}).get('correo_soporte', '')).strip().lower()
+    if not contacts:
+        contacts = [{
+            'id': 1,
+            'name': 'Contacto soporte',
+            'email': support_email,
+            'phone': '',
+            'source': 'Configuración',
+            'blocked': False
+        }]
+
+    if not profiles:
+        profile_name = str(settings.get('perfil', {}).get('nombre_mostrar', '')).strip() or 'Perfil principal'
+        profiles = [{
+            'id': 1,
+            'name': profile_name,
+            'description': 'Visible para servicios internos'
+        }]
+
+    contacts_share['family'] = family
+    contacts_share['preferences'] = preferences
+    contacts_share['contacts'] = contacts
+    contacts_share['profiles'] = profiles
+    payload['contacts_share'] = contacts_share
+    return contacts_share
+
+
+def _contacts_share_summary(contacts_share):
+    contacts = contacts_share.get('contacts', []) if isinstance(contacts_share, dict) else []
+    profiles = contacts_share.get('profiles', []) if isinstance(contacts_share, dict) else []
+    family = contacts_share.get('family', {}) if isinstance(contacts_share, dict) else {}
+    preferences = contacts_share.get('preferences', {}) if isinstance(contacts_share, dict) else {}
+
+    blocked_count = len([item for item in contacts if bool(item.get('blocked', False))])
+    active_count = len([item for item in contacts if not bool(item.get('blocked', False))])
+
+    return {
+        'contacts_total': len(contacts),
+        'contacts_active': active_count,
+        'contacts_blocked': blocked_count,
+        'profiles_total': len(profiles),
+        'invites_remaining': max(_sanitize_int(family.get('invites_remaining', 0), 0), 0),
+        'family_enabled': bool(family.get('enabled', False)),
+        'share_location': bool(preferences.get('share_location', False))
+    }
+
+
+def _ensure_privacy_center(payload):
+    privacy = payload.get('privacy_center', {})
+    if not isinstance(privacy, dict):
+        privacy = {}
+
+    defaults = {
+        'search_personalization': True,
+        'play_personalization': True,
+        'web_activity': True,
+        'play_history': True,
+        'youtube_history': True,
+        'maps_timeline': False,
+        'ads_personalized': True,
+        'partner_ads': False,
+        'legacy_plan_created': False,
+        'delete_account_requested_at': '',
+        'service_emails_enabled': True,
+        'fit_data_enabled': True,
+        'voice_match_enabled': False,
+        'download_requests': 0
+    }
+
+    for key, default_value in defaults.items():
+        if key not in privacy:
+            privacy[key] = default_value
+
+    privacy['download_requests'] = max(_sanitize_int(privacy.get('download_requests', 0), 0), 0)
+    payload['privacy_center'] = privacy
+    return privacy
+
+
+def _privacy_center_summary(privacy, activity):
+    active_controls = 0
+    control_keys = [
+        'search_personalization',
+        'play_personalization',
+        'web_activity',
+        'play_history',
+        'youtube_history',
+        'ads_personalized',
+        'service_emails_enabled',
+        'fit_data_enabled',
+        'voice_match_enabled'
+    ]
+    for key in control_keys:
+        if bool(privacy.get(key, False)):
+            active_controls += 1
+
+    privacy_keywords = ['privacidad', 'actividad', 'anuncio', 'historial', 'datos']
+    privacy_activity_count = 0
+    for item in activity:
+        haystack = f"{str(item.get('action', ''))} {str(item.get('detail', ''))}".lower()
+        if any(keyword in haystack for keyword in privacy_keywords):
+            privacy_activity_count += 1
+
+    return {
+        'active_controls': active_controls,
+        'privacy_activity_count': privacy_activity_count,
+        'download_requests': max(_sanitize_int(privacy.get('download_requests', 0), 0), 0),
+        'legacy_plan_created': bool(privacy.get('legacy_plan_created', False)),
+        'delete_account_requested_at': str(privacy.get('delete_account_requested_at', '')).strip()
+    }
 
 def extract_emails_from_df(df):
     emails = set()
@@ -1025,7 +1261,10 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
 
     if not account_features.get('third_party_apps'):
         account_features['third_party_apps'] = _default_third_party_apps()
-        save_account_features(account_features)
+
+    contacts_share = _ensure_contacts_share(account_features, general_settings)
+    privacy_center = _ensure_privacy_center(account_features)
+    save_account_features(account_features)
 
     feature_security = account_features.get('security', {})
     sessions_list = account_features.get('sessions', [])
@@ -1037,13 +1276,40 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
         'recovery_email': str(feature_security.get('recovery_email', '')).strip(),
         'two_factor_phone': str(feature_security.get('two_factor_phone', '')).strip(),
         'backup_codes': max(_sanitize_int(feature_security.get('backup_codes', 0), 0), 0),
-        'google_prompt_devices': max(_sanitize_int(feature_security.get('google_prompt_devices', 0), 0), 0),
+        'device_prompt_count': max(_sanitize_int(feature_security.get('device_prompt_count', feature_security.get('google_prompt_devices', 0)), 0), 0),
         'skip_password_when_possible': bool(feature_security.get('skip_password_when_possible', False)),
         'enhanced_browsing': bool(feature_security.get('enhanced_browsing', False)),
         'sessions_total': len(sessions_list),
         'active_sessions': active_sessions,
         'third_party_total': third_party_total,
         'password_updated_at': get_account_password_updated_at()
+    }
+
+    contacts_panel = {
+        'correo_soporte': str(general_settings.get('contactos', {}).get('correo_soporte', '')).strip(),
+        'correo_copia': str(general_settings.get('contactos', {}).get('correo_copia', '')).strip(),
+        'sync_interactions': bool(contacts_share.get('preferences', {}).get('sync_interactions', True)),
+        'sync_device_contacts': bool(contacts_share.get('preferences', {}).get('sync_device_contacts', True)),
+        'share_location': bool(contacts_share.get('preferences', {}).get('share_location', False)),
+        'profile_visible': bool(contacts_share.get('preferences', {}).get('profile_visible', True)),
+        'family_enabled': bool(contacts_share.get('family', {}).get('enabled', False)),
+        'group_name': str(contacts_share.get('family', {}).get('group_name', 'Mi grupo familiar')).strip() or 'Mi grupo familiar',
+        'summary': _contacts_share_summary(contacts_share)
+    }
+
+    privacy_panel = {
+        'search_personalization': bool(privacy_center.get('search_personalization', True)),
+        'play_personalization': bool(privacy_center.get('play_personalization', True)),
+        'web_activity': bool(privacy_center.get('web_activity', True)),
+        'play_history': bool(privacy_center.get('play_history', True)),
+        'youtube_history': bool(privacy_center.get('youtube_history', True)),
+        'maps_timeline': bool(privacy_center.get('maps_timeline', False)),
+        'ads_personalized': bool(privacy_center.get('ads_personalized', True)),
+        'partner_ads': bool(privacy_center.get('partner_ads', False)),
+        'service_emails_enabled': bool(privacy_center.get('service_emails_enabled', True)),
+        'fit_data_enabled': bool(privacy_center.get('fit_data_enabled', True)),
+        'voice_match_enabled': bool(privacy_center.get('voice_match_enabled', False)),
+        'summary': _privacy_center_summary(privacy_center, account_features.get('activity', []))
     }
 
     photo_path = _profile_photo_path()
@@ -1065,6 +1331,8 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
         google_config=google_config,
         general_settings=general_settings,
         security_panel=security_panel,
+        contacts_panel=contacts_panel,
+        privacy_panel=privacy_panel,
         has_profile_photo=has_profile_photo,
         profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
     )
@@ -1416,7 +1684,7 @@ def seguridad_inicio_sesion():
         'recovery_phone': recovery_phone,
         'two_factor_phone': str(feature_security.get('two_factor_phone', '')).strip(),
         'backup_codes': max(_sanitize_int(feature_security.get('backup_codes', 0), 0), 0),
-        'google_prompt_devices': max(_sanitize_int(feature_security.get('google_prompt_devices', 0), 0), 0)
+        'device_prompt_count': max(_sanitize_int(feature_security.get('device_prompt_count', feature_security.get('google_prompt_devices', 0)), 0), 0)
     }
 
     sessions_summary = _group_sessions_summary(sessions_list)
@@ -1452,7 +1720,7 @@ def seguridad_inicio_sesion_guardar():
     recovery_email = request.form.get('recovery_email', '').strip().lower()
     two_factor_phone = request.form.get('two_factor_phone', '').strip()
     backup_codes = max(_sanitize_int(request.form.get('backup_codes', '0'), 0), 0)
-    google_prompt_devices = max(_sanitize_int(request.form.get('google_prompt_devices', '0'), 0), 0)
+    device_prompt_count = max(_sanitize_int(request.form.get('device_prompt_count', request.form.get('google_prompt_devices', '0')), 0), 0)
 
     security_settings['doble_factor'] = two_factor_enabled
     settings['seguridad'] = security_settings
@@ -1463,7 +1731,7 @@ def seguridad_inicio_sesion_guardar():
     feature_security['recovery_email'] = recovery_email
     feature_security['two_factor_phone'] = two_factor_phone
     feature_security['backup_codes'] = backup_codes
-    feature_security['google_prompt_devices'] = google_prompt_devices
+    feature_security['device_prompt_count'] = device_prompt_count
     payload['security'] = feature_security
 
     try:
@@ -1629,18 +1897,17 @@ def dispositivos_desconectar(session_id_value):
     payload = load_account_features()
     sessions_list = payload.get('sessions', [])
 
-    changed = False
-    for item in sessions_list:
-        if str(item.get('session_id', '')).strip() == str(session_id_value or '').strip():
-            item['active'] = False
-            changed = True
-            break
+    target_session = str(session_id_value or '').strip()
+    kept_sessions = [
+        item for item in sessions_list
+        if str(item.get('session_id', '')).strip() != target_session
+    ]
 
-    if changed:
-        payload['sessions'] = sessions_list
+    if len(kept_sessions) != len(sessions_list):
+        payload['sessions'] = kept_sessions
         save_account_features(payload)
         add_account_activity('Dispositivos', f'Sesión desconectada: {session_id_value}')
-        session['devices_message'] = '✅ Sesión desconectada correctamente.'
+        session['devices_message'] = '✅ Sesión desconectada y removida de la lista.'
     else:
         session['devices_message'] = 'No se encontró la sesión seleccionada.'
 
@@ -1694,6 +1961,151 @@ def mi_actividad_limpiar():
         add_account_activity('Mi actividad', 'Actividad eliminada por usuario')
 
     return redirect(url_for('mi_actividad'))
+
+
+@app.route('/datos_privacidad', methods=['GET'])
+def datos_privacidad():
+    add_account_activity('Datos y privacidad', 'Apertura de panel')
+
+    settings = load_general_settings()
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+    contacts_share = _ensure_contacts_share(payload, settings)
+
+    third_party_apps = payload.get('third_party_apps', [])
+    if not third_party_apps:
+        third_party_apps = _default_third_party_apps()
+        payload['third_party_apps'] = third_party_apps
+
+    save_account_features(payload)
+
+    history_status = {
+        'web_activity': 'Activada' if privacy_center.get('web_activity', True) else 'Detenida',
+        'play_history': 'Activada' if privacy_center.get('play_history', True) else 'Detenida',
+        'youtube_history': 'Activada' if privacy_center.get('youtube_history', True) else 'Detenida',
+        'maps_timeline': 'Activada' if privacy_center.get('maps_timeline', False) else 'Detenida'
+    }
+
+    message = session.pop('privacy_message', None)
+    return render_template(
+        'datos_privacidad.html',
+        message=message,
+        privacy=privacy_center,
+        history_status=history_status,
+        privacy_summary=_privacy_center_summary(privacy_center, payload.get('activity', [])),
+        third_party_apps=third_party_apps,
+        third_party_count=len(third_party_apps),
+        contacts_summary=_contacts_share_summary(contacts_share)
+    )
+
+
+@app.route('/datos_privacidad/guardar', methods=['POST'])
+def datos_privacidad_guardar():
+    settings = load_general_settings()
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+
+    privacy_center['search_personalization'] = request.form.get('search_personalization', '').strip().lower() == 'on'
+    privacy_center['play_personalization'] = request.form.get('play_personalization', '').strip().lower() == 'on'
+    privacy_center['web_activity'] = request.form.get('web_activity', '').strip().lower() == 'on'
+    privacy_center['play_history'] = request.form.get('play_history', '').strip().lower() == 'on'
+    privacy_center['youtube_history'] = request.form.get('youtube_history', '').strip().lower() == 'on'
+    privacy_center['maps_timeline'] = request.form.get('maps_timeline', '').strip().lower() == 'on'
+    privacy_center['ads_personalized'] = request.form.get('ads_personalized', '').strip().lower() == 'on'
+    privacy_center['partner_ads'] = request.form.get('partner_ads', '').strip().lower() == 'on'
+    privacy_center['service_emails_enabled'] = request.form.get('service_emails_enabled', '').strip().lower() == 'on'
+    privacy_center['fit_data_enabled'] = request.form.get('fit_data_enabled', '').strip().lower() == 'on'
+    privacy_center['voice_match_enabled'] = request.form.get('voice_match_enabled', '').strip().lower() == 'on'
+
+    payload['privacy_center'] = privacy_center
+
+    settings['privacidad']['compartir_datos'] = bool(privacy_center['partner_ads'])
+    settings['privacidad']['analytics'] = bool(privacy_center['web_activity'])
+
+    try:
+        save_account_features(payload)
+        save_general_settings(settings)
+        add_account_activity('Datos y privacidad', 'Preferencias de privacidad actualizadas')
+        session['privacy_message'] = '✅ Datos y privacidad guardados correctamente.'
+    except Exception as ex:
+        session['privacy_message'] = f'Error guardando datos y privacidad: {ex}'
+
+    return redirect(url_for('datos_privacidad'))
+
+
+@app.route('/datos_privacidad/historial/limpiar', methods=['POST'])
+def datos_privacidad_limpiar_historial():
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+
+    history_target = request.form.get('history_target', '').strip().lower()
+    if history_target in ['web_activity', 'play_history', 'youtube_history', 'maps_timeline']:
+        privacy_center[history_target] = False
+        payload['privacy_center'] = privacy_center
+        save_account_features(payload)
+        add_account_activity('Datos y privacidad', f'Historial desactivado: {history_target}')
+        session['privacy_message'] = f'✅ Historial actualizado: {history_target} ahora está detenido.'
+    else:
+        session['privacy_message'] = 'No se reconoció el historial a modificar.'
+
+    return redirect(url_for('datos_privacidad'))
+
+
+@app.route('/datos_privacidad/historial/detener/<history_target>', methods=['GET'])
+def datos_privacidad_detener_historial(history_target):
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+
+    target = str(history_target or '').strip().lower()
+    if target in ['web_activity', 'play_history', 'youtube_history', 'maps_timeline']:
+        privacy_center[target] = False
+        payload['privacy_center'] = privacy_center
+        save_account_features(payload)
+        add_account_activity('Datos y privacidad', f'Historial detenido desde acceso rápido: {target}')
+        session['privacy_message'] = f'✅ Historial detenido: {target}.'
+    else:
+        session['privacy_message'] = 'No se reconoció el historial seleccionado.'
+
+    return redirect(url_for('datos_privacidad'))
+
+
+@app.route('/datos_privacidad/solicitar_descarga', methods=['POST'])
+def datos_privacidad_solicitar_descarga():
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+    privacy_center['download_requests'] = max(_sanitize_int(privacy_center.get('download_requests', 0), 0), 0) + 1
+    payload['privacy_center'] = privacy_center
+    save_account_features(payload)
+
+    add_account_activity('Datos y privacidad', 'Solicitud de descarga de datos generada')
+    session['privacy_message'] = '✅ Solicitud de descarga registrada correctamente.'
+    return redirect(url_for('datos_privacidad'))
+
+
+@app.route('/datos_privacidad/crear_legado', methods=['POST'])
+def datos_privacidad_crear_legado():
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+    privacy_center['legacy_plan_created'] = True
+    payload['privacy_center'] = privacy_center
+    save_account_features(payload)
+
+    add_account_activity('Datos y privacidad', 'Plan de legado digital configurado')
+    session['privacy_message'] = '✅ Plan de legado digital configurado.'
+    return redirect(url_for('datos_privacidad'))
+
+
+@app.route('/datos_privacidad/solicitar_eliminar_cuenta', methods=['POST'])
+def datos_privacidad_solicitar_eliminar_cuenta():
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+    privacy_center['delete_account_requested_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+    payload['privacy_center'] = privacy_center
+    save_account_features(payload)
+
+    add_account_activity('Datos y privacidad', 'Solicitud de eliminación de cuenta registrada')
+    session['privacy_message'] = '✅ Solicitud de eliminación registrada. Requiere revisión administrativa.'
+    return redirect(url_for('datos_privacidad'))
 
 
 @app.route('/informacion_personal', methods=['GET'])
@@ -1917,7 +2329,7 @@ def configuracion_seguridad():
     feature_security['recovery_email'] = request.form.get('recovery_email', '').strip().lower()
     feature_security['two_factor_phone'] = request.form.get('two_factor_phone', '').strip()
     feature_security['backup_codes'] = max(_sanitize_int(request.form.get('backup_codes', '0'), 0), 0)
-    feature_security['google_prompt_devices'] = max(_sanitize_int(request.form.get('google_prompt_devices', '0'), 0), 0)
+    feature_security['device_prompt_count'] = max(_sanitize_int(request.form.get('device_prompt_count', request.form.get('google_prompt_devices', '0')), 0), 0)
     feature_security['skip_password_when_possible'] = request.form.get('skip_password_when_possible', '').strip().lower() == 'on'
     feature_security['enhanced_browsing'] = request.form.get('enhanced_browsing', '').strip().lower() == 'on'
     payload['security'] = feature_security
@@ -1949,11 +2361,29 @@ def configuracion_seguridad():
 @app.route('/configuracion_privacidad', methods=['POST'])
 def configuracion_privacidad():
     settings = load_general_settings()
+    payload = load_account_features()
+    privacy_center = _ensure_privacy_center(payload)
+
     settings['privacidad']['compartir_datos'] = request.form.get('compartir_datos', '').strip().lower() == 'on'
     settings['privacidad']['analytics'] = request.form.get('analytics', '').strip().lower() == 'on'
 
+    privacy_center['web_activity'] = settings['privacidad']['analytics']
+    privacy_center['partner_ads'] = settings['privacidad']['compartir_datos']
+    privacy_center['search_personalization'] = request.form.get('search_personalization', '').strip().lower() == 'on'
+    privacy_center['play_personalization'] = request.form.get('play_personalization', '').strip().lower() == 'on'
+    privacy_center['play_history'] = request.form.get('play_history', '').strip().lower() == 'on'
+    privacy_center['youtube_history'] = request.form.get('youtube_history', '').strip().lower() == 'on'
+    privacy_center['maps_timeline'] = request.form.get('maps_timeline', '').strip().lower() == 'on'
+    privacy_center['ads_personalized'] = request.form.get('ads_personalized', '').strip().lower() == 'on'
+    privacy_center['service_emails_enabled'] = request.form.get('service_emails_enabled', '').strip().lower() == 'on'
+    privacy_center['fit_data_enabled'] = request.form.get('fit_data_enabled', '').strip().lower() == 'on'
+    privacy_center['voice_match_enabled'] = request.form.get('voice_match_enabled', '').strip().lower() == 'on'
+
+    payload['privacy_center'] = privacy_center
+
     try:
         save_general_settings(settings)
+        save_account_features(payload)
         add_account_activity('Privacidad', 'Preferencias de privacidad actualizadas')
         session['config_message'] = '✅ Configuración de Privacidad guardada correctamente.'
     except Exception as ex:
@@ -1965,17 +2395,286 @@ def configuracion_privacidad():
 @app.route('/configuracion_contactos', methods=['POST'])
 def configuracion_contactos():
     settings = load_general_settings()
-    settings['contactos']['correo_soporte'] = request.form.get('correo_soporte', '').strip()
-    settings['contactos']['correo_copia'] = request.form.get('correo_copia', '').strip()
+    payload = load_account_features()
+
+    correo_soporte = request.form.get('correo_soporte', '').strip().lower()
+    correo_copia = request.form.get('correo_copia', '').strip().lower()
+
+    settings['contactos']['correo_soporte'] = correo_soporte
+    settings['contactos']['correo_copia'] = correo_copia
+
+    contacts_share = _ensure_contacts_share(payload, settings)
+    preferences = contacts_share.get('preferences', {})
+    family = contacts_share.get('family', {})
+
+    preferences['sync_interactions'] = request.form.get('sync_interactions', '').strip().lower() == 'on'
+    preferences['sync_device_contacts'] = request.form.get('sync_device_contacts', '').strip().lower() == 'on'
+    preferences['share_location'] = request.form.get('share_location', '').strip().lower() == 'on'
+    preferences['profile_visible'] = request.form.get('profile_visible', '').strip().lower() == 'on'
+
+    family['enabled'] = request.form.get('family_enabled', '').strip().lower() == 'on'
+    family_name = request.form.get('group_name', '').strip()
+    if family_name:
+        family['group_name'] = family_name
+
+    contacts_share['preferences'] = preferences
+    contacts_share['family'] = family
+    payload['contacts_share'] = contacts_share
+
+    if correo_soporte:
+        contacts = contacts_share.get('contacts', [])
+        exists_support = False
+        for item in contacts:
+            if str(item.get('email', '')).strip().lower() == correo_soporte:
+                exists_support = True
+                if not str(item.get('name', '')).strip():
+                    item['name'] = 'Contacto soporte'
+                break
+
+        if not exists_support:
+            contacts.append({
+                'id': _next_numeric_id(contacts),
+                'name': 'Contacto soporte',
+                'email': correo_soporte,
+                'phone': '',
+                'source': 'Configuración',
+                'blocked': False
+            })
+        contacts_share['contacts'] = contacts
+        payload['contacts_share'] = contacts_share
 
     try:
         save_general_settings(settings)
-        add_account_activity('Contactos', 'Contactos de configuración actualizados')
+        save_account_features(payload)
+        add_account_activity('Contactos', 'Contactos y compartir actualizado desde configuración')
         session['config_message'] = '✅ Configuración de Contactos guardada correctamente.'
     except Exception as ex:
         session['config_message'] = f'Error guardando Contactos: {ex}'
 
     return redirect(url_for('correos'))
+
+
+@app.route('/contactos_compartir', methods=['GET'])
+def contactos_compartir():
+    add_account_activity('Contactos y compartir', 'Apertura de panel')
+
+    settings = load_general_settings()
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload, settings)
+    save_account_features(payload)
+
+    summary = _contacts_share_summary(contacts_share)
+    message = session.pop('contacts_share_message', None)
+
+    contacts_list = contacts_share.get('contacts', [])
+    active_contacts = [item for item in contacts_list if not bool(item.get('blocked', False))]
+    blocked_contacts = [item for item in contacts_list if bool(item.get('blocked', False))]
+
+    return render_template(
+        'contactos_compartir.html',
+        message=message,
+        settings=settings,
+        contacts_share=contacts_share,
+        contacts_summary=summary,
+        active_contacts=active_contacts,
+        blocked_contacts=blocked_contacts,
+        profiles=contacts_share.get('profiles', []),
+        connected_sender=get_connected_account_email()
+    )
+
+
+@app.route('/contactos_compartir/guardar', methods=['POST'])
+def contactos_compartir_guardar():
+    settings = load_general_settings()
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload, settings)
+
+    family = contacts_share.get('family', {})
+    preferences = contacts_share.get('preferences', {})
+
+    family['enabled'] = request.form.get('family_enabled', '').strip().lower() == 'on'
+    family_name = request.form.get('group_name', '').strip()
+    if family_name:
+        family['group_name'] = family_name
+
+    invites_remaining = _sanitize_int(request.form.get('invites_remaining', family.get('invites_remaining', 5)), family.get('invites_remaining', 5))
+    family['invites_remaining'] = max(invites_remaining, 0)
+
+    preferences['sync_interactions'] = request.form.get('sync_interactions', '').strip().lower() == 'on'
+    preferences['sync_device_contacts'] = request.form.get('sync_device_contacts', '').strip().lower() == 'on'
+    preferences['share_location'] = request.form.get('share_location', '').strip().lower() == 'on'
+    preferences['profile_visible'] = request.form.get('profile_visible', '').strip().lower() == 'on'
+
+    contacts_share['family'] = family
+    contacts_share['preferences'] = preferences
+    payload['contacts_share'] = contacts_share
+
+    try:
+        save_account_features(payload)
+        add_account_activity('Contactos y compartir', 'Preferencias de contacto actualizadas')
+        session['contacts_share_message'] = '✅ Preferencias de Contactos y compartir guardadas.'
+    except Exception as ex:
+        session['contacts_share_message'] = f'Error guardando preferencias: {ex}'
+
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/invitar_familia', methods=['POST'])
+def contactos_compartir_invitar_familia():
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    family = contacts_share.get('family', {})
+
+    invites_remaining = max(_sanitize_int(family.get('invites_remaining', 0), 0), 0)
+    if invites_remaining <= 0:
+        session['contacts_share_message'] = 'No quedan invitaciones disponibles para el grupo familiar.'
+        return redirect(url_for('contactos_compartir'))
+
+    family['invites_remaining'] = invites_remaining - 1
+    contacts_share['family'] = family
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', 'Se envió una invitación familiar')
+    session['contacts_share_message'] = '✅ Invitación familiar enviada correctamente.'
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/contacto/agregar', methods=['POST'])
+def contactos_compartir_contacto_agregar():
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    contacts = contacts_share.get('contacts', [])
+
+    name = request.form.get('name', '').strip()
+    email = request.form.get('email', '').strip().lower()
+    phone = request.form.get('phone', '').strip()
+    source = request.form.get('source', '').strip() or 'Manual'
+
+    if not name:
+        session['contacts_share_message'] = 'Ingresa un nombre para el contacto.'
+        return redirect(url_for('contactos_compartir'))
+
+    if not email and not phone:
+        session['contacts_share_message'] = 'Ingresa al menos correo o teléfono del contacto.'
+        return redirect(url_for('contactos_compartir'))
+
+    contacts.append({
+        'id': _next_numeric_id(contacts),
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'source': source,
+        'blocked': False
+    })
+
+    contacts_share['contacts'] = contacts
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', f'Contacto agregado: {name}')
+    session['contacts_share_message'] = '✅ Contacto agregado correctamente.'
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/contacto/eliminar/<int:contact_id>', methods=['POST'])
+def contactos_compartir_contacto_eliminar(contact_id):
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    contacts = contacts_share.get('contacts', [])
+
+    kept = [item for item in contacts if _sanitize_int(item.get('id', 0), 0) != int(contact_id)]
+    if len(kept) == len(contacts):
+        session['contacts_share_message'] = 'No se encontró el contacto seleccionado.'
+        return redirect(url_for('contactos_compartir'))
+
+    contacts_share['contacts'] = kept
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', f'Contacto eliminado: id={contact_id}')
+    session['contacts_share_message'] = '✅ Contacto eliminado correctamente.'
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/contacto/bloquear/<int:contact_id>', methods=['POST'])
+def contactos_compartir_contacto_bloquear(contact_id):
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    contacts = contacts_share.get('contacts', [])
+
+    changed = False
+    for item in contacts:
+        if _sanitize_int(item.get('id', 0), 0) == int(contact_id):
+            item['blocked'] = True
+            changed = True
+            break
+
+    if not changed:
+        session['contacts_share_message'] = 'No se encontró el contacto seleccionado.'
+        return redirect(url_for('contactos_compartir'))
+
+    contacts_share['contacts'] = contacts
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', f'Contacto bloqueado: id={contact_id}')
+    session['contacts_share_message'] = '✅ Contacto bloqueado correctamente.'
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/contacto/desbloquear/<int:contact_id>', methods=['POST'])
+def contactos_compartir_contacto_desbloquear(contact_id):
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    contacts = contacts_share.get('contacts', [])
+
+    changed = False
+    for item in contacts:
+        if _sanitize_int(item.get('id', 0), 0) == int(contact_id):
+            item['blocked'] = False
+            changed = True
+            break
+
+    if not changed:
+        session['contacts_share_message'] = 'No se encontró el contacto seleccionado.'
+        return redirect(url_for('contactos_compartir'))
+
+    contacts_share['contacts'] = contacts
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', f'Contacto desbloqueado: id={contact_id}')
+    session['contacts_share_message'] = '✅ Contacto desbloqueado correctamente.'
+    return redirect(url_for('contactos_compartir'))
+
+
+@app.route('/contactos_compartir/perfil/agregar', methods=['POST'])
+def contactos_compartir_perfil_agregar():
+    payload = load_account_features()
+    contacts_share = _ensure_contacts_share(payload)
+    profiles = contacts_share.get('profiles', [])
+
+    profile_name = request.form.get('profile_name', '').strip()
+    profile_description = request.form.get('profile_description', '').strip() or 'Perfil para servicios conectados'
+
+    if not profile_name:
+        session['contacts_share_message'] = 'Ingresa el nombre del perfil.'
+        return redirect(url_for('contactos_compartir'))
+
+    profiles.append({
+        'id': _next_numeric_id(profiles),
+        'name': profile_name,
+        'description': profile_description
+    })
+
+    contacts_share['profiles'] = profiles
+    payload['contacts_share'] = contacts_share
+    save_account_features(payload)
+
+    add_account_activity('Contactos y compartir', f'Perfil agregado: {profile_name}')
+    session['contacts_share_message'] = '✅ Perfil agregado correctamente.'
+    return redirect(url_for('contactos_compartir'))
 
 
 @app.route('/subir_foto_perfil', methods=['POST'])

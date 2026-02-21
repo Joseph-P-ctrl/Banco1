@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contactos y compartir</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #edf1f7; color: #0f172a; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .sidebar { background: #e9eef5; border-right: 1px solid #d8dee9; padding: 12px; }
+    .brand { font-weight: 700; margin: 6px 8px 12px; }
+    .nav-pill { border-radius: 999px; padding: 9px 12px; display: block; color: #1f2937; text-decoration: none; font-weight: 600; margin-bottom: 6px; }
+    .nav-pill.active { background: #fff; }
+    .main { padding: 8px 22px 24px; }
+    .top-search { background: #fff; border: 1px solid #dbe3ef; border-radius: 999px; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #64748b; max-width: 420px; }
+    .center-wrap { max-width: 820px; margin: 24px auto; }
+    .title { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: #64748b; margin-bottom: 14px; }
+    .panel-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+    .panel-head { padding: 14px 16px; border-bottom: 1px solid #eef2f7; font-weight: 700; }
+    .row-item { border-top: 1px solid #eef2f7; padding: 12px 16px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .row-item:first-child { border-top: none; }
+    .row-head { font-weight: 700; margin-bottom: 2px; }
+    .row-value { color: #475569; font-size: 14px; }
+    .chip { border-radius: 999px; font-size: 12px; font-weight: 700; padding: 2px 10px; }
+    .chip-ok { background: #dcfce7; color: #166534; }
+    .chip-off { background: #fee2e2; color: #991b1b; }
+    .stat-box { background: #f8fafc; border: 1px solid #dce6f4; border-radius: 10px; padding: 10px; text-align: center; }
+    .meta-small { color: #64748b; font-size: 12px; }
+    .footer-mini { color: #64748b; font-size: 12px; margin-top: 24px; display: flex; gap: 14px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: auto; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">ENSA Cuenta</div>
+      <a class="nav-pill" href="/correos">Inicio</a>
+      <a class="nav-pill" href="/informacion_personal">Información personal</a>
+      <a class="nav-pill" href="/seguridad_inicio_sesion">Seguridad e inicio de sesión</a>
+      <a class="nav-pill" href="/mi_contrasena">Contraseña ENSA</a>
+      <a class="nav-pill" href="/dispositivos">Conexiones de terceros</a>
+      <a class="nav-pill" href="/datos_privacidad">Datos y privacidad</a>
+      <a class="nav-pill active" href="/contactos_compartir">Contactos y compartir</a>
+    </aside>
+
+    <main class="main">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="top-search">🔎&nbsp;&nbsp;Buscar en tu cuenta ENSA</div>
+        <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos?open_config=1&panel=contactos">Volver</a></div>
+      </div>
+
+      <div class="center-wrap">
+        <div class="title">Contactos y compartir</div>
+        <div class="sub">Controla tu red de contactos, opciones de grupo familiar, visibilidad de perfil y preferencias de compartición.</div>
+
+        {% if message %}
+          <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
+
+        <div class="row g-2 mb-2">
+          <div class="col-md-3"><div class="stat-box"><div class="meta-small">Contactos</div><div><strong>{{ contacts_summary.contacts_total }}</strong></div></div></div>
+          <div class="col-md-3"><div class="stat-box"><div class="meta-small">Activos</div><div><strong>{{ contacts_summary.contacts_active }}</strong></div></div></div>
+          <div class="col-md-3"><div class="stat-box"><div class="meta-small">Bloqueados</div><div><strong>{{ contacts_summary.contacts_blocked }}</strong></div></div></div>
+          <div class="col-md-3"><div class="stat-box"><div class="meta-small">Invitaciones familia</div><div><strong>{{ contacts_summary.invites_remaining }}</strong></div></div></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">Tu familia en ENSA</div>
+          <div class="p-3">
+            <form method="POST" action="/contactos_compartir/guardar" class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label">Nombre del grupo familiar</label>
+                <input class="form-control" name="group_name" value="{{ contacts_share.family.group_name }}">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Invitaciones disponibles</label>
+                <input class="form-control" type="number" min="0" name="invites_remaining" value="{{ contacts_share.family.invites_remaining }}">
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check form-switch mb-2">
+                  <input class="form-check-input" type="checkbox" id="family_enabled" name="family_enabled" {% if contacts_share.family.enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="family_enabled">Familia activa</label>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="sync_interactions" name="sync_interactions" {% if contacts_share.preferences.sync_interactions %}checked{% endif %}><label class="form-check-label" for="sync_interactions">Sincronizar interacciones</label></div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="sync_device_contacts" name="sync_device_contacts" {% if contacts_share.preferences.sync_device_contacts %}checked{% endif %}><label class="form-check-label" for="sync_device_contacts">Sincronizar contactos dispositivo</label></div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="share_location" name="share_location" {% if contacts_share.preferences.share_location %}checked{% endif %}><label class="form-check-label" for="share_location">Compartir ubicación</label></div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="profile_visible" name="profile_visible" {% if contacts_share.preferences.profile_visible %}checked{% endif %}><label class="form-check-label" for="profile_visible">Perfil visible</label></div>
+              </div>
+
+              <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                <button class="btn btn-success btn-sm" type="submit">Guardar preferencias</button>
+              </div>
+            </form>
+            <form method="POST" action="/contactos_compartir/invitar_familia" class="mt-2">
+              <button class="btn btn-outline-primary btn-sm" type="submit">Enviar invitación familiar</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">Contactos</div>
+
+          <div class="p-3 border-bottom">
+            <form method="POST" action="/contactos_compartir/contacto/agregar" class="row g-2">
+              <div class="col-md-3"><input class="form-control" name="name" placeholder="Nombre" required></div>
+              <div class="col-md-3"><input class="form-control" name="email" placeholder="Correo"></div>
+              <div class="col-md-2"><input class="form-control" name="phone" placeholder="Teléfono"></div>
+              <div class="col-md-2"><input class="form-control" name="source" placeholder="Origen"></div>
+              <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm" type="submit">Agregar</button></div>
+            </form>
+          </div>
+
+          {% for item in active_contacts %}
+            <div class="row-item">
+              <div>
+                <div class="row-head">{{ item.name }}</div>
+                <div class="row-value">{{ item.email if item.email else 'Sin correo' }} · {{ item.phone if item.phone else 'Sin teléfono' }}</div>
+                <div class="meta-small">Origen: {{ item.source if item.source else 'Manual' }}</div>
+              </div>
+              <div class="d-flex gap-1">
+                <form method="POST" action="/contactos_compartir/contacto/bloquear/{{ item.id }}"><button class="btn btn-sm btn-outline-warning" type="submit">Bloquear</button></form>
+                <form method="POST" action="/contactos_compartir/contacto/eliminar/{{ item.id }}" onsubmit="return confirm('¿Eliminar contacto?');"><button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button></form>
+              </div>
+            </div>
+          {% else %}
+            <div class="row-item"><div><div class="row-head">No hay contactos activos</div><div class="row-value">Agrega contactos para comenzar a compartir.</div></div><span></span></div>
+          {% endfor %}
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">Bloqueados</div>
+          {% for item in blocked_contacts %}
+            <div class="row-item">
+              <div>
+                <div class="row-head">{{ item.name }}</div>
+                <div class="row-value">{{ item.email if item.email else 'Sin correo' }} · {{ item.phone if item.phone else 'Sin teléfono' }}</div>
+              </div>
+              <form method="POST" action="/contactos_compartir/contacto/desbloquear/{{ item.id }}"><button class="btn btn-sm btn-outline-success" type="submit">Desbloquear</button></form>
+            </div>
+          {% else %}
+            <div class="row-item"><div><div class="row-head">Sin contactos bloqueados</div><div class="row-value">Todos tus contactos están habilitados.</div></div><span class="chip chip-ok">OK</span></div>
+          {% endfor %}
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-head">Tus perfiles</div>
+          <div class="p-3 border-bottom">
+            <form method="POST" action="/contactos_compartir/perfil/agregar" class="row g-2">
+              <div class="col-md-4"><input class="form-control" name="profile_name" placeholder="Nombre de perfil" required></div>
+              <div class="col-md-6"><input class="form-control" name="profile_description" placeholder="Descripción del perfil"></div>
+              <div class="col-md-2 d-grid"><button class="btn btn-primary btn-sm" type="submit">Agregar</button></div>
+            </form>
+          </div>
+
+          {% for p in profiles %}
+            <div class="row-item">
+              <div>
+                <div class="row-head">{{ p.name }}</div>
+                <div class="row-value">{{ p.description }}</div>
+              </div>
+              {% if contacts_share.preferences.profile_visible %}
+                <span class="chip chip-ok">Visible</span>
+              {% else %}
+                <span class="chip chip-off">Oculto</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="panel-card">
+          <div class="row-item">
+            <div>
+              <div class="row-head">Correo principal conectado</div>
+              <div class="row-value">{{ connected_sender if connected_sender else 'Sin correo conectado' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/correo_electronico">Gestionar correo</a>
+          </div>
+        </div>
+
+        <div class="footer-mini"><span>Privacidad</span><span>Términos</span><span>Ayuda</span></div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

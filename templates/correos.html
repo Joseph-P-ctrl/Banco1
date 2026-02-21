@@ -501,27 +501,9 @@
                                 <button type="button" class="inicio-pill" onclick="quickAccess('manager')">Gestor de contraseñas</button>
                                 <button type="button" class="inicio-pill" onclick="quickAccess('activity')">Mi actividad</button>
                                 <button type="button" class="inicio-pill" onclick="quickAccess('email')">Correo electrónico</button>
+                                <button type="button" class="inicio-pill" onclick="quickAccess('contacts')">Contactos y compartir</button>
                             </div>
 
-                            <div class="inicio-card">
-                                <div class="inicio-card-title">Personaliza tu panel de inicio</div>
-                                <div class="inicio-card-text">Configura preferencias básicas para que el módulo de correos se adapte a tu flujo diario.</div>
-
-                                <div class="inicio-form-row">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="mostrar_resumen" name="mostrar_resumen" {% if general_settings is defined and general_settings.inicio.mostrar_resumen %}checked{% endif %}>
-                                        <label class="form-check-label" for="mostrar_resumen">Mostrar resumen al abrir</label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="notificaciones_activas" name="notificaciones_activas" {% if general_settings is defined and general_settings.inicio.notificaciones_activas %}checked{% endif %}>
-                                        <label class="form-check-label" for="notificaciones_activas">Notificaciones activas</label>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex justify-content-end mt-2">
-                                    <button type="submit" class="btn btn-success">Guardar inicio</button>
-                                </div>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -613,8 +595,8 @@
                                 <input type="number" min="0" class="form-control" name="backup_codes" value="{{ security_panel.backup_codes if security_panel is defined else 0 }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Google Prompt</label>
-                                <input type="number" min="0" class="form-control" name="google_prompt_devices" value="{{ security_panel.google_prompt_devices if security_panel is defined else 0 }}">
+                                <label class="form-label">Verificación en dispositivos</label>
+                                <input type="number" min="0" class="form-control" name="device_prompt_count" value="{{ security_panel.device_prompt_count if security_panel is defined else 0 }}">
                             </div>
                         </div>
 
@@ -646,7 +628,23 @@
                     <form action="/configuracion_privacidad" method="POST">
                         <div id="priv-activity" class="settings-note mb-2">
                             <strong>Mi actividad</strong><br>
-                            Gestiona el historial y preferencias de trazabilidad.
+                            Gestiona el historial y preferencias de trazabilidad.<br>
+                            <small class="text-muted">
+                                Controles activos: {{ privacy_panel.summary.active_controls if privacy_panel is defined else 0 }} ·
+                                Eventos de privacidad: {{ privacy_panel.summary.privacy_activity_count if privacy_panel is defined else 0 }}
+                            </small>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/datos_privacidad" target="_blank">Abrir módulo completo</a>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="search_personalization" name="search_personalization" {% if privacy_panel is defined and privacy_panel.search_personalization %}checked{% endif %}>
+                            <label class="form-check-label" for="search_personalization">Personalizar búsqueda</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="play_personalization" name="play_personalization" {% if privacy_panel is defined and privacy_panel.play_personalization %}checked{% endif %}>
+                            <label class="form-check-label" for="play_personalization">Personalizar plataforma ENSA</label>
                         </div>
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="compartir_datos" name="compartir_datos" {% if general_settings is defined and general_settings.privacidad.compartir_datos %}checked{% endif %}>
@@ -655,6 +653,34 @@
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="analytics" name="analytics" {% if general_settings is defined and general_settings.privacidad.analytics %}checked{% endif %}>
                             <label class="form-check-label" for="analytics">Permitir analítica interna</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="play_history" name="play_history" {% if privacy_panel is defined and privacy_panel.play_history %}checked{% endif %}>
+                            <label class="form-check-label" for="play_history">Historial de plataforma ENSA</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="youtube_history" name="youtube_history" {% if privacy_panel is defined and privacy_panel.youtube_history %}checked{% endif %}>
+                            <label class="form-check-label" for="youtube_history">Historial de YouTube</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="maps_timeline" name="maps_timeline" {% if privacy_panel is defined and privacy_panel.maps_timeline %}checked{% endif %}>
+                            <label class="form-check-label" for="maps_timeline">Cronología de Maps</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="ads_personalized" name="ads_personalized" {% if privacy_panel is defined and privacy_panel.ads_personalized %}checked{% endif %}>
+                            <label class="form-check-label" for="ads_personalized">Anuncios personalizados</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="service_emails_enabled" name="service_emails_enabled" {% if privacy_panel is defined and privacy_panel.service_emails_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="service_emails_enabled">Correos de servicios ENSA</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="fit_data_enabled" name="fit_data_enabled" {% if privacy_panel is defined and privacy_panel.fit_data_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="fit_data_enabled">Privacidad de datos operativos</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="voice_match_enabled" name="voice_match_enabled" {% if privacy_panel is defined and privacy_panel.voice_match_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="voice_match_enabled">Voice Match</label>
                         </div>
                         <div class="d-flex justify-content-end mt-3">
                             <button type="submit" class="btn btn-success">Guardar privacidad</button>
@@ -665,13 +691,50 @@
                 <div id="panel-contactos" class="settings-panel">
                     <h5 class="mb-3">Contactos y compartir</h5>
                     <form action="/configuracion_contactos" method="POST">
+                        <div class="settings-note mb-2">
+                            <strong>Resumen de contactos</strong><br>
+                            <small class="text-muted">
+                                Total: {{ contacts_panel.summary.contacts_total if contacts_panel is defined else 0 }} ·
+                                Activos: {{ contacts_panel.summary.contacts_active if contacts_panel is defined else 0 }} ·
+                                Bloqueados: {{ contacts_panel.summary.contacts_blocked if contacts_panel is defined else 0 }} ·
+                                Invitaciones familia: {{ contacts_panel.summary.invites_remaining if contacts_panel is defined else 0 }}
+                            </small>
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/contactos_compartir" target="_blank">Abrir módulo completo</a>
+                            </div>
+                        </div>
+
                         <div class="mb-2">
                             <label class="form-label">Correo de soporte</label>
-                            <input type="email" class="form-control" name="correo_soporte" value="{{ general_settings.contactos.correo_soporte if general_settings is defined else '' }}" placeholder="soporte@distriluz.com.pe">
+                            <input type="email" class="form-control" name="correo_soporte" value="{{ contacts_panel.correo_soporte if contacts_panel is defined else (general_settings.contactos.correo_soporte if general_settings is defined else '') }}" placeholder="soporte@distriluz.com.pe">
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Correo copia (CC)</label>
-                            <input type="email" class="form-control" name="correo_copia" value="{{ general_settings.contactos.correo_copia if general_settings is defined else '' }}" placeholder="copia@distriluz.com.pe">
+                            <input type="email" class="form-control" name="correo_copia" value="{{ contacts_panel.correo_copia if contacts_panel is defined else (general_settings.contactos.correo_copia if general_settings is defined else '') }}" placeholder="copia@distriluz.com.pe">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Nombre del grupo familiar</label>
+                            <input type="text" class="form-control" name="group_name" value="{{ contacts_panel.group_name if contacts_panel is defined else 'Mi grupo familiar' }}" placeholder="Mi grupo familiar">
+                        </div>
+                        <div class="form-check mb-2 mt-2">
+                            <input class="form-check-input" type="checkbox" id="family_enabled" name="family_enabled" {% if contacts_panel is defined and contacts_panel.family_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="family_enabled">Habilitar grupo familiar</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="sync_interactions" name="sync_interactions" {% if contacts_panel is defined and contacts_panel.sync_interactions %}checked{% endif %}>
+                            <label class="form-check-label" for="sync_interactions">Guardar información de contacto desde interacciones</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="sync_device_contacts" name="sync_device_contacts" {% if contacts_panel is defined and contacts_panel.sync_device_contacts %}checked{% endif %}>
+                            <label class="form-check-label" for="sync_device_contacts">Sincronizar contactos de dispositivos</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="share_location" name="share_location" {% if contacts_panel is defined and contacts_panel.share_location %}checked{% endif %}>
+                            <label class="form-check-label" for="share_location">Compartir ubicación con contactos confiables</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="profile_visible" name="profile_visible" {% if contacts_panel is defined and contacts_panel.profile_visible %}checked{% endif %}>
+                            <label class="form-check-label" for="profile_visible">Mostrar perfil en servicios conectados</label>
                         </div>
                         <div class="d-flex justify-content-end mt-3">
                             <button type="submit" class="btn btn-success">Guardar contactos</button>
@@ -940,12 +1003,17 @@ function quickAccess(type) {
     }
 
     if (type === 'activity') {
-        window.open('/mi_actividad?back_to=seguridad', '_blank');
+        window.open('/datos_privacidad', '_blank');
         return;
     }
 
     if (type === 'email') {
         window.open('/correo_electronico?back_to=seguridad', '_blank');
+        return;
+    }
+
+    if (type === 'contacts') {
+        window.open('/contactos_compartir', '_blank');
         return;
     }
 
