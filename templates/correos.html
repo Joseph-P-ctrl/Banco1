@@ -139,9 +139,496 @@
         .close-btn-float:hover {
             transform: scale(1.05);
         }
+
+        .corner-config-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 10001;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+
+        .config-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 10002;
+            display: none;
+        }
+
+        .config-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(860px, 94vw);
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            z-index: 10003;
+            display: none;
+        }
+
+        .config-modal-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .config-modal-body {
+            padding: 0;
+            text-align: left;
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 480px;
+        }
+
+        .settings-sidebar {
+            background: #eef1f5;
+            padding: 16px;
+            border-right: 1px solid #d9dfe8;
+        }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+
+        .settings-nav-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 999px;
+            padding: 9px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #1f2937;
+            text-align: left;
+        }
+
+        .settings-nav-item:hover {
+            background: #e5eaf3;
+        }
+
+        .settings-nav-item.active {
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .settings-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .icon-blue { background: #bfdbfe; }
+        .icon-green { background: #86efac; }
+        .icon-cyan { background: #7dd3fc; }
+        .icon-violet { background: #c4b5fd; }
+        .icon-pink { background: #f9a8d4; }
+        .icon-orange { background: #fdba74; }
+
+        .settings-content {
+            padding: 20px;
+        }
+
+        .settings-note {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            color: #475569;
+        }
+
+        .settings-panel {
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .inicio-shell {
+            background: #eef2f6;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .inicio-profile {
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .inicio-avatar {
+            width: 82px;
+            height: 82px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c7d2fe, #93c5fd);
+            margin: 0 auto 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e3a8a;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .inicio-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .inicio-avatar-wrap {
+            width: 90px;
+            margin: 0 auto 10px auto;
+            position: relative;
+        }
+
+        .avatar-upload-btn {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #94a3b8;
+            background: #fff;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .avatar-upload-btn:hover {
+            background: #f8fafc;
+        }
+
+        .inicio-name {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0f172a;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .inicio-email {
+            color: #334155;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .inicio-search {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            color: #475569;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .inicio-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .inicio-pill {
+            border: 1px solid #94a3b8;
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 7px 14px;
+            font-size: 14px;
+            color: #0f172a;
+            cursor: pointer;
+        }
+
+        .inicio-pill:hover {
+            background: #e2e8f0;
+        }
+
+        .inicio-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+        }
+
+        .inicio-card-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .inicio-card-text {
+            color: #475569;
+            margin-bottom: 12px;
+        }
+
+        .inicio-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
+<button type="button" class="btn btn-primary corner-config-btn" onclick="openConfigModal()">Configuración</button>
+
+<div id="configOverlay" class="config-modal-overlay" onclick="closeConfigModal()"></div>
+<form id="avatarUploadForm" action="/subir_foto_perfil" method="POST" enctype="multipart/form-data" style="display:none;">
+    <input id="avatarUploadInput" type="file" name="profile_image" accept=".png,.jpg,.jpeg,.webp" onchange="submitAvatarUpload()">
+</form>
+<div id="configModal" class="config-modal" role="dialog" aria-modal="true" aria-label="Configuración">
+    <div class="config-modal-header">
+        <span>Configuración</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeConfigModal()">Cerrar</button>
+    </div>
+    <div class="config-modal-body">
+        <div class="settings-layout">
+            <aside class="settings-sidebar">
+                <div class="settings-title">Cuenta</div>
+
+                <button type="button" class="settings-nav-item" data-panel="inicio" onclick="showSettingsPanel('inicio', this)">
+                    <span class="settings-icon icon-blue">🏠</span>
+                    Inicio
+                </button>
+
+                <button type="button" class="settings-nav-item" data-panel="perfil" onclick="showSettingsPanel('perfil', this)">
+                    <span class="settings-icon icon-green">👤</span>
+                    Información personal
+                </button>
+
+                <button type="button" class="settings-nav-item" data-panel="seguridad" onclick="showSettingsPanel('seguridad', this)">
+                    <span class="settings-icon icon-cyan">🔒</span>
+                    Seguridad e inicio de sesión
+                </button>
+
+                <button type="button" class="settings-nav-item active" data-panel="correo" onclick="showSettingsPanel('correo', this)">
+                    <span class="settings-icon icon-violet">✉️</span>
+                    Configuración de correo
+                </button>
+
+                <button type="button" class="settings-nav-item" data-panel="privacidad" onclick="showSettingsPanel('privacidad', this)">
+                    <span class="settings-icon icon-pink">🛡️</span>
+                    Datos y privacidad
+                </button>
+
+                <button type="button" class="settings-nav-item" data-panel="contactos" onclick="showSettingsPanel('contactos', this)">
+                    <span class="settings-icon icon-orange">👥</span>
+                    Contactos y compartir
+                </button>
+            </aside>
+
+            <section class="settings-content">
+                <div id="panel-correo" class="settings-panel active">
+                    <h5 class="mb-3">Configuración de correo</h5>
+                    <form action="/configurar_correo" method="POST">
+                        <div class="mb-2">
+                            <label class="form-label">Usuario</label>
+                            <input type="email" class="form-control" name="sender" value="{{ smtp_config.sender if smtp_config is defined else '' }}" placeholder="usuario@distriluz.com.pe">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" name="password" placeholder="••••••••">
+                            <small class="text-muted">Déjalo vacío para mantener la contraseña actual.</small>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-success">Guardar correo</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="panel-inicio" class="settings-panel">
+                    <h5 class="mb-3">Inicio</h5>
+                    <form action="/configuracion_inicio" method="POST">
+                        <div class="inicio-shell">
+                            <div class="inicio-profile">
+                                <div class="inicio-avatar-wrap">
+                                    <div class="inicio-avatar">
+                                        {% if has_profile_photo %}
+                                            <img src="{{ profile_photo_url }}" alt="Foto de perfil">
+                                        {% else %}
+                                            JP
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="avatar-upload-btn" title="Subir foto" onclick="openAvatarUpload()">📷</button>
+                                </div>
+                                <div class="inicio-name">{{ general_settings.perfil.nombre_mostrar if general_settings is defined and general_settings.perfil.nombre_mostrar else 'Cuenta principal' }}</div>
+                                <div class="inicio-email">{{ smtp_config.sender if smtp_config is defined and smtp_config.sender else 'correo@empresa.com' }}</div>
+                            </div>
+
+                            <div class="inicio-search">🔎&nbsp;&nbsp;Buscar en la configuración de la cuenta</div>
+
+                            <div class="inicio-actions">
+                                <button type="button" class="inicio-pill" onclick="quickAccess('password')">Mi contraseña</button>
+                                <button type="button" class="inicio-pill" onclick="quickAccess('devices')">Dispositivos</button>
+                                <button type="button" class="inicio-pill" onclick="quickAccess('manager')">Gestor de contraseñas</button>
+                                <button type="button" class="inicio-pill" onclick="quickAccess('activity')">Mi actividad</button>
+                                <button type="button" class="inicio-pill" onclick="quickAccess('email')">Correo electrónico</button>
+                            </div>
+
+                            <div class="inicio-card">
+                                <div class="inicio-card-title">Personaliza tu panel de inicio</div>
+                                <div class="inicio-card-text">Configura preferencias básicas para que el módulo de correos se adapte a tu flujo diario.</div>
+
+                                <div class="inicio-form-row">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="mostrar_resumen" name="mostrar_resumen" {% if general_settings is defined and general_settings.inicio.mostrar_resumen %}checked{% endif %}>
+                                        <label class="form-check-label" for="mostrar_resumen">Mostrar resumen al abrir</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="notificaciones_activas" name="notificaciones_activas" {% if general_settings is defined and general_settings.inicio.notificaciones_activas %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificaciones_activas">Notificaciones activas</label>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="submit" class="btn btn-success">Guardar inicio</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="panel-perfil" class="settings-panel">
+                    <h5 class="mb-3">Información personal</h5>
+                    <div class="settings-note mb-2">
+                        <a class="btn btn-sm btn-outline-primary" href="/informacion_personal" target="_blank">Abrir panel completo</a>
+                    </div>
+                    <form action="/configuracion_perfil" method="POST">
+                        <div class="settings-note mb-2">
+                            Panel rápido de edición. Para vista completa estilo cuenta, abre el panel avanzado.
+                            <div class="mt-2">
+                                <a class="btn btn-sm btn-outline-primary" href="/informacion_personal" target="_blank">Abrir información personal completa</a>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Nombre para mostrar</label>
+                            <input type="text" class="form-control" name="nombre_mostrar" value="{{ general_settings.perfil.nombre_mostrar if general_settings is defined else '' }}" placeholder="Tu nombre">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Género</label>
+                            <input type="text" class="form-control" name="genero" value="{{ general_settings.perfil.genero if general_settings is defined else '' }}" placeholder="Ejemplo: Hombre / Mujer">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Correo personal</label>
+                            <input type="email" class="form-control" name="correo_personal" value="{{ general_settings.perfil.correo_personal if general_settings is defined else '' }}" placeholder="correo@dominio.com">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" class="form-control" name="cargo" value="{{ general_settings.perfil.cargo if general_settings is defined else '' }}" placeholder="Analista">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" name="telefono" value="{{ general_settings.perfil.telefono if general_settings is defined else '' }}" placeholder="999999999">
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-success">Guardar perfil</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="panel-seguridad" class="settings-panel">
+                    <h5 class="mb-3">Seguridad e inicio de sesión</h5>
+                    <form action="/configuracion_seguridad" method="POST">
+                        <div id="sec-password" class="settings-note mb-2">
+                            <strong>Mi contraseña</strong><br>
+                            Administra el acceso y las credenciales de la cuenta.
+                        </div>
+                        <div id="sec-devices" class="settings-note mb-2">
+                            <strong>Dispositivos</strong><br>
+                            Controla sesiones y equipos vinculados.
+                        </div>
+                        <div id="sec-manager" class="settings-note mb-2">
+                            <strong>Gestor de contraseñas</strong><br>
+                            Configura recordatorios y políticas de claves.
+                        </div>
+                        <div class="form-check mb-2 mt-3">
+                            <input class="form-check-input" type="checkbox" id="doble_factor" name="doble_factor" {% if general_settings is defined and general_settings.seguridad.doble_factor %}checked{% endif %}>
+                            <label class="form-check-label" for="doble_factor">Habilitar doble factor (2FA)</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="cerrar_sesiones" name="cerrar_sesiones" {% if general_settings is defined and general_settings.seguridad.cerrar_sesiones %}checked{% endif %}>
+                            <label class="form-check-label" for="cerrar_sesiones">Cerrar sesiones en otros dispositivos</label>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-success">Guardar seguridad</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="panel-privacidad" class="settings-panel">
+                    <h5 class="mb-3">Datos y privacidad</h5>
+                    <form action="/configuracion_privacidad" method="POST">
+                        <div id="priv-activity" class="settings-note mb-2">
+                            <strong>Mi actividad</strong><br>
+                            Gestiona el historial y preferencias de trazabilidad.
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="compartir_datos" name="compartir_datos" {% if general_settings is defined and general_settings.privacidad.compartir_datos %}checked{% endif %}>
+                            <label class="form-check-label" for="compartir_datos">Permitir compartir datos operativos</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="analytics" name="analytics" {% if general_settings is defined and general_settings.privacidad.analytics %}checked{% endif %}>
+                            <label class="form-check-label" for="analytics">Permitir analítica interna</label>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-success">Guardar privacidad</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="panel-contactos" class="settings-panel">
+                    <h5 class="mb-3">Contactos y compartir</h5>
+                    <form action="/configuracion_contactos" method="POST">
+                        <div class="mb-2">
+                            <label class="form-label">Correo de soporte</label>
+                            <input type="email" class="form-control" name="correo_soporte" value="{{ general_settings.contactos.correo_soporte if general_settings is defined else '' }}" placeholder="soporte@distriluz.com.pe">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Correo copia (CC)</label>
+                            <input type="email" class="form-control" name="correo_copia" value="{{ general_settings.contactos.correo_copia if general_settings is defined else '' }}" placeholder="copia@distriluz.com.pe">
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-success">Guardar contactos</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
 <header>
     <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
 </header>
@@ -337,6 +824,91 @@ function filterEmails() {
     });
     
     document.getElementById('emailCount').textContent = visibleCount;
+}
+
+function openConfigModal() {
+    document.getElementById('configOverlay').style.display = 'block';
+    document.getElementById('configModal').style.display = 'block';
+}
+
+function closeConfigModal() {
+    document.getElementById('configOverlay').style.display = 'none';
+    document.getElementById('configModal').style.display = 'none';
+}
+
+function showSettingsPanel(panelName, buttonElement) {
+    document.querySelectorAll('.settings-panel').forEach((panel) => {
+        panel.classList.remove('active');
+    });
+
+    const targetPanel = document.getElementById(`panel-${panelName}`);
+    if (targetPanel) {
+        targetPanel.classList.add('active');
+    }
+
+    document.querySelectorAll('.settings-nav-item').forEach((item) => {
+        item.classList.remove('active');
+    });
+
+    if (buttonElement) {
+        buttonElement.classList.add('active');
+    }
+}
+
+function openAvatarUpload() {
+    const fileInput = document.getElementById('avatarUploadInput');
+    if (fileInput) {
+        fileInput.click();
+    }
+}
+
+function submitAvatarUpload() {
+    const fileInput = document.getElementById('avatarUploadInput');
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        document.getElementById('avatarUploadForm').submit();
+    }
+}
+
+function quickAccess(type) {
+    if (type === 'password') {
+        window.open('/mi_contrasena', '_blank');
+        return;
+    }
+
+    if (type === 'devices') {
+        window.open('/dispositivos', '_blank');
+        return;
+    }
+
+    if (type === 'manager') {
+        window.open('/gestor_contrasenas', '_blank');
+        return;
+    }
+
+    if (type === 'activity') {
+        window.open('/mi_actividad', '_blank');
+        return;
+    }
+
+    if (type === 'email') {
+        window.open('/correo_electronico', '_blank');
+        return;
+    }
+
+    let panelName = 'inicio';
+    let targetId = '';
+
+    const navButton = document.querySelector(`.settings-nav-item[data-panel="${panelName}"]`);
+    showSettingsPanel(panelName, navButton);
+
+    if (targetId) {
+        setTimeout(() => {
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+    }
 }
 </script>
 

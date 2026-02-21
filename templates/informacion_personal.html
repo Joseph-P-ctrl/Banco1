@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Información personal</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #edf1f7; color: #0f172a; }
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+    .sidebar { background: #e9eef5; border-right: 1px solid #d8dee9; padding: 12px; }
+    .brand { font-weight: 700; margin: 6px 8px 12px; }
+    .nav-pill { border-radius: 999px; padding: 9px 12px; display: block; color: #1f2937; text-decoration: none; font-weight: 600; margin-bottom: 6px; }
+    .nav-pill.active { background: #fff; }
+    .main { padding: 8px 22px 20px; }
+    .top-search { background: #fff; border: 1px solid #dbe3ef; border-radius: 999px; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #64748b; max-width: 420px; }
+    .center-wrap { max-width: 700px; margin: 24px auto; }
+    .title { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+    .sub { color: #64748b; margin-bottom: 16px; }
+    .panel-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .row-item { border-top: 1px solid #eef2f7; padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .row-item:first-child { border-top: none; }
+    .row-head { font-weight: 700; margin-bottom: 2px; }
+    .row-value { color: #475569; font-size: 14px; }
+    .avatar-wrap { width: 54px; height: 54px; border-radius: 50%; overflow: hidden; background: #bfdbfe; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #1e3a8a; }
+    .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .edit-box { background: #fff; border: 1px solid #d9e2ef; border-radius: 12px; padding: 14px; margin-top: 14px; }
+    .footer-mini { color: #64748b; font-size: 12px; margin-top: 24px; display: flex; gap: 14px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: auto; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Google Cuenta</div>
+      <a class="nav-pill" href="/correos">Inicio</a>
+      <a class="nav-pill active" href="/informacion_personal">Información personal</a>
+      <a class="nav-pill" href="/mi_contrasena">Seguridad e inicio de sesión</a>
+      <a class="nav-pill" href="/gestor_contrasenas">Contraseña de Google</a>
+      <a class="nav-pill" href="/dispositivos">Conexiones de terceros</a>
+      <a class="nav-pill" href="/mi_actividad">Datos y privacidad</a>
+      <a class="nav-pill" href="/correos">Contactos y compartir</a>
+    </aside>
+
+    <main class="main">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="top-search">🔎&nbsp;&nbsp;Buscar en la cuenta de Google</div>
+        <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos">Volver</a></div>
+      </div>
+
+      <div class="center-wrap">
+        <div class="title">Información personal</div>
+        <div class="sub">Gestiona los detalles que mejoran tu experiencia y decide qué información pueden ver los demás.</div>
+
+        {% if message %}
+          <div class="alert alert-info">{{ message }}</div>
+        {% endif %}
+
+        <form id="photoForm" method="POST" action="/subir_foto_perfil" enctype="multipart/form-data" style="display:none;">
+          <input type="hidden" name="next" value="informacion_personal">
+          <input id="photoInput" type="file" name="profile_image" accept=".png,.jpg,.jpeg,.webp" onchange="submitPhotoForm()">
+        </form>
+
+        <div class="panel-card">
+          <div class="row-item">
+            <div>
+              <div class="row-head">Imagen de perfil</div>
+              <div class="row-value">Configura una imagen para identificar la cuenta.</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="avatar-wrap">
+                {% if has_profile_photo %}
+                  <img src="{{ profile_photo_url }}" alt="Foto perfil">
+                {% else %}
+                  JP
+                {% endif %}
+              </div>
+              <button class="btn btn-sm btn-outline-primary" type="button" onclick="openPhotoPicker()">Cambiar</button>
+            </div>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Nombre</div>
+              <div class="row-value">{{ perfil.nombre_mostrar if perfil.nombre_mostrar else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=nombre">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Género</div>
+              <div class="row-value">{{ perfil.genero if perfil.genero else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=genero">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Correo electrónico</div>
+              <div class="row-value">{{ perfil.correo_personal if perfil.correo_personal else sender_email }}</div>
+              <div class="row-value">{{ perfil.correo_alterno if perfil.correo_alterno else '' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=correo">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Teléfono</div>
+              <div class="row-value">{{ perfil.telefono if perfil.telefono else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=telefono">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Fecha de nacimiento</div>
+              <div class="row-value">{{ perfil.fecha_nacimiento if perfil.fecha_nacimiento else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=fecha">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Idioma</div>
+              <div class="row-value">{{ perfil.idioma if perfil.idioma else 'Español (España)' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=idioma">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Dirección de casa</div>
+              <div class="row-value">{{ perfil.direccion_casa if perfil.direccion_casa else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=casa">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Dirección del trabajo</div>
+              <div class="row-value">{{ perfil.direccion_trabajo if perfil.direccion_trabajo else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=trabajo">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Otras direcciones</div>
+              <div class="row-value">{{ perfil.otras_direcciones if perfil.otras_direcciones else 'Sin configurar' }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/informacion_personal?edit=otras">Editar</a>
+          </div>
+
+          <div class="row-item">
+            <div>
+              <div class="row-head">Contraseña de Google</div>
+              <div class="row-value">Administra credenciales y seguridad de acceso.</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="/mi_contrasena" target="_blank">Ir</a>
+          </div>
+        </div>
+
+        {% if edit_field %}
+          <div class="edit-box">
+            <form method="POST" action="/informacion_personal/guardar">
+              {% if edit_field == 'nombre' %}
+                <label class="form-label"><strong>Editar nombre</strong></label>
+                <input class="form-control" name="nombre_mostrar" value="{{ perfil.nombre_mostrar if perfil.nombre_mostrar else '' }}" placeholder="Nombre completo">
+              {% elif edit_field == 'genero' %}
+                <label class="form-label"><strong>Editar género</strong></label>
+                <input class="form-control" name="genero" value="{{ perfil.genero if perfil.genero else '' }}" placeholder="Género">
+              {% elif edit_field == 'correo' %}
+                <label class="form-label"><strong>Editar correo</strong></label>
+                <input class="form-control mb-2" name="correo_personal" value="{{ perfil.correo_personal if perfil.correo_personal else sender_email }}" placeholder="Correo principal">
+                <input class="form-control" name="correo_alterno" value="{{ perfil.correo_alterno if perfil.correo_alterno else '' }}" placeholder="Correo alterno">
+              {% elif edit_field == 'telefono' %}
+                <label class="form-label"><strong>Editar teléfono</strong></label>
+                <input class="form-control" name="telefono" value="{{ perfil.telefono if perfil.telefono else '' }}" placeholder="Teléfono">
+              {% elif edit_field == 'fecha' %}
+                <label class="form-label"><strong>Editar fecha de nacimiento</strong></label>
+                <input class="form-control" name="fecha_nacimiento" value="{{ perfil.fecha_nacimiento if perfil.fecha_nacimiento else '' }}" placeholder="dd/mm/yyyy">
+              {% elif edit_field == 'idioma' %}
+                <label class="form-label"><strong>Editar idioma</strong></label>
+                <input class="form-control" name="idioma" value="{{ perfil.idioma if perfil.idioma else 'Español (España)' }}" placeholder="Idioma">
+              {% elif edit_field == 'casa' %}
+                <label class="form-label"><strong>Editar dirección de casa</strong></label>
+                <input class="form-control" name="direccion_casa" value="{{ perfil.direccion_casa if perfil.direccion_casa else '' }}" placeholder="Dirección de casa">
+              {% elif edit_field == 'trabajo' %}
+                <label class="form-label"><strong>Editar dirección de trabajo</strong></label>
+                <input class="form-control" name="direccion_trabajo" value="{{ perfil.direccion_trabajo if perfil.direccion_trabajo else '' }}" placeholder="Dirección de trabajo">
+              {% elif edit_field == 'otras' %}
+                <label class="form-label"><strong>Editar otras direcciones</strong></label>
+                <input class="form-control" name="otras_direcciones" value="{{ perfil.otras_direcciones if perfil.otras_direcciones else '' }}" placeholder="Otras direcciones">
+              {% endif %}
+
+              <div class="d-flex justify-content-end gap-2 mt-3">
+                <a class="btn btn-outline-secondary" href="/informacion_personal">Cancelar</a>
+                <button class="btn btn-success" type="submit">Guardar cambios</button>
+              </div>
+            </form>
+          </div>
+        {% endif %}
+
+        <div class="footer-mini">
+          <span>Privacidad</span><span>Términos</span><span>Ayuda</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function openPhotoPicker() {
+      document.getElementById('photoInput').click();
+    }
+    function submitPhotoForm() {
+      const fileInput = document.getElementById('photoInput');
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        document.getElementById('photoForm').submit();
+      }
+    }
+  </script>
+</body>
+</html>

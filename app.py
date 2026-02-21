@@ -19,6 +19,7 @@ import logging
 import traceback
 import json
 import smtplib
+import uuid
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
@@ -59,6 +60,94 @@ def _smtp_key_path():
 
 def _smtp_credentials_path():
     return files_path('smtp_credentials.json')
+
+
+def _google_config_path():
+    return files_path('google_config.json')
+
+
+def _general_settings_path():
+    return files_path('general_settings.json')
+
+
+def _account_features_path():
+    return files_path('account_features.json')
+
+
+def _profile_photo_dir():
+    return files_path('profile')
+
+
+def _profile_photo_path(filename='profile_photo.png'):
+    return os.path.join(_profile_photo_dir(), filename)
+
+
+def _allowed_image_extension(filename):
+    lower_name = str(filename or '').strip().lower()
+    return lower_name.endswith('.png') or lower_name.endswith('.jpg') or lower_name.endswith('.jpeg') or lower_name.endswith('.webp')
+
+
+def _safe_user_agent():
+    try:
+        return str(request.user_agent.string or '').strip()
+    except Exception:
+        return ''
+
+
+def _client_ip():
+    forwarded_for = request.headers.get('X-Forwarded-For', '').strip()
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return str(request.remote_addr or '').strip() or 'desconocido'
+
+
+def _detect_os_family(user_agent_text):
+    ua = str(user_agent_text or '').lower()
+    if 'android' in ua:
+        return 'Android'
+    if 'windows' in ua:
+        return 'Windows'
+    if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
+        return 'iOS'
+    if 'mac os' in ua or 'macintosh' in ua:
+        return 'macOS'
+    if 'linux' in ua:
+        return 'Linux'
+    return 'Otro'
+
+
+def _detect_device_type(user_agent_text):
+    ua = str(user_agent_text or '').lower()
+    if 'android' in ua or 'iphone' in ua or 'mobile' in ua:
+        return 'Móvil'
+    if 'ipad' in ua or 'tablet' in ua:
+        return 'Tablet'
+    return 'Computadora'
+
+
+def _relative_time_label(timestamp_value):
+    if not timestamp_value:
+        return 'Sin registro'
+    try:
+        last_seen = pd.to_datetime(timestamp_value, format='%d/%m/%Y %H:%M:%S', errors='coerce')
+        if pd.isna(last_seen):
+            return str(timestamp_value)
+        now_value = pd.Timestamp.now()
+        diff = now_value - last_seen
+        total_seconds = max(int(diff.total_seconds()), 0)
+
+        if total_seconds < 60:
+            return 'Hace unos segundos'
+        if total_seconds < 3600:
+            minutes = total_seconds // 60
+            return f'Hace {minutes} min'
+        if total_seconds < 86400:
+            hours = total_seconds // 3600
+            return f'Hace {hours} hora(s)'
+        days = total_seconds // 86400
+        return f'Hace {days} día(s)'
+    except Exception:
+        return str(timestamp_value)
 
 
 def _get_fernet():
@@ -135,6 +224,345 @@ def load_secure_smtp_credentials():
     except Exception as ex:
         logging.error(f'No se pudo leer credenciales SMTP cifradas: {ex}')
         return {}
+
+
+def save_google_config(config_values):
+    payload = {
+        'project_id': str(config_values.get('project_id', '')).strip(),
+        'client_id': str(config_values.get('client_id', '')).strip(),
+        'redirect_uri': str(config_values.get('redirect_uri', '')).strip(),
+        'scopes': str(config_values.get('scopes', '')).strip(),
+        'enabled': bool(config_values.get('enabled', False))
+    }
+
+    fernet = _get_fernet()
+
+    client_secret = str(config_values.get('client_secret', '')).strip()
+    api_key = str(config_values.get('api_key', '')).strip()
+
+    if client_secret:
+        payload['client_secret_encrypted'] = fernet.encrypt(client_secret.encode('utf-8')).decode('utf-8')
+    if api_key:
+        payload['api_key_encrypted'] = fernet.encrypt(api_key.encode('utf-8')).decode('utf-8')
+
+    with open(_google_config_path(), 'w', encoding='utf-8') as out_file:
+        json.dump(payload, out_file, ensure_ascii=False)
+
+
+def load_google_config():
+    config_path = _google_config_path()
+    if not os.path.exists(config_path):
+        return {
+            'project_id': '',
+            'client_id': '',
+            'client_secret': '',
+            'redirect_uri': '',
+            'scopes': 'openid email profile',
+            'api_key': '',
+            'enabled': False
+        }
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as in_file:
+            payload = json.load(in_file)
+
+        fernet = _get_fernet()
+
+        client_secret = ''
+        api_key = ''
+
+        client_secret_encrypted = payload.get('client_secret_encrypted', '')
+        if client_secret_encrypted:
+            client_secret = fernet.decrypt(client_secret_encrypted.encode('utf-8')).decode('utf-8')
+
+        api_key_encrypted = payload.get('api_key_encrypted', '')
+        if api_key_encrypted:
+            api_key = fernet.decrypt(api_key_encrypted.encode('utf-8')).decode('utf-8')
+
+        return {
+            'project_id': str(payload.get('project_id', '')).strip(),
+            'client_id': str(payload.get('client_id', '')).strip(),
+            'client_secret': client_secret,
+            'redirect_uri': str(payload.get('redirect_uri', '')).strip(),
+            'scopes': str(payload.get('scopes', 'openid email profile')).strip(),
+            'api_key': api_key,
+            'enabled': bool(payload.get('enabled', False))
+        }
+    except Exception as ex:
+        logging.error(f'No se pudo leer configuración Google: {ex}')
+        return {
+            'project_id': '',
+            'client_id': '',
+            'client_secret': '',
+            'redirect_uri': '',
+            'scopes': 'openid email profile',
+            'api_key': '',
+            'enabled': False
+        }
+
+
+def load_general_settings():
+    default_payload = {
+        'inicio': {
+            'mostrar_resumen': True,
+            'notificaciones_activas': True
+        },
+        'perfil': {
+            'nombre_mostrar': '',
+            'cargo': '',
+            'telefono': '',
+            'foto_version': 0,
+            'genero': '',
+            'correo_personal': '',
+            'correo_alterno': '',
+            'fecha_nacimiento': '',
+            'idioma': 'Español (España)',
+            'direccion_casa': '',
+            'direccion_trabajo': '',
+            'otras_direcciones': ''
+        },
+        'seguridad': {
+            'doble_factor': False,
+            'cerrar_sesiones': True
+        },
+        'privacidad': {
+            'compartir_datos': False,
+            'analytics': False
+        },
+        'contactos': {
+            'correo_soporte': '',
+            'correo_copia': ''
+        }
+    }
+
+    settings_path = _general_settings_path()
+    if not os.path.exists(settings_path):
+        return default_payload
+
+    try:
+        with open(settings_path, 'r', encoding='utf-8') as settings_file:
+            payload = json.load(settings_file)
+
+        if not isinstance(payload, dict):
+            return default_payload
+
+        merged = default_payload.copy()
+        for section_key in default_payload.keys():
+            section_value = payload.get(section_key, {})
+            if isinstance(section_value, dict):
+                merged_section = default_payload[section_key].copy()
+                merged_section.update(section_value)
+                merged[section_key] = merged_section
+        return merged
+    except Exception as ex:
+        logging.error(f'No se pudo leer configuración general: {ex}')
+        return default_payload
+
+
+def save_general_settings(payload):
+    with open(_general_settings_path(), 'w', encoding='utf-8') as settings_file:
+        json.dump(payload, settings_file, ensure_ascii=False)
+
+
+def sync_email_config_to_modules(sender_email):
+    sender_clean = str(sender_email or '').strip().lower()
+    if not sender_clean:
+        return
+
+    settings = load_general_settings()
+
+    if 'perfil' not in settings or not isinstance(settings['perfil'], dict):
+        settings['perfil'] = {}
+    if 'contactos' not in settings or not isinstance(settings['contactos'], dict):
+        settings['contactos'] = {}
+
+    settings['perfil']['correo_personal'] = sender_clean
+
+    soporte_actual = str(settings['contactos'].get('correo_soporte', '')).strip()
+    if not soporte_actual:
+        settings['contactos']['correo_soporte'] = sender_clean
+
+    save_general_settings(settings)
+
+
+def get_connected_account_email():
+    secure_smtp = load_secure_smtp_credentials()
+    sender = str(secure_smtp.get('sender', '')).strip()
+    if sender:
+        return sender
+
+    settings = load_general_settings()
+    perfil = settings.get('perfil', {}) if isinstance(settings, dict) else {}
+    return str(perfil.get('correo_personal', '')).strip()
+
+
+def load_account_features():
+    default_payload = {
+        'password': {
+            'value_encrypted': '',
+            'updated_at': ''
+        },
+        'devices': [
+            {
+                'id': 1,
+                'name': 'Equipo principal',
+                'location': 'Oficina',
+                'active': True
+            }
+        ],
+        'activity': [],
+        'sessions': []
+    }
+
+    features_path = _account_features_path()
+    if not os.path.exists(features_path):
+        return default_payload
+
+    try:
+        with open(features_path, 'r', encoding='utf-8') as features_file:
+            payload = json.load(features_file)
+
+        if not isinstance(payload, dict):
+            return default_payload
+
+        merged = default_payload.copy()
+        for key in ['password', 'devices', 'activity', 'sessions']:
+            value = payload.get(key)
+            if key == 'password' and isinstance(value, dict):
+                password_payload = default_payload['password'].copy()
+                password_payload.update(value)
+                merged['password'] = password_payload
+            elif key == 'devices' and isinstance(value, list):
+                merged['devices'] = value
+            elif key == 'activity' and isinstance(value, list):
+                merged['activity'] = value
+            elif key == 'sessions' and isinstance(value, list):
+                merged['sessions'] = value
+
+        return merged
+    except Exception as ex:
+        logging.error(f'No se pudo leer account_features: {ex}')
+        return default_payload
+
+
+def save_account_features(payload):
+    with open(_account_features_path(), 'w', encoding='utf-8') as features_file:
+        json.dump(payload, features_file, ensure_ascii=False)
+
+
+def add_account_activity(action, detail=''):
+    payload = load_account_features()
+    activity_list = payload.get('activity', [])
+    timestamp = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+    activity_list.insert(0, {
+        'timestamp': timestamp,
+        'action': str(action or '').strip(),
+        'detail': str(detail or '').strip()
+    })
+
+    if len(activity_list) > 200:
+        activity_list = activity_list[:200]
+
+    payload['activity'] = activity_list
+    save_account_features(payload)
+
+
+def clear_account_activity(mode='all', keep_last=0):
+    payload = load_account_features()
+    if mode == 'last' and keep_last > 0:
+        payload['activity'] = payload.get('activity', [])[:keep_last]
+    else:
+        payload['activity'] = []
+    save_account_features(payload)
+
+
+def _ensure_current_session_tracked():
+    route_path = request.path or ''
+    if route_path.startswith('/static') or route_path.startswith('/foto_perfil_actual'):
+        return
+
+    account_session_id = session.get('account_session_id', '')
+    if not account_session_id:
+        account_session_id = str(uuid.uuid4())
+        session['account_session_id'] = account_session_id
+
+    user_agent_text = _safe_user_agent()
+    ip_value = _client_ip()
+    now_text = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+
+    payload = load_account_features()
+    sessions_list = payload.get('sessions', [])
+
+    existing_index = -1
+    for index, item in enumerate(sessions_list):
+        if str(item.get('session_id', '')).strip() == account_session_id:
+            existing_index = index
+            break
+
+    if existing_index >= 0:
+        current = sessions_list[existing_index]
+        current['last_seen'] = now_text
+        current['ip'] = ip_value
+        current['user_agent'] = user_agent_text
+        current['os_family'] = _detect_os_family(user_agent_text)
+        current['device_type'] = _detect_device_type(user_agent_text)
+        current['active'] = True
+        sessions_list[existing_index] = current
+    else:
+        sessions_list.insert(0, {
+            'session_id': account_session_id,
+            'first_seen': now_text,
+            'last_seen': now_text,
+            'ip': ip_value,
+            'user_agent': user_agent_text,
+            'os_family': _detect_os_family(user_agent_text),
+            'device_type': _detect_device_type(user_agent_text),
+            'active': True
+        })
+
+    sanitized_sessions = []
+    now_value = pd.Timestamp.now()
+    for item in sessions_list:
+        last_seen_text = str(item.get('last_seen', '')).strip()
+        is_active = False
+        if last_seen_text:
+            try:
+                parsed_last_seen = pd.to_datetime(last_seen_text, format='%d/%m/%Y %H:%M:%S', errors='coerce')
+                if pd.isna(parsed_last_seen):
+                    raise ValueError('Fecha inválida')
+                delta = now_value - parsed_last_seen
+                is_active = delta.total_seconds() <= (7 * 24 * 3600)
+            except Exception:
+                is_active = bool(item.get('active', False))
+        item['active'] = is_active
+        sanitized_sessions.append(item)
+
+    payload['sessions'] = sanitized_sessions[:200]
+    save_account_features(payload)
+
+
+@app.before_request
+def _before_every_request_account_tracking():
+    try:
+        _ensure_current_session_tracked()
+    except Exception as ex:
+        logging.warning(f'No se pudo actualizar sesión de dispositivo: {ex}')
+
+
+def save_account_password(new_password):
+    if not new_password:
+        return
+
+    payload = load_account_features()
+    fernet = _get_fernet()
+    payload['password']['value_encrypted'] = fernet.encrypt(new_password.encode('utf-8')).decode('utf-8')
+    payload['password']['updated_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+    save_account_features(payload)
+
+
+def get_account_password_updated_at():
+    payload = load_account_features()
+    return str(payload.get('password', {}).get('updated_at', '')).strip()
 
 def extract_emails_from_df(df):
     emails = set()
@@ -500,6 +928,18 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
     # Obtener información de vouchers disponibles
     vouchers_generados = session.get('vouchers_generados', [])
     total_vouchers = len(vouchers_generados)
+    secure_smtp = load_secure_smtp_credentials()
+    smtp_config = {
+        'sender': secure_smtp.get('sender', ''),
+        'smtp_host': secure_smtp.get('smtp_host', '') or 'owa.fonafe.gob.pe',
+        'smtp_port': secure_smtp.get('smtp_port', '') or '587',
+        'smtp_security': secure_smtp.get('smtp_security', '') or 'starttls'
+    }
+    google_config = load_google_config()
+    general_settings = load_general_settings()
+    photo_path = _profile_photo_path()
+    has_profile_photo = os.path.exists(photo_path)
+    profile_photo_version = general_settings.get('perfil', {}).get('foto_version', 0)
     
     return render_template(
         'correos.html',
@@ -511,7 +951,12 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
         total_emails=total,
         mensaje_exito=mensaje_exito,
         total_vouchers=total_vouchers,
-        vouchers_generados=vouchers_generados
+        vouchers_generados=vouchers_generados,
+        smtp_config=smtp_config,
+        google_config=google_config,
+        general_settings=general_settings,
+        has_profile_photo=has_profile_photo,
+        profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
     )
 
 def extract_emails_from_excel_upload(file_storage):
@@ -741,6 +1186,8 @@ def correos():
         if sess_emails:
             session['asiento_emails'] = sess_emails
     warning_message = session.pop('asiento_email_warning', None)
+    config_message = session.pop('config_message', None)
+    page_message = config_message or warning_message
 
     try:
         page = int(request.args.get('page', '1'))
@@ -749,7 +1196,506 @@ def correos():
     if page < 1:
         page = 1
 
-    return render_correos_page(emails=sess_emails, mensaje_exito=warning_message, page=page)
+    return render_correos_page(emails=sess_emails, mensaje_exito=page_message, page=page)
+
+
+@app.route('/gestor_contrasenas', methods=['GET'])
+def gestor_contrasenas():
+    add_account_activity('Gestor de contraseñas', 'Apertura de panel')
+    return render_template('gestor_contrasenas.html')
+
+
+@app.route('/mi_contrasena', methods=['GET'])
+def mi_contrasena():
+    add_account_activity('Mi contraseña', 'Apertura de panel')
+    message = session.pop('password_message', None)
+    updated_at = get_account_password_updated_at()
+    return render_template('mi_contrasena.html', password_updated_at=updated_at, message=message)
+
+
+@app.route('/mi_contrasena/guardar', methods=['POST'])
+def mi_contrasena_guardar():
+    new_password = request.form.get('new_password', '').strip()
+    confirm_password = request.form.get('confirm_password', '').strip()
+
+    if len(new_password) < 6:
+        session['password_message'] = 'La contraseña debe tener al menos 6 caracteres.'
+        return redirect(url_for('mi_contrasena'))
+
+    if new_password != confirm_password:
+        session['password_message'] = 'La confirmación no coincide con la contraseña.'
+        return redirect(url_for('mi_contrasena'))
+
+    try:
+        save_account_password(new_password)
+        add_account_activity('Mi contraseña', 'Contraseña actualizada')
+        session['password_message'] = '✅ Contraseña actualizada correctamente.'
+    except Exception as ex:
+        session['password_message'] = f'Error guardando contraseña: {ex}'
+
+    return redirect(url_for('mi_contrasena'))
+
+
+@app.route('/dispositivos', methods=['GET'])
+def dispositivos():
+    add_account_activity('Dispositivos', 'Apertura de panel')
+    payload = load_account_features()
+    current_session_id = session.get('account_session_id', '')
+
+    grouped = {}
+    sessions_list = payload.get('sessions', [])
+    now_value = pd.Timestamp.now()
+    for item in sessions_list:
+        os_family = str(item.get('os_family', 'Otro')).strip() or 'Otro'
+        grouped.setdefault(os_family, [])
+
+        last_seen_text = str(item.get('last_seen', '')).strip()
+        inactive_days = 0
+        if last_seen_text:
+            try:
+                parsed_last_seen = pd.to_datetime(last_seen_text, format='%d/%m/%Y %H:%M:%S', errors='coerce')
+                if pd.isna(parsed_last_seen):
+                    raise ValueError('Fecha inválida')
+                inactive_days = max((now_value - parsed_last_seen).days, 0)
+            except Exception:
+                inactive_days = 0
+
+        grouped[os_family].append({
+            'session_id': str(item.get('session_id', '')).strip(),
+            'device_type': str(item.get('device_type', '')).strip() or 'Equipo',
+            'ip': str(item.get('ip', '')).strip() or 'desconocido',
+            'last_seen': _relative_time_label(last_seen_text),
+            'user_agent': str(item.get('user_agent', '')).strip(),
+            'active': bool(item.get('active', False)),
+            'inactive_days': inactive_days,
+            'is_current': str(item.get('session_id', '')).strip() == current_session_id
+        })
+
+    message = session.pop('devices_message', None)
+    return render_template(
+        'dispositivos.html',
+        devices=payload.get('devices', []),
+        sessions_grouped=grouped,
+        total_sessions=len(sessions_list),
+        message=message
+    )
+
+
+@app.route('/dispositivos/agregar', methods=['POST'])
+def dispositivos_agregar():
+    name = request.form.get('name', '').strip()
+    location = request.form.get('location', '').strip()
+
+    if not name:
+        session['devices_message'] = 'Indica el nombre del dispositivo.'
+        return redirect(url_for('dispositivos'))
+
+    payload = load_account_features()
+    devices = payload.get('devices', [])
+    next_id = max([int(d.get('id', 0) or 0) for d in devices], default=0) + 1
+    devices.append({
+        'id': next_id,
+        'name': name,
+        'location': location or 'Sin ubicación',
+        'active': True
+    })
+    payload['devices'] = devices
+    save_account_features(payload)
+
+    add_account_activity('Dispositivos', f'Dispositivo agregado: {name}')
+    session['devices_message'] = '✅ Dispositivo agregado correctamente.'
+    return redirect(url_for('dispositivos'))
+
+
+@app.route('/dispositivos/eliminar/<int:device_id>', methods=['POST'])
+def dispositivos_eliminar(device_id):
+    payload = load_account_features()
+    devices = payload.get('devices', [])
+    kept = [d for d in devices if int(d.get('id', 0) or 0) != int(device_id)]
+
+    if len(kept) == len(devices):
+        session['devices_message'] = 'No se encontró el dispositivo seleccionado.'
+        return redirect(url_for('dispositivos'))
+
+    payload['devices'] = kept
+    save_account_features(payload)
+    add_account_activity('Dispositivos', f'Dispositivo eliminado: id={device_id}')
+    session['devices_message'] = '✅ Dispositivo eliminado correctamente.'
+    return redirect(url_for('dispositivos'))
+
+
+@app.route('/dispositivos/desconectar/<session_id_value>', methods=['POST'])
+def dispositivos_desconectar(session_id_value):
+    payload = load_account_features()
+    sessions_list = payload.get('sessions', [])
+
+    changed = False
+    for item in sessions_list:
+        if str(item.get('session_id', '')).strip() == str(session_id_value or '').strip():
+            item['active'] = False
+            changed = True
+            break
+
+    if changed:
+        payload['sessions'] = sessions_list
+        save_account_features(payload)
+        add_account_activity('Dispositivos', f'Sesión desconectada: {session_id_value}')
+        session['devices_message'] = '✅ Sesión desconectada correctamente.'
+    else:
+        session['devices_message'] = 'No se encontró la sesión seleccionada.'
+
+    return redirect(url_for('dispositivos'))
+
+
+@app.route('/mi_actividad', methods=['GET'])
+def mi_actividad():
+    payload = load_account_features()
+    activity = payload.get('activity', [])
+
+    query_text = request.args.get('q', '').strip().lower()
+    action_filter = request.args.get('action', '').strip().lower()
+
+    filtered = []
+    for item in activity:
+        action_value = str(item.get('action', '')).strip()
+        detail_value = str(item.get('detail', '')).strip()
+        timestamp_value = str(item.get('timestamp', '')).strip()
+
+        haystack = f"{action_value} {detail_value} {timestamp_value}".lower()
+        if query_text and query_text not in haystack:
+            continue
+        if action_filter and action_filter not in action_value.lower():
+            continue
+        filtered.append(item)
+
+    action_types = sorted({str(item.get('action', '')).strip() for item in activity if str(item.get('action', '')).strip()})
+    total = len(activity)
+    total_filtered = len(filtered)
+
+    return render_template(
+        'mi_actividad.html',
+        activity=filtered,
+        total=total,
+        total_filtered=total_filtered,
+        action_types=action_types,
+        current_query=query_text,
+        current_action=action_filter
+    )
+
+
+@app.route('/mi_actividad/limpiar', methods=['POST'])
+def mi_actividad_limpiar():
+    mode = request.form.get('mode', '').strip().lower() or 'all'
+    if mode == 'last50':
+        clear_account_activity(mode='last', keep_last=50)
+        add_account_activity('Mi actividad', 'Se conservaron solo 50 registros recientes')
+    else:
+        clear_account_activity(mode='all')
+        add_account_activity('Mi actividad', 'Actividad eliminada por usuario')
+
+    return redirect(url_for('mi_actividad'))
+
+
+@app.route('/informacion_personal', methods=['GET'])
+def informacion_personal():
+    add_account_activity('Información personal', 'Apertura de panel')
+    settings = load_general_settings()
+    perfil = settings.get('perfil', {})
+    message = session.pop('personal_info_message', None)
+    photo_version = int(perfil.get('foto_version', 0) or 0)
+    edit_field = request.args.get('edit', '').strip().lower()
+
+    return render_template(
+        'informacion_personal.html',
+        perfil=perfil,
+        sender_email=get_connected_account_email(),
+        has_profile_photo=os.path.exists(_profile_photo_path()),
+        profile_photo_url=f"/foto_perfil_actual?v={photo_version}",
+        message=message,
+        edit_field=edit_field
+    )
+
+
+@app.route('/informacion_personal/guardar', methods=['POST'])
+def informacion_personal_guardar():
+    settings = load_general_settings()
+    perfil = settings.get('perfil', {})
+
+    def update_field(field_name, default_value=''):
+        if field_name in request.form:
+            return request.form.get(field_name, '').strip()
+        return str(perfil.get(field_name, default_value)).strip()
+
+    perfil['nombre_mostrar'] = update_field('nombre_mostrar')
+    perfil['genero'] = update_field('genero')
+    perfil['correo_personal'] = update_field('correo_personal')
+    perfil['correo_alterno'] = update_field('correo_alterno')
+    perfil['telefono'] = update_field('telefono')
+    perfil['fecha_nacimiento'] = update_field('fecha_nacimiento')
+    perfil['idioma'] = update_field('idioma', 'Español (España)') or 'Español (España)'
+    perfil['direccion_casa'] = update_field('direccion_casa')
+    perfil['direccion_trabajo'] = update_field('direccion_trabajo')
+    perfil['otras_direcciones'] = update_field('otras_direcciones')
+
+    settings['perfil'] = perfil
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Información personal', 'Datos personales actualizados')
+        session['personal_info_message'] = '✅ Información personal guardada correctamente.'
+    except Exception as ex:
+        session['personal_info_message'] = f'Error guardando información personal: {ex}'
+
+    return redirect(url_for('informacion_personal'))
+
+
+@app.route('/correo_electronico', methods=['GET'])
+def correo_electronico():
+    add_account_activity('Correo electrónico', 'Apertura de panel')
+    secure_smtp = load_secure_smtp_credentials()
+    message = session.pop('email_settings_message', None)
+    return render_template(
+        'correo_electronico.html',
+        sender=secure_smtp.get('sender', '') or get_connected_account_email(),
+        smtp_host=secure_smtp.get('smtp_host', '') or 'owa.fonafe.gob.pe',
+        smtp_port=secure_smtp.get('smtp_port', '') or '587',
+        smtp_security=secure_smtp.get('smtp_security', '') or 'starttls',
+        message=message
+    )
+
+
+@app.route('/correo_electronico/guardar', methods=['POST'])
+def correo_electronico_guardar():
+    existing = load_secure_smtp_credentials()
+    sender = request.form.get('sender', '').strip() or existing.get('sender', '').strip()
+    password = request.form.get('password', '').strip() or existing.get('password', '').strip()
+
+    if not sender or not password:
+        session['email_settings_message'] = 'Completa usuario y contraseña.'
+        return redirect(url_for('correo_electronico'))
+
+    try:
+        save_secure_smtp_credentials(
+            sender,
+            password,
+            smtp_host_value=existing.get('smtp_host', '') or 'owa.fonafe.gob.pe',
+            smtp_port_value=existing.get('smtp_port', '') or '587',
+            smtp_security_value=existing.get('smtp_security', '') or 'starttls'
+        )
+        sync_email_config_to_modules(sender)
+        add_account_activity('Correo electrónico', f'Credenciales actualizadas para {sender}')
+        session['email_settings_message'] = '✅ Configuración de correo actualizada correctamente.'
+    except Exception as ex:
+        session['email_settings_message'] = f'Error guardando correo: {ex}'
+
+    return redirect(url_for('correo_electronico'))
+
+
+@app.route('/configurar_correo', methods=['POST'])
+def configurar_correo():
+    emails = session.get('asiento_emails', [])
+
+    existing = load_secure_smtp_credentials()
+    sender = request.form.get('sender', '').strip() or existing.get('sender', '').strip()
+    password = request.form.get('password', '').strip() or existing.get('password', '').strip()
+    smtp_host = request.form.get('smtp_host', '').strip() or existing.get('smtp_host', '').strip() or 'owa.fonafe.gob.pe'
+    smtp_port = request.form.get('smtp_port', '').strip() or existing.get('smtp_port', '').strip() or '587'
+    smtp_security = request.form.get('smtp_security', '').strip().lower() or existing.get('smtp_security', '').strip().lower() or 'starttls'
+
+    if smtp_security not in ('ssl', 'starttls', 'auto'):
+        smtp_security = 'starttls'
+
+    if not sender or not password:
+        return render_correos_page(
+            emails=emails,
+            mensaje_exito='Completa remitente y clave para guardar la configuración de correo.',
+            page=1
+        )
+
+    try:
+        save_secure_smtp_credentials(
+            sender,
+            password,
+            smtp_host_value=smtp_host,
+            smtp_port_value=smtp_port,
+            smtp_security_value=smtp_security
+        )
+        sync_email_config_to_modules(sender)
+        add_account_activity('Configuración de correo', f'Credenciales guardadas para {sender}')
+        session['config_message'] = '✅ Configuración de correo guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando configuración de correo: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configurar_google', methods=['POST'])
+def configurar_google():
+    existing = load_google_config()
+
+    project_id = request.form.get('project_id', '').strip()
+    client_id = request.form.get('client_id', '').strip()
+    client_secret = request.form.get('client_secret', '').strip() or existing.get('client_secret', '')
+    redirect_uri = request.form.get('redirect_uri', '').strip()
+    scopes = request.form.get('scopes', '').strip() or 'openid email profile'
+    api_key = request.form.get('api_key', '').strip() or existing.get('api_key', '')
+    enabled = request.form.get('google_enabled', '').strip().lower() == 'on'
+
+    if not client_id or not redirect_uri:
+        session['config_message'] = 'Completa Client ID y Redirect URI para guardar Google.'
+        return redirect(url_for('correos'))
+
+    try:
+        save_google_config({
+            'project_id': project_id,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'redirect_uri': redirect_uri,
+            'scopes': scopes,
+            'api_key': api_key,
+            'enabled': enabled
+        })
+        session['config_message'] = '✅ Configuración Google guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando configuración Google: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configuracion_inicio', methods=['POST'])
+def configuracion_inicio():
+    settings = load_general_settings()
+    settings['inicio']['mostrar_resumen'] = request.form.get('mostrar_resumen', '').strip().lower() == 'on'
+    settings['inicio']['notificaciones_activas'] = request.form.get('notificaciones_activas', '').strip().lower() == 'on'
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Inicio', 'Preferencias de inicio actualizadas')
+        session['config_message'] = '✅ Configuración de Inicio guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando Inicio: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configuracion_perfil', methods=['POST'])
+def configuracion_perfil():
+    settings = load_general_settings()
+    settings['perfil']['nombre_mostrar'] = request.form.get('nombre_mostrar', '').strip()
+    settings['perfil']['cargo'] = request.form.get('cargo', '').strip()
+    settings['perfil']['telefono'] = request.form.get('telefono', '').strip()
+    settings['perfil']['genero'] = request.form.get('genero', settings['perfil'].get('genero', '')).strip()
+    settings['perfil']['correo_personal'] = request.form.get('correo_personal', settings['perfil'].get('correo_personal', '')).strip()
+    settings['perfil']['correo_alterno'] = request.form.get('correo_alterno', settings['perfil'].get('correo_alterno', '')).strip()
+    settings['perfil']['fecha_nacimiento'] = request.form.get('fecha_nacimiento', settings['perfil'].get('fecha_nacimiento', '')).strip()
+    settings['perfil']['idioma'] = request.form.get('idioma', settings['perfil'].get('idioma', 'Español (España)')).strip()
+    settings['perfil']['direccion_casa'] = request.form.get('direccion_casa', settings['perfil'].get('direccion_casa', '')).strip()
+    settings['perfil']['direccion_trabajo'] = request.form.get('direccion_trabajo', settings['perfil'].get('direccion_trabajo', '')).strip()
+    settings['perfil']['otras_direcciones'] = request.form.get('otras_direcciones', settings['perfil'].get('otras_direcciones', '')).strip()
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Perfil', f"Perfil actualizado: {settings['perfil']['nombre_mostrar']}")
+        session['config_message'] = '✅ Configuración de Perfil guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando Perfil: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configuracion_seguridad', methods=['POST'])
+def configuracion_seguridad():
+    settings = load_general_settings()
+    settings['seguridad']['doble_factor'] = request.form.get('doble_factor', '').strip().lower() == 'on'
+    settings['seguridad']['cerrar_sesiones'] = request.form.get('cerrar_sesiones', '').strip().lower() == 'on'
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Seguridad', 'Preferencias de seguridad actualizadas')
+        session['config_message'] = '✅ Configuración de Seguridad guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando Seguridad: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configuracion_privacidad', methods=['POST'])
+def configuracion_privacidad():
+    settings = load_general_settings()
+    settings['privacidad']['compartir_datos'] = request.form.get('compartir_datos', '').strip().lower() == 'on'
+    settings['privacidad']['analytics'] = request.form.get('analytics', '').strip().lower() == 'on'
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Privacidad', 'Preferencias de privacidad actualizadas')
+        session['config_message'] = '✅ Configuración de Privacidad guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando Privacidad: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/configuracion_contactos', methods=['POST'])
+def configuracion_contactos():
+    settings = load_general_settings()
+    settings['contactos']['correo_soporte'] = request.form.get('correo_soporte', '').strip()
+    settings['contactos']['correo_copia'] = request.form.get('correo_copia', '').strip()
+
+    try:
+        save_general_settings(settings)
+        add_account_activity('Contactos', 'Contactos de configuración actualizados')
+        session['config_message'] = '✅ Configuración de Contactos guardada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error guardando Contactos: {ex}'
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/subir_foto_perfil', methods=['POST'])
+def subir_foto_perfil():
+    image_file = request.files.get('profile_image')
+    next_url = request.form.get('next', '').strip()
+    if image_file is None or image_file.filename == '':
+        session['config_message'] = 'Selecciona una imagen para subir.'
+        if next_url == 'informacion_personal':
+            return redirect(url_for('informacion_personal'))
+        return redirect(url_for('correos'))
+
+    if not _allowed_image_extension(image_file.filename):
+        session['config_message'] = 'Formato no válido. Usa PNG, JPG, JPEG o WEBP.'
+        if next_url == 'informacion_personal':
+            return redirect(url_for('informacion_personal'))
+        return redirect(url_for('correos'))
+
+    try:
+        os.makedirs(_profile_photo_dir(), exist_ok=True)
+        photo_path = _profile_photo_path()
+        image_file.save(photo_path)
+
+        settings = load_general_settings()
+        current_version = int(settings.get('perfil', {}).get('foto_version', 0) or 0)
+        settings['perfil']['foto_version'] = current_version + 1
+        save_general_settings(settings)
+        add_account_activity('Perfil', 'Foto de perfil actualizada')
+
+        session['config_message'] = '✅ Foto de perfil actualizada correctamente.'
+    except Exception as ex:
+        session['config_message'] = f'Error subiendo foto de perfil: {ex}'
+
+    if next_url == 'informacion_personal':
+        if 'config_message' in session:
+            session['personal_info_message'] = session.pop('config_message')
+        return redirect(url_for('informacion_personal'))
+
+    return redirect(url_for('correos'))
+
+
+@app.route('/foto_perfil_actual', methods=['GET'])
+def foto_perfil_actual():
+    photo_path = _profile_photo_path()
+    if not os.path.exists(photo_path):
+        return '', 404
+    return send_file(photo_path)
 
 @app.route('/upload', methods=['POST','GET'])
 def upload():

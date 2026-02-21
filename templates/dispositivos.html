@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tus dispositivos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f1f5f9; color: #0f172a; }
+    .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .card-soft { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+    .session-item { border-top: 1px solid #eef2f7; padding: 14px 0; }
+    .session-item:first-child { border-top: none; }
+    .meta { color: #475569; font-size: 14px; }
+    .chip { border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+    .chip-ok { background: #dcfce7; color: #166534; }
+    .chip-off { background: #fee2e2; color: #991b1b; }
+    .icon-circle { width: 44px; height: 44px; border-radius: 50%; background: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="topbar py-3">
+    <div class="container" style="max-width: 1120px;">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2 class="m-0">Tus dispositivos</h2>
+        <a class="btn btn-outline-secondary" href="/correos">Volver</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container py-4" style="max-width: 1120px;">
+    <p class="meta mb-3">Tienes sesión iniciada en estos dispositivos o has iniciado sesión recientemente. Total de sesiones detectadas: <strong>{{ total_sessions }}</strong>.</p>
+
+    {% if message %}
+      <div class="alert alert-info">{{ message }}</div>
+    {% endif %}
+
+    <div class="card-soft p-3 mb-3">
+      <h5>Registrar dispositivo</h5>
+      <form method="POST" action="/dispositivos/agregar" class="row g-2">
+        <div class="col-md-5">
+          <input class="form-control" name="name" placeholder="Nombre del dispositivo" required>
+        </div>
+        <div class="col-md-5">
+          <input class="form-control" name="location" placeholder="Ubicación">
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-success" type="submit">Agregar</button>
+        </div>
+      </form>
+    </div>
+
+    {% for group_name, group_sessions in sessions_grouped.items() %}
+      <div class="card-soft p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="m-0">{{ group_sessions|length }} sesión(es) en {{ group_name }}</h5>
+          <span class="meta">¿Qué es una sesión?</span>
+        </div>
+
+        {% for s in group_sessions %}
+          <div class="session-item">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-1 text-center">
+                <span class="icon-circle">📱</span>
+              </div>
+              <div class="col-md-7">
+                <div><strong>{{ s.device_type }} - {{ group_name }}</strong></div>
+                <div class="meta">IP: {{ s.ip }} | {{ s.last_seen }}</div>
+                <div class="meta">{{ s.user_agent[:95] }}{% if s.user_agent|length > 95 %}...{% endif %}</div>
+                {% if s.inactive_days > 30 %}
+                  <div class="meta text-warning">⚠ Inactivo durante {{ s.inactive_days }} días</div>
+                {% endif %}
+              </div>
+              <div class="col-md-4 text-end">
+                {% if s.active %}
+                  <span class="chip chip-ok">Activa</span>
+                {% else %}
+                  <span class="chip chip-off">Inactiva</span>
+                {% endif %}
+                {% if s.is_current %}
+                  <span class="chip chip-ok">Sesión actual</span>
+                {% else %}
+                  <form method="POST" action="/dispositivos/desconectar/{{ s.session_id }}" class="d-inline" onsubmit="return confirm('¿Desconectar esta sesión?');">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Desconectar</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card-soft p-3 mb-3 text-muted">No hay sesiones detectadas todavía.</div>
+    {% endfor %}
+
+    <div class="card-soft p-3">
+      <h5>Inventario manual de dispositivos</h5>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>ID</th><th>Nombre</th><th>Ubicación</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            {% for d in devices %}
+            <tr>
+              <td>{{ d.id }}</td>
+              <td>{{ d.name }}</td>
+              <td>{{ d.location }}</td>
+              <td>{% if d.active %}Activo{% else %}Inactivo{% endif %}</td>
+              <td class="text-end">
+                <form method="POST" action="/dispositivos/eliminar/{{ d.id }}" onsubmit="return confirm('¿Eliminar dispositivo?');">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted">Sin dispositivos registrados</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
