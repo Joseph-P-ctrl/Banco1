@@ -140,13 +140,809 @@
             transform: scale(1.05);
         }
 
-        .corner-config-btn {
+        .corner-logout-btn {
             position: fixed;
             top: 16px;
             right: 16px;
             z-index: 10001;
             border-radius: 20px;
             padding: 8px 14px;
+            font-weight: 600;
+        }
+
+        .corner-config-btn {
+            display: none;
+        }
+
+        .corner-quick-btn {
+            position: fixed;
+            top: 16px;
+            right: 168px;
+            z-index: 10001;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #cfd8e3;
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+
+        .corner-theme-btn {
+            position: fixed;
+            top: 16px;
+            right: 222px;
+            z-index: 10001;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #cfd8e3;
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        }
+
+        .corner-theme-btn:hover {
+            background: #f8fafc;
+        }
+
+        .corner-quick-btn:hover {
+            background: #f8fafc;
+        }
+
+        .quick-settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.22);
+            z-index: 10010;
+            display: none;
+        }
+
+        .quick-settings-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: min(370px, 95vw);
+            height: 100vh;
+            background: #f1f3f4;
+            border-left: 1px solid #d1d5db;
+            box-shadow: -8px 0 20px rgba(15, 23, 42, 0.12);
+            z-index: 10011;
+            transform: translateX(100%);
+            transition: transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quick-settings-panel.open {
+            transform: translateX(0);
+        }
+
+        .quick-head {
+            padding: 14px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f3f4;
+        }
+
+        .quick-title {
+            font-size: 34px;
+            font-weight: 400;
+            color: #1f2937;
+        }
+
+        .quick-close {
+            border: none;
+            background: transparent;
+            font-size: 26px;
+            color: #6b7280;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .quick-body {
+            padding: 0 0 20px;
+            overflow-y: auto;
+        }
+
+        .quick-btn-all {
+            width: calc(100% - 24px);
+            margin: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-weight: 600;
+            background: #fff;
+            color: #2563eb;
+            margin-bottom: 0;
+        }
+
+        .quick-section {
+            border-top: 1px solid #e5e7eb;
+            padding: 12px;
+        }
+
+        .quick-section h6 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #3f3f46;
+            margin-bottom: 10px;
+        }
+
+        .quick-sub {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: -6px;
+            margin-bottom: 12px;
+        }
+
+        .quick-option {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            gap: 10px;
+        }
+
+        .quick-option:hover {
+            background: #eceff1;
+        }
+
+        .quick-option input[type="radio"] {
+            margin-top: 5px;
+            margin-right: 6px;
+        }
+
+        .quick-radio {
+            width: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 5px;
+        }
+
+        .quick-option-text {
+            flex: 1;
+        }
+
+        .quick-option label {
+            margin: 0;
+            cursor: pointer;
+            flex: 1;
+            font-size: 15px;
+            color: #1f2937;
+            line-height: 1.25;
+        }
+
+        .quick-option small {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .quick-preview {
+            width: 88px;
+            height: 56px;
+            border-radius: 6px;
+            border: 1px solid #bcc3ca;
+            background: #f0f2f4;
+        }
+
+        .quick-preview.lines {
+            background:
+                linear-gradient(#c5ccd3 0 0) 8px 8px/18px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 8px 18px/66px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 8px 28px/58px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 8px 38px/62px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.split-right {
+            background:
+                linear-gradient(#d0d6dc 0 0) 38px 0/1px 100% no-repeat,
+                radial-gradient(circle at 50px 20px, #d84b4b 2px, transparent 3px),
+                radial-gradient(circle at 50px 30px, #e0b100 2px, transparent 3px),
+                radial-gradient(circle at 50px 40px, #3aa85f 2px, transparent 3px),
+                linear-gradient(#c5ccd3 0 0) 56px 18px/22px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 56px 28px/22px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 56px 38px/22px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.split-bottom {
+            background:
+                linear-gradient(#d0d6dc 0 0) 0 24px/100% 1px no-repeat,
+                radial-gradient(circle at 8px 37px, #d84b4b 2px, transparent 3px),
+                radial-gradient(circle at 8px 46px, #3aa85f 2px, transparent 3px),
+                linear-gradient(#c5ccd3 0 0) 14px 34px/58px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 14px 44px/54px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.multibox {
+            background:
+                linear-gradient(#d0d6dc 0 0) 34px 0/1px 100% no-repeat,
+                linear-gradient(#d0d6dc 0 0) 0 18px/34px 1px no-repeat,
+                linear-gradient(#d0d6dc 0 0) 0 36px/34px 1px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 44px 8px/12px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 44px 20px/28px 4px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 44px 32px/20px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.important {
+            background:
+                linear-gradient(#c5ccd3 0 0) 8px 8px/12px 4px no-repeat,
+                linear-gradient(#f59e0b 0 0) 70px 18px/10px 10px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 8px 28px/18px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.unread {
+            background:
+                linear-gradient(#c5ccd3 0 0) 8px 8px/12px 4px no-repeat,
+                linear-gradient(#3b82f6 0 0) 68px 16px/12px 12px no-repeat,
+                linear-gradient(#c5ccd3 0 0) 8px 30px/18px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-preview.starred {
+            background:
+                linear-gradient(#c5ccd3 0 0) 8px 8px/12px 4px no-repeat,
+                radial-gradient(circle at 74px 22px, #facc15 7px, transparent 8px),
+                linear-gradient(#c5ccd3 0 0) 8px 30px/18px 4px no-repeat,
+                #f0f2f4;
+        }
+
+        .quick-theme-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .quick-theme-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .quick-theme-list {
+            display: flex;
+            gap: 8px;
+        }
+
+        .quick-theme-item {
+            width: 58px;
+            height: 48px;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #dbeafe;
+            position: relative;
+        }
+
+        .quick-theme-item.active {
+            border-color: #2563eb;
+        }
+
+        .quick-theme-item.default {
+            background:
+                linear-gradient(#bfdbfe 0 0) 0 0/100% 16px no-repeat,
+                linear-gradient(#e5e7eb 0 0) 8px 24px/34px 4px no-repeat,
+                linear-gradient(#e5e7eb 0 0) 8px 32px/30px 4px no-repeat,
+                #ffffff;
+        }
+
+        .quick-theme-item.soft {
+            background:
+                linear-gradient(#fde68a 0 0) 0 0/100% 16px no-repeat,
+                linear-gradient(#ddd6fe 0 0) 8px 24px/34px 4px no-repeat,
+                linear-gradient(#ddd6fe 0 0) 8px 32px/30px 4px no-repeat,
+                #fef9c3;
+        }
+
+        .quick-personalize {
+            display: inline-block;
+            margin-top: 6px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .quick-personalize:hover {
+            color: #1d4ed8;
+        }
+
+        .quick-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0 10px;
+            font-size: 15px;
+            color: #1f2937;
+        }
+
+        .quick-divider {
+            border-top: 1px solid #e5e7eb;
+            margin: 14px 0;
+        }
+
+        .full-settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 10020;
+            display: none;
+        }
+
+        .full-settings-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(1540px, 98vw);
+            height: min(92vh, 900px);
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #d8dce3;
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+            z-index: 10021;
+            display: none;
+            overflow: hidden;
+        }
+
+        .full-settings-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .full-settings-title {
+            font-size: 26px;
+            font-weight: 400;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .full-settings-close {
+            border: none;
+            background: transparent;
+            font-size: 28px;
+            color: #6b7280;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .full-settings-tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 8px;
+            border-bottom: 1px solid #e5e7eb;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .full-settings-tab {
+            border: none;
+            background: transparent;
+            color: #5f6368;
+            font-weight: 500;
+            padding: 10px 12px;
+            border-bottom: 3px solid transparent;
+            font-size: 13px;
+            line-height: 1.1;
+            cursor: pointer;
+        }
+
+        .full-settings-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .full-settings-tab.placeholder {
+            cursor: default;
+        }
+
+        .full-settings-body {
+            padding: 0 14px 16px;
+            height: calc(100% - 102px);
+            overflow-y: auto;
+        }
+
+        .settings-screen {
+            display: none;
+        }
+
+        .settings-screen.active {
+            display: block;
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: 290px 1fr;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .settings-row-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.2;
+        }
+
+        .settings-row-content {
+            font-size: 16px;
+            color: #1f2937;
+        }
+
+        .settings-row-subtext {
+            margin-top: 4px;
+            color: #374151;
+            font-size: 13px;
+            max-width: 280px;
+        }
+
+        .settings-row-content .form-select,
+        .settings-row-content .form-control {
+            max-width: 430px;
+            border-color: #9ca3af;
+            font-size: 16px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+
+        .settings-inline {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .settings-help-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        .settings-help-link:hover {
+            color: #1d4ed8;
+        }
+
+        .settings-radio-list {
+            display: grid;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .settings-radio-list label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.25;
+        }
+
+        .settings-row strong {
+            font-weight: 700;
+        }
+
+        .settings-note {
+            color: #4b5563;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+
+        .settings-line-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .settings-section-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .settings-main-wrap {
+            padding: 6px 0;
+        }
+
+        .settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .settings-status {
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin: 10px 0;
+            display: none;
+            font-size: 14px;
+        }
+
+        .settings-status.show {
+            display: block;
+        }
+
+        .settings-status.ok {
+            background: #ecfdf3;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        @media (max-width: 900px) {
+            .full-settings-tab {
+                font-size: 20px;
+            }
+
+            .settings-row {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-row-title,
+            .settings-row-content,
+            .settings-help-link,
+            .settings-row-subtext,
+            .settings-note,
+            .settings-status,
+            .settings-radio-list label,
+            .settings-row-content .form-select,
+            .settings-row-content .form-control {
+                font-size: 17px;
+            }
+        }
+
+        body.qs-density-comfortable table th,
+        body.qs-density-comfortable table td {
+            padding-top: 13px;
+            padding-bottom: 13px;
+        }
+
+        body.qs-density-compact table th,
+        body.qs-density-compact table td {
+            padding-top: 6px;
+            padding-bottom: 6px;
+            font-size: 0.88rem;
+        }
+
+        body.qs-soft-mode .card {
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            border-color: #dbe4f0;
+            background: #fffef7;
+        }
+
+        body.qs-soft-mode .table {
+            background: #fffdf2;
+        }
+
+        body.qs-soft-mode {
+            background: #fef9e8;
+        }
+
+        body.qs-soft-mode .bg-body-tertiary,
+        body.qs-soft-mode .quick-settings-panel,
+        body.qs-soft-mode .full-settings-modal,
+        body.qs-soft-mode .config-modal {
+            background: #fff7d6 !important;
+        }
+
+        body.qs-soft-mode .table td,
+        body.qs-soft-mode .table th {
+            background-color: #fffdf2;
+            border-color: #e5d9a6;
+        }
+
+        body.qs-soft-mode .mail-row-selected td {
+            background: #fff1b8 !important;
+        }
+
+        body.qs-soft-mode .nav-link,
+        body.qs-soft-mode .form-label,
+        body.qs-soft-mode h1,
+        body.qs-soft-mode h5,
+        body.qs-soft-mode strong,
+        body.qs-soft-mode label {
+            color: #3f3a2f !important;
+        }
+
+        body.qs-dark-mode {
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+
+        body.qs-dark-mode .card,
+        body.qs-dark-mode .table-responsive,
+        body.qs-dark-mode .config-modal,
+        body.qs-dark-mode .full-settings-modal,
+        body.qs-dark-mode .quick-settings-panel {
+            background: #111827;
+            color: #e5e7eb;
+            border-color: #374151;
+        }
+
+        body.qs-dark-mode .table,
+        body.qs-dark-mode .table th,
+        body.qs-dark-mode .table td {
+            color: #e5e7eb;
+            background-color: #111827;
+            border-color: #374151;
+        }
+
+        body.qs-dark-mode .nav-link,
+        body.qs-dark-mode .form-label,
+        body.qs-dark-mode h1,
+        body.qs-dark-mode h5,
+        body.qs-dark-mode strong,
+        body.qs-dark-mode label,
+        body.qs-dark-mode .text-muted {
+            color: #d1d5db !important;
+        }
+
+        body.qs-dark-mode .form-control,
+        body.qs-dark-mode .form-select {
+            background: #1f2937;
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        body.qs-dark-mode .btn-outline-danger,
+        body.qs-dark-mode .btn-outline-secondary,
+        body.qs-dark-mode .btn-outline-primary {
+            color: #e5e7eb;
+            border-color: #6b7280;
+        }
+
+        body.qs-dark-mode .general-effects-chip {
+            border-color: #475569;
+            background: #1e293b;
+            color: #cbd5e1;
+        }
+
+        .mail-workspace {
+            display: block;
+        }
+
+        .mail-workspace.mail-reading-right {
+            display: block;
+        }
+
+        .mail-workspace.mail-reading-bottom {
+            display: block;
+        }
+
+        .general-effects-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+
+        .general-effects-chip {
+            font-size: 12px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-weight: 600;
+        }
+
+        .mail-main-pane.general-font-sans {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .mail-main-pane.general-font-serif {
+            font-family: Georgia, 'Times New Roman', serif;
+        }
+
+        .mail-main-pane.general-font-mono {
+            font-family: 'Courier New', Consolas, monospace;
+        }
+
+        .mail-main-pane.general-size-small {
+            font-size: 0.9rem;
+        }
+
+        .mail-main-pane.general-size-normal {
+            font-size: 1rem;
+        }
+
+        .mail-main-pane.general-size-large {
+            font-size: 1.08rem;
+        }
+
+        .mail-hover-actions-enabled .mail-row:hover td {
+            box-shadow: inset -3px 0 0 #60a5fa;
+        }
+
+        .mail-hover-actions-disabled .mail-row {
+            cursor: default;
+        }
+
+        .mail-hover-actions-disabled .mail-row:hover td {
+            box-shadow: none !important;
+        }
+
+        .mail-reading-mode-label {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #c7d2fe;
+            background: #eef2ff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        body.qs-dark-mode .mail-reading-mode-label {
+            background: #1e293b;
+            border-color: #334155;
+            color: #cbd5e1;
+        }
+
+        .mail-workspace.mail-reading-right .table-responsive {
+            max-width: 72%;
+            transition: max-width 0.2s ease;
+        }
+
+        .mail-workspace.mail-reading-right .table {
+            table-layout: fixed;
+        }
+
+        .mail-workspace.mail-reading-right .table th:nth-child(2),
+        .mail-workspace.mail-reading-right .table td:nth-child(2) {
+            max-width: 380px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mail-workspace.mail-reading-right .mail-row-selected td {
+            box-shadow: inset 4px 0 0 #2563eb;
+        }
+
+        .mail-workspace.mail-reading-bottom .table th,
+        .mail-workspace.mail-reading-bottom .table td {
+            padding-top: 14px;
+            padding-bottom: 14px;
+        }
+
+        .mail-workspace.mail-reading-bottom .mail-row-selected td {
+            box-shadow: inset 0 -3px 0 #2563eb;
+        }
+
+        .mail-row-selected td {
+            background: #eaf2ff !important;
+        }
+
+        .conversation-tag {
+            margin-left: 8px;
+            font-size: 12px;
+            color: #2563eb;
             font-weight: 600;
         }
 
@@ -408,7 +1204,367 @@
     </style>
 </head>
 <body>
-<button type="button" class="btn btn-primary corner-config-btn" onclick="openConfigModal()">Configuración</button>
+<a id="logoutBtn" href="/cerrar_sesion" class="btn btn-outline-danger corner-logout-btn">Cerrar sesión</a>
+<button type="button" class="corner-theme-btn" id="themeToggleBtn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
+<button type="button" class="corner-quick-btn" id="quickSettingsBtn" title="Ajustes rápidos" aria-label="Ajustes rápidos">⚙</button>
+
+<div id="quickSettingsOverlay" class="quick-settings-overlay" onclick="closeQuickSettings()"></div>
+<aside id="quickSettingsPanel" class="quick-settings-panel" aria-label="Ajustes rápidos">
+    <div class="quick-head">
+        <div id="quickTitle" class="quick-title">Ajustes rápidos</div>
+        <button type="button" class="quick-close" onclick="closeQuickSettings()">×</button>
+    </div>
+    <div class="quick-body">
+        <button id="quickViewAllBtn" type="button" class="quick-btn-all" onclick="openFullSettings('general')">Ver todos los ajustes</button>
+
+        <div class="quick-section">
+            <h6 id="quickDensityTitle">Densidad</h6>
+
+            <div class="quick-option" onclick="setDensity('default')">
+                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityDefault"></div>
+                <label id="quickDensityDefault" class="quick-option-text">Predeterminada</label>
+                <div class="quick-preview lines"></div>
+            </div>
+
+            <div class="quick-option" onclick="setDensity('comfortable')">
+                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityComfortable"></div>
+                <label id="quickDensityComfortable" class="quick-option-text">Cómoda</label>
+                <div class="quick-preview lines"></div>
+            </div>
+
+            <div class="quick-option" onclick="setDensity('compact')">
+                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityCompact"></div>
+                <label id="quickDensityCompact" class="quick-option-text">Compacta</label>
+                <div class="quick-preview lines"></div>
+            </div>
+        </div>
+
+        <div class="quick-section">
+            <div class="quick-theme-header">
+                <h6 id="quickThemeTitle" style="margin:0;">Tema</h6>
+                <a id="quickThemeViewAll" href="#" class="quick-theme-link" onclick="event.preventDefault(); openFullSettings('general');">Ver todo</a>
+            </div>
+            <div class="quick-theme-list">
+                <button type="button" class="quick-theme-item default" id="themeDefault" onclick="setThemeMode('default')" title="Tema predeterminado"></button>
+                <button type="button" class="quick-theme-item soft" id="themeSoft" onclick="setThemeMode('soft')" title="Tema suave"></button>
+            </div>
+        </div>
+
+        <div class="quick-section">
+            <h6 id="quickInboxTitle">Tipo de bandeja de entrada</h6>
+
+            <div class="quick-option" onclick="setInboxType('default')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxDefault"></div>
+                <div class="quick-option-text">
+                    <span id="quickInboxDefault">Predeterminada</span>
+                    <a id="quickInboxDefaultCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
+                </div>
+                <div class="quick-preview lines"></div>
+            </div>
+
+            <div class="quick-option" onclick="setInboxType('important')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxImportant"></div>
+                <div id="quickInboxImportant" class="quick-option-text">Importantes primero</div>
+                <div class="quick-preview important"></div>
+            </div>
+
+            <div class="quick-option" onclick="setInboxType('unread')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxUnread"></div>
+                <div id="quickInboxUnread" class="quick-option-text">No leídos primero</div>
+                <div class="quick-preview unread"></div>
+            </div>
+
+            <div class="quick-option" onclick="setInboxType('starred')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxStarred"></div>
+                <div id="quickInboxStarred" class="quick-option-text">Destacados primero</div>
+                <div class="quick-preview starred"></div>
+            </div>
+
+            <div class="quick-option" onclick="setInboxType('priority')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxPriority"></div>
+                <div class="quick-option-text">
+                    <span id="quickInboxPriority">Prioritarios</span>
+                    <a id="quickInboxPriorityCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
+                </div>
+                <div class="quick-preview lines"></div>
+            </div>
+
+            <div class="quick-option" onclick="setInboxType('multiple')">
+                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxMultiple"></div>
+                <div class="quick-option-text">
+                    <span id="quickInboxMultiple">Varias bandejas de entrada</span>
+                    <a id="quickInboxMultipleCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
+                </div>
+                <div class="quick-preview multibox"></div>
+            </div>
+        </div>
+
+        <div class="quick-section">
+            <h6 id="quickReadingTitle">Panel de lectura</h6>
+            <div class="quick-option" onclick="setReadingMode('none')">
+                <div class="quick-radio"><input type="radio" name="quickReading" id="readingNone"></div>
+                <label id="quickReadingNone" class="quick-option-text">Sin división</label>
+                <div class="quick-preview lines"></div>
+            </div>
+            <div class="quick-option" onclick="setReadingMode('right')">
+                <div class="quick-radio"><input type="radio" name="quickReading" id="readingRight"></div>
+                <label id="quickReadingRight" class="quick-option-text">A la derecha de la bandeja de entrada</label>
+                <div class="quick-preview split-right"></div>
+            </div>
+            <div class="quick-option" onclick="setReadingMode('bottom')">
+                <div class="quick-radio"><input type="radio" name="quickReading" id="readingBottom"></div>
+                <label id="quickReadingBottom" class="quick-option-text">Debajo de la bandeja de entrada</label>
+                <div class="quick-preview split-bottom"></div>
+            </div>
+        </div>
+
+        <div class="quick-section">
+            <h6 id="quickConversationTitle">Conversaciones de correo</h6>
+            <div class="quick-check">
+                <input type="checkbox" id="conversationToggle" onchange="toggleConversation(this.checked)">
+                <label id="quickConversationLabel" for="conversationToggle">Vista de conversación</label>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<div id="fullSettingsOverlay" class="full-settings-overlay" onclick="closeFullSettings()"></div>
+<section id="fullSettingsModal" class="full-settings-modal" aria-label="Configuración completa">
+    <div class="full-settings-header">
+        <h2 id="fullSettingsTitle" class="full-settings-title">Configuración</h2>
+        <button type="button" class="full-settings-close" onclick="closeFullSettings()">×</button>
+    </div>
+
+    <div class="full-settings-tabs">
+        <button id="fullSettingsTabGeneral" type="button" class="full-settings-tab active" data-target="general" onclick="switchFullSettingsTab('general', this)">General</button>
+        <button id="fullSettingsTabForwarding" type="button" class="full-settings-tab" data-target="forwarding" onclick="switchFullSettingsTab('forwarding', this)">Reenvío y correo POP/IMAP</button>
+    </div>
+
+    <div class="full-settings-body">
+        <div id="settingsStatus" class="settings-status"></div>
+
+        <div id="screen-general" class="settings-screen active settings-main-wrap">
+            <div class="settings-row">
+                <div>
+                    <div id="labelLanguage" class="settings-row-title">Idioma:</div>
+                </div>
+                <div class="settings-row-content">
+                    <div class="settings-inline">
+                        <strong id="labelDisplayLanguage">Idioma de visualización:</strong>
+                        <select id="generalLanguage" class="form-select form-select-sm">
+                            <option value="es">Español</option>
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
+                        </select>
+                    </div>
+                    <a id="helpLangProducts" class="settings-help-link" href="#" onclick="event.preventDefault();">Cambiar la configuración de idioma de otros productos</a><br>
+                    <a id="helpLangAll" class="settings-help-link" href="#" onclick="event.preventDefault();">Mostrar todas las opciones de idioma</a>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelPageSize" class="settings-row-title">Tamaño máximo de la página:</div>
+                </div>
+                <div class="settings-row-content settings-inline">
+                    <strong id="labelShow">Mostrar</strong>
+                    <select id="generalPageSize" class="form-select form-select-sm">
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <strong id="labelConversationsPerPage">conversaciones por página</strong>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelUndoSend" class="settings-row-title">Deshacer el envío:</div>
+                </div>
+                <div class="settings-row-content settings-inline">
+                    <strong id="labelUndoPeriod">Periodo de cancelación de envío:</strong>
+                    <select id="generalUndoSeconds" class="form-select form-select-sm">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                    </select>
+                    <strong id="labelSeconds">segundos</strong>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelReplyDefault" class="settings-row-title">Forma predeterminada de respuesta:</div>
+                    <a id="helpMoreReply" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
+                </div>
+                <div class="settings-row-content settings-radio-list">
+                    <label><input type="radio" name="generalReplyMode" value="reply"> <strong id="labelReply">Responder</strong></label>
+                    <label><input type="radio" name="generalReplyMode" value="reply_all"> <strong id="labelReplyAll">Responder a todos</strong></label>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelHoverActions" class="settings-row-title">Acciones de colocar el cursor sobre un elemento:</div>
+                </div>
+                <div class="settings-row-content settings-radio-list">
+                    <label><input type="radio" name="generalHoverActions" value="enabled"> <strong id="labelHoverEnable">Habilitar acciones de colocar el cursor sobre un elemento</strong></label>
+                    <label><input type="radio" name="generalHoverActions" value="disabled"> <strong id="labelHoverDisable">Inhabilitar acciones de colocar el cursor sobre un elemento</strong></label>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelSendArchive" class="settings-row-title">Enviar y archivar</div>
+                    <a id="helpMoreSendArchive" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
+                </div>
+                <div class="settings-row-content settings-radio-list">
+                    <label><input type="radio" name="generalSendArchive" value="show"> <strong id="labelSendArchiveShow">Mostrar el botón Enviar y archivar en la respuesta</strong></label>
+                    <label><input type="radio" name="generalSendArchive" value="hide"> <strong id="labelSendArchiveHide">Ocultar el botón Enviar y archivar en la respuesta</strong></label>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelDefaultTextStyle" class="settings-row-title">Estilo de texto predeterminado:</div>
+                    <div id="labelDefaultTextStyleHelp" class="settings-row-subtext">(Usa el botón "Eliminar formato" de la barra de herramientas para restablecer el estilo de texto predeterminado)</div>
+                </div>
+                <div class="settings-row-content">
+                    <div class="settings-inline">
+                        <select id="generalFont" class="form-select form-select-sm">
+                            <option value="sans">Sans Serif</option>
+                            <option value="serif">Serif</option>
+                            <option value="mono">Monospace</option>
+                        </select>
+                        <select id="generalFontSize" class="form-select form-select-sm">
+                            <option value="normal">Normal</option>
+                            <option value="small">Pequeño</option>
+                            <option value="large">Grande</option>
+                        </select>
+                    </div>
+                    <div id="labelTextPreview" class="settings-note">Así se verá el texto del cuerpo del mensaje.</div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelImages" class="settings-row-title">Imágenes:</div>
+                </div>
+                <div class="settings-row-content settings-radio-list">
+                    <label><input type="radio" name="generalExternalImages" value="always"> <strong id="labelImagesShow">Mostrar siempre las imágenes externas</strong></label>
+                    <label><input type="radio" name="generalExternalImages" value="ask"> <strong id="labelImagesAsk">Preguntar antes de mostrar imágenes externas</strong></label>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelDynamicEmail" class="settings-row-title">Correo dinámico:</div>
+                </div>
+                <div class="settings-row-content">
+                    <label class="settings-inline" style="margin:0;">
+                        <input type="checkbox" id="generalDynamicEmail">
+                        <strong id="labelDynamicEmailEnable">Habilitar el correo dinámico</strong>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button id="btnGeneralCancel" type="button" class="btn btn-outline-secondary" onclick="closeFullSettings()">Cancelar</button>
+                <button id="btnGeneralSave" type="button" class="btn btn-primary" onclick="saveGeneralSettings()">Guardar cambios</button>
+            </div>
+        </div>
+
+        <div id="screen-forwarding" class="settings-screen settings-main-wrap">
+            <div class="settings-row">
+                <div>
+                    <div id="labelForwarding" class="settings-row-title">Reenvío:</div>
+                    <a id="helpMoreForwarding" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
+                </div>
+                <div class="settings-row-content settings-line-group">
+                    <div>
+                        <button id="btnAddForwarding" type="button" class="btn btn-sm btn-outline-primary" onclick="enableForwardingField()">Añadir una dirección de reenvío</button>
+                    </div>
+                    <input type="email" id="forwardingEmail" class="form-control form-control-sm" placeholder="correo@dominio.com" disabled>
+                    <div id="labelForwardingTip" class="settings-note">Sugerencia: si solo quieres reenviar algunos mensajes, crea un filtro.</div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelPopDownload" class="settings-row-title">Descarga de correo POP:</div>
+                    <a id="helpMorePop" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
+                </div>
+                <div class="settings-row-content settings-line-group">
+                    <div id="labelPopStatus" class="settings-section-title">1. Estado: El correo POP está inhabilitado.</div>
+                    <div class="settings-radio-list">
+                        <label><input type="radio" name="popMode" value="all"> <span id="labelPopAll">Habilitar POP para <strong>todos los mensajes</strong></span></label>
+                        <label><input type="radio" name="popMode" value="new"> <span id="labelPopNew">Habilitar POP para los <strong>mensajes que se reciban a partir de ahora</strong></span></label>
+                    </div>
+
+                    <div class="settings-inline">
+                        <strong id="labelPopAccess">2. Cuando se accede a los mensajes a través de POP</strong>
+                        <select id="popAction" class="form-select form-select-sm">
+                            <option value="keep">conservar la copia en Recibidos</option>
+                            <option value="archive">archivar la copia</option>
+                            <option value="delete">eliminar la copia</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <strong id="labelPopClient">3. Configura el cliente de correo electrónico</strong>
+                        <a id="helpPopSetup" class="settings-help-link" href="#" onclick="event.preventDefault();">Instrucciones para la configuración</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div>
+                    <div id="labelImapAccess" class="settings-row-title">Acceso IMAP:</div>
+                    <div id="labelImapSub" class="settings-row-subtext">Accede al correo desde otros clientes mediante IMAP.</div>
+                    <a id="helpMoreImap" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
+                </div>
+                <div class="settings-row-content settings-line-group">
+                    <div>
+                        <div id="labelImapMarked" class="settings-section-title">Cuando se marque un mensaje en IMAP como eliminado:</div>
+                        <div class="settings-radio-list">
+                            <label><input type="radio" name="imapMarkedDeleted" value="auto"> <span id="labelImapMarkedAuto">Eliminar automáticamente: actualizar inmediatamente el servidor</span></label>
+                            <label><input type="radio" name="imapMarkedDeleted" value="manual"> <span id="labelImapMarkedManual">No eliminar automáticamente: esperar a que el cliente actualice el servidor</span></label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div id="labelImapDeleteRule" class="settings-section-title">Cuando un mensaje se marque como eliminado y se borre de la última carpeta IMAP visible:</div>
+                        <div class="settings-radio-list">
+                            <label><input type="radio" name="imapDeleteMode" value="archive"> <span id="labelImapDeleteArchive">Archivar el mensaje (predeterminado)</span></label>
+                            <label><input type="radio" name="imapDeleteMode" value="trash"> <span id="labelImapDeleteTrash">Mover el mensaje a la papelera</span></label>
+                            <label><input type="radio" name="imapDeleteMode" value="delete"> <span id="labelImapDeleteNow">Eliminar el mensaje de forma inmediata y definitiva</span></label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div id="labelImapFolderLimit" class="settings-section-title">Límites de tamaño de las carpetas</div>
+                        <div class="settings-radio-list">
+                            <label><input type="radio" name="imapFolderLimitMode" value="none"> <span id="labelImapLimitNone">No limitar el número de mensajes en una carpeta IMAP (predeterminado)</span></label>
+                            <label class="settings-inline"><input type="radio" name="imapFolderLimitMode" value="limit"> <span id="labelImapLimitValue">Limitar las carpetas IMAP para que no contengan más mensajes que esta cantidad</span>
+                                <select id="imapFolderLimitCount" class="form-select form-select-sm" style="max-width:120px;">
+                                    <option value="500">500</option>
+                                    <option value="1000">1000</option>
+                                    <option value="2000">2000</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button id="btnForwardingCancel" type="button" class="btn btn-outline-secondary" onclick="closeFullSettings()">Cancelar</button>
+                <button id="btnForwardingSave" type="button" class="btn btn-primary" onclick="saveForwardingSettings()">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</section>
 
 <div id="configOverlay" class="config-modal-overlay" onclick="closeConfigModal()"></div>
 <form id="avatarUploadForm" action="/subir_foto_perfil" method="POST" enctype="multipart/form-data" style="display:none;">
@@ -424,34 +1580,9 @@
             <aside class="settings-sidebar">
                 <div class="settings-title">Cuenta</div>
 
-                <button type="button" class="settings-nav-item" data-panel="inicio" onclick="showSettingsPanel('inicio', this)">
-                    <span class="settings-icon icon-blue">🏠</span>
-                    Inicio
-                </button>
-
-                <button type="button" class="settings-nav-item" data-panel="perfil" onclick="showSettingsPanel('perfil', this)">
-                    <span class="settings-icon icon-green">👤</span>
-                    Información personal
-                </button>
-
-                <button type="button" class="settings-nav-item" data-panel="seguridad" onclick="showSettingsPanel('seguridad', this)">
-                    <span class="settings-icon icon-cyan">🔒</span>
-                    Seguridad e inicio de sesión
-                </button>
-
                 <button type="button" class="settings-nav-item active" data-panel="correo" onclick="showSettingsPanel('correo', this)">
                     <span class="settings-icon icon-violet">✉️</span>
                     Configuración de correo
-                </button>
-
-                <button type="button" class="settings-nav-item" data-panel="privacidad" onclick="showSettingsPanel('privacidad', this)">
-                    <span class="settings-icon icon-pink">🛡️</span>
-                    Datos y privacidad
-                </button>
-
-                <button type="button" class="settings-nav-item" data-panel="contactos" onclick="showSettingsPanel('contactos', this)">
-                    <span class="settings-icon icon-orange">👥</span>
-                    Contactos y compartir
                 </button>
             </aside>
 
@@ -751,19 +1882,19 @@
 </header>
 <nav class="bg-body-tertiary">
     <ul class="nav nav-pills justify-content-center mb-3">
-        <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="/basedatos">Base de Datos</a></li>
-        <li class="nav-item"><a class="nav-link" href="/asiento">Asientos</a></li>
-        <li class="nav-item"><a class="nav-link active" href="/correos">Correos</a></li>
+        <li class="nav-item"><a id="navHome" class="nav-link" href="/">Home</a></li>
+        <li class="nav-item"><a id="navDatabase" class="nav-link" href="/basedatos">Base de Datos</a></li>
+        <li class="nav-item"><a id="navEntries" class="nav-link" href="/asiento">Asientos</a></li>
+        <li class="nav-item"><a id="navEmails" class="nav-link active" href="/correos">Correos</a></li>
     </ul>
 </nav>
 
 <div class="container text-center">
-    <h1>Correos</h1>
+    <h1 id="pageTitle">Correos</h1>
 
     {% if emails is defined %}
         <div class="card p-3 mt-3">
-            <h5>Correos detectados</h5>
+            <h5 data-i18n="detectedEmails">Correos detectados</h5>
             
             <!-- Información de vouchers disponibles -->
             {% if total_vouchers is defined and total_vouchers > 0 %}
@@ -781,31 +1912,33 @@
                 <!-- Barra de búsqueda -->
                 <div class="mb-3">
                     <input type="text" id="searchBox" class="form-control" placeholder="🔍 Buscar correo..." onkeyup="filterEmails()">
-                    <small class="text-muted">Escribe para filtrar correos en tiempo real</small>
+                    <small id="searchHintText" class="text-muted">Escribe para filtrar correos en tiempo real</small>
                 </div>
                 
                 <form action="/send_emails" method="POST">
-                    <div class="alert alert-secondary text-start" role="alert">
-                        El envío es manual. Selecciona los correos a enviar y confirma antes de continuar.
-                    </div>
+                    <div id="mailWorkspace" class="mail-workspace mail-reading-none">
+                    <div class="mail-main-pane">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div><strong>Total:</strong> <span id="emailCount">{{ total_emails }}</span> correos</div>
-                        <div><strong>Página:</strong> {{ page }} de {{ total_pages }}</div>
+                        <div><strong id="totalLabel">Total:</strong> <span id="emailCount">{{ total_emails }}</span> <span id="emailsSuffix">correos</span></div>
+                        <div>
+                            <span id="mailReadingModeLabel" class="mail-reading-mode-label me-2">Panel: Sin división</span>
+                            <strong id="pageLabel">Página:</strong> {{ page }} <span id="pageOfWord">de</span> {{ total_pages }}
+                        </div>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-3">
+                        <table id="emailsTable" class="table table-sm table-hover align-middle mb-3">
                             <thead>
                                 <tr>
                                     <th style="width:40px; text-align:center;">
                                         <input type="checkbox" id="check-all" onclick="toggleAll(this)">
                                     </th>
-                                    <th>Correo</th>
+                                    <th id="emailHeaderText">Correo</th>
                                 </tr>
                             </thead>
                             <tbody>
                             {% for e in page_emails %}
-                                <tr>
+                                <tr data-email="{{ e }}" class="mail-row">
                                     <td style="text-align:center;">
                                         <input type="checkbox" name="selected_emails" value="{{ e }}">
                                     </td>
@@ -817,10 +1950,10 @@
                     </div>
 
                     {% if total_pages > 1 %}
-                        <nav aria-label="Paginación de correos" class="mb-3">
+                        <nav id="paginationNav" aria-label="Paginación de correos" class="mb-3">
                             <ul class="pagination justify-content-center mb-0">
                                 <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                                    <a class="page-link" href="/correos?page={{ page-1 }}">Anterior</a>
+                                    <a id="pagePrevLink" class="page-link" href="/correos?page={{ page-1 }}">Anterior</a>
                                 </li>
                                 {% for p in range(1, total_pages + 1) %}
                                     {% if p == page or p <= 2 or p > total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
@@ -830,7 +1963,7 @@
                                     {% endif %}
                                 {% endfor %}
                                 <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                                    <a class="page-link" href="/correos?page={{ page+1 }}">Siguiente</a>
+                                    <a id="pageNextLink" class="page-link" href="/correos?page={{ page+1 }}">Siguiente</a>
                                 </li>
                             </ul>
                         </nav>
@@ -838,21 +1971,25 @@
 
                     <div class="form-check mb-3 text-start">
                         <input class="form-check-input" type="checkbox" id="manual_confirm" name="manual_confirm" value="yes" required>
-                        <label class="form-check-label" for="manual_confirm">
+                        <label id="manualConfirmLabel" class="form-check-label" for="manual_confirm">
                             Confirmo que deseo enviar manualmente solo los correos seleccionados.
                         </label>
                     </div>
 
-                    <button class="btn btn-success" type="submit">Enviar seleccionados</button>
+                    <button id="sendSelectedBtn" class="btn btn-success" type="submit">Enviar seleccionados</button>
+                    <button id="sendArchiveBtn" class="btn btn-outline-primary ms-2 d-none" type="submit">Enviar y archivar</button>
+                    </div>
+
+                    </div>
                 </form>
             {% else %}
-                <p>No se detectaron correos en el archivo.</p>
+                <p id="noDetectedText">No se detectaron correos en el archivo.</p>
             {% endif %}
         </div>
     {% else %}
         <div class="card p-3 mt-3">
-            <h5>Correos detectados</h5>
-            <p>No hay correos para mostrar. Procesa Asientos para generar los correos automáticamente.</p>
+            <h5 data-i18n="detectedEmails">Correos detectados</h5>
+            <p id="noEmailsText">No hay correos para mostrar. Procesa Asientos para generar los correos automáticamente.</p>
         </div>
     {% endif %}
 
@@ -903,7 +2040,7 @@
                         </div>
                 {% endif %}
                 <div style="text-align: center;">
-                    <button class="close-btn-float" onclick="closeFloatingAlert()">Entendido</button>
+                    <button id="floatingCloseBtn" class="close-btn-float" onclick="closeFloatingAlert()">Entendido</button>
                 </div>
             </div>
         </div>
@@ -917,7 +2054,7 @@ function closeFloatingAlert() {
 }
 
 function toggleAll(source) {
-    const checkboxes = document.querySelectorAll('input[name="selected_emails"]:not([style*="display: none"])');
+    const checkboxes = document.querySelectorAll('input[name="selected_emails"]');
     checkboxes.forEach((checkbox) => {
         if (checkbox.closest('tr').style.display !== 'none') {
             checkbox.checked = source.checked;
@@ -925,22 +2062,685 @@ function toggleAll(source) {
     });
 }
 
-function filterEmails() {
-    const searchText = document.getElementById('searchBox').value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    let visibleCount = 0;
-    
+function getCurrentGeneralPageSize() {
+    const select = document.getElementById('generalPageSize');
+    if (select && select.value) {
+        return Number(select.value);
+    }
+
+    try {
+        const saved = JSON.parse(localStorage.getItem('fullSettingsGeneral') || '{}');
+        return Number(saved.pageSize || 50);
+    } catch (_) {
+        return 50;
+    }
+}
+
+function applyPageSizeToMail(pageSize) {
+    const rows = getMailRows();
+    let visibleBySearch = 0;
+    let visibleFinal = 0;
+
     rows.forEach((row) => {
-        const email = row.cells[1].textContent.toLowerCase();
-        if (email.includes(searchText)) {
+        const matchesSearch = row.dataset.searchMatch !== '0';
+        if (!matchesSearch) {
+            row.style.display = 'none';
+            return;
+        }
+
+        visibleBySearch++;
+        if (visibleBySearch <= pageSize) {
             row.style.display = '';
-            visibleCount++;
+            visibleFinal++;
         } else {
             row.style.display = 'none';
         }
     });
+
+    const emailCount = document.getElementById('emailCount');
+    if (emailCount) {
+        emailCount.textContent = String(visibleFinal);
+    }
+}
+
+function filterEmails() {
+    const searchText = document.getElementById('searchBox').value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr.mail-row');
     
-    document.getElementById('emailCount').textContent = visibleCount;
+    rows.forEach((row) => {
+        const email = row.cells[1].textContent.toLowerCase();
+        if (email.includes(searchText)) {
+            row.dataset.searchMatch = '1';
+        } else {
+            row.dataset.searchMatch = '0';
+        }
+    });
+
+    applyPageSizeToMail(getCurrentGeneralPageSize());
+}
+
+function collectGeneralSettingsFromUI() {
+    return {
+        language: document.getElementById('generalLanguage').value,
+        pageSize: document.getElementById('generalPageSize').value,
+        undoSeconds: document.getElementById('generalUndoSeconds').value,
+        replyMode: document.querySelector('input[name="generalReplyMode"]:checked')?.value || 'reply',
+        hoverActions: document.querySelector('input[name="generalHoverActions"]:checked')?.value || 'enabled',
+        sendArchive: document.querySelector('input[name="generalSendArchive"]:checked')?.value || 'hide',
+        font: document.getElementById('generalFont').value,
+        fontSize: document.getElementById('generalFontSize').value,
+        externalImages: document.querySelector('input[name="generalExternalImages"]:checked')?.value || 'always',
+        dynamicEmail: document.getElementById('generalDynamicEmail').checked
+    };
+}
+
+function getUILanguageStrings(languageCode) {
+    const lang = ['es', 'en', 'fr'].includes(languageCode) ? languageCode : 'es';
+    if (lang === 'en') {
+        return {
+            pageTitle: 'Emails',
+            detectedEmails: 'Detected emails',
+            searchPlaceholder: '🔍 Search email...',
+            searchHint: 'Type to filter emails in real time',
+            manualSendAlert: 'Sending is manual. Select the emails to send and confirm before continuing.',
+            emailHeader: 'Email',
+            manualConfirm: 'I confirm that I want to manually send only the selected emails.',
+            sendSelected: 'Send selected',
+            sendArchive: 'Send and archive',
+            noDetected: 'No emails were detected in the file.',
+            noEmails: 'There are no emails to display. Process entries first to generate emails automatically.',
+            panelPrefix: 'Panel',
+            panelNone: 'No split',
+            panelRight: 'Right',
+            panelBottom: 'Bottom',
+            chipLanguage: 'Language',
+            chipUndo: 'Undo',
+            chipReply: 'Reply',
+            chipReplyAll: 'Reply all',
+            chipImages: 'Images',
+            chipAsk: 'Ask',
+            chipShow: 'Show',
+            chipDynamic: 'Dynamic email',
+            logoutBtn: 'Sign out',
+            navHome: 'Home',
+            navDatabase: 'Database',
+            navEntries: 'Entries',
+            navEmails: 'Emails',
+            totalLabel: 'Total:',
+            emailsSuffix: 'emails',
+            pageLabel: 'Page:',
+            pageOfWord: 'of',
+            paginationAria: 'Email pagination',
+            pagePrevLink: 'Previous',
+            pageNextLink: 'Next',
+            floatingCloseBtn: 'Understood',
+            quickSettingsAria: 'Quick settings',
+            quickTitle: 'Quick settings',
+            quickViewAllBtn: 'See all settings',
+            quickDensityTitle: 'Density',
+            quickDensityDefault: 'Default',
+            quickDensityComfortable: 'Comfortable',
+            quickDensityCompact: 'Compact',
+            quickThemeTitle: 'Theme',
+            quickThemeViewAll: 'See all',
+            quickThemeDefaultTitle: 'Default theme',
+            quickThemeSoftTitle: 'Soft theme',
+            quickInboxTitle: 'Inbox type',
+            quickInboxDefault: 'Default',
+            quickInboxImportant: 'Important first',
+            quickInboxUnread: 'Unread first',
+            quickInboxStarred: 'Starred first',
+            quickInboxPriority: 'Priority',
+            quickInboxMultiple: 'Multiple inboxes',
+            quickPersonalize: 'Customize',
+            quickReadingTitle: 'Reading pane',
+            quickReadingNone: 'No split',
+            quickReadingRight: 'To the right of the inbox',
+            quickReadingBottom: 'Below the inbox',
+            quickConversationTitle: 'Email conversations',
+            quickConversationLabel: 'Conversation view',
+            fullSettingsTitle: 'Settings',
+            fullSettingsTabGeneral: 'General',
+            fullSettingsTabForwarding: 'Forwarding and POP/IMAP',
+            labelLanguage: 'Language:',
+            labelDisplayLanguage: 'Display language:',
+            helpLangProducts: 'Change language settings for other products',
+            helpLangAll: 'Show all language options',
+            labelPageSize: 'Maximum page size:',
+            labelShow: 'Show',
+            labelConversationsPerPage: 'conversations per page',
+            labelUndoSend: 'Undo send:',
+            labelUndoPeriod: 'Send cancellation period:',
+            labelSeconds: 'seconds',
+            labelReplyDefault: 'Default reply behavior:',
+            helpMoreReply: 'More information',
+            labelReply: 'Reply',
+            labelReplyAll: 'Reply all',
+            labelHoverActions: 'Hover actions over an item:',
+            labelHoverEnable: 'Enable hover actions over an item',
+            labelHoverDisable: 'Disable hover actions over an item',
+            labelSendArchive: 'Send and archive',
+            helpMoreSendArchive: 'More information',
+            labelSendArchiveShow: 'Show the Send and archive button in replies',
+            labelSendArchiveHide: 'Hide the Send and archive button in replies',
+            labelDefaultTextStyle: 'Default text style:',
+            labelDefaultTextStyleHelp: '(Use the "Remove formatting" toolbar button to reset the default text style)',
+            labelTextPreview: 'This is how the message body text will look.',
+            labelImages: 'Images:',
+            labelImagesShow: 'Always display external images',
+            labelImagesAsk: 'Ask before displaying external images',
+            labelDynamicEmail: 'Dynamic email:',
+            labelDynamicEmailEnable: 'Enable dynamic email',
+            btnGeneralCancel: 'Cancel',
+            btnGeneralSave: 'Save changes',
+            labelForwarding: 'Forwarding:',
+            helpMoreForwarding: 'More information',
+            btnAddForwarding: 'Add a forwarding address',
+            forwardingPlaceholder: 'email@domain.com',
+            labelForwardingTip: 'Tip: if you only want to forward some messages, create a filter.',
+            labelPopDownload: 'POP mail download:',
+            helpMorePop: 'More information',
+            labelPopStatus: '1. Status: POP mail is disabled.',
+            labelPopAll: 'Enable POP for all messages',
+            labelPopNew: 'Enable POP for messages received from now on',
+            labelPopAccess: '2. When messages are accessed via POP',
+            popActionKeep: 'keep copy in Inbox',
+            popActionArchive: 'archive copy',
+            popActionDelete: 'delete copy',
+            labelPopClient: '3. Configure your email client',
+            helpPopSetup: 'Setup instructions',
+            labelImapAccess: 'IMAP access:',
+            labelImapSub: 'Access email from other clients through IMAP.',
+            helpMoreImap: 'More information',
+            labelImapMarked: 'When a message is marked as deleted in IMAP:',
+            labelImapMarkedAuto: 'Auto-delete: immediately update the server',
+            labelImapMarkedManual: 'Do not auto-delete: wait for the client to update the server',
+            labelImapDeleteRule: 'When a message is marked deleted and removed from the last visible IMAP folder:',
+            labelImapDeleteArchive: 'Archive the message (default)',
+            labelImapDeleteTrash: 'Move the message to Trash',
+            labelImapDeleteNow: 'Delete the message immediately and permanently',
+            labelImapFolderLimit: 'Folder size limits',
+            labelImapLimitNone: 'Do not limit the number of messages in an IMAP folder (default)',
+            labelImapLimitValue: 'Limit IMAP folders to no more messages than this amount',
+            btnForwardingCancel: 'Cancel',
+            btnForwardingSave: 'Save changes',
+            statusGeneralSaved: '✅ General settings saved successfully.',
+            statusForwardingSaved: '✅ Forwarding and POP/IMAP settings saved successfully.',
+            languageNameEs: 'Spanish',
+            languageNameEn: 'English',
+            languageNameFr: 'French'
+        };
+    }
+
+    if (lang === 'fr') {
+        return {
+            pageTitle: 'E-mails',
+            detectedEmails: 'E-mails détectés',
+            searchPlaceholder: '🔍 Rechercher un e-mail...',
+            searchHint: 'Tapez pour filtrer les e-mails en temps réel',
+            manualSendAlert: 'L’envoi est manuel. Sélectionnez les e-mails à envoyer et confirmez avant de continuer.',
+            emailHeader: 'E-mail',
+            manualConfirm: 'Je confirme vouloir envoyer manuellement uniquement les e-mails sélectionnés.',
+            sendSelected: 'Envoyer la sélection',
+            sendArchive: 'Envoyer et archiver',
+            noDetected: 'Aucun e-mail détecté dans le fichier.',
+            noEmails: 'Aucun e-mail à afficher. Traitez d’abord les écritures pour générer automatiquement les e-mails.',
+            panelPrefix: 'Volet',
+            panelNone: 'Sans division',
+            panelRight: 'À droite',
+            panelBottom: 'En bas',
+            chipLanguage: 'Langue',
+            chipUndo: 'Annuler',
+            chipReply: 'Répondre',
+            chipReplyAll: 'Répondre à tous',
+            chipImages: 'Images',
+            chipAsk: 'Demander',
+            chipShow: 'Afficher',
+            chipDynamic: 'E-mail dynamique',
+            logoutBtn: 'Se déconnecter',
+            navHome: 'Accueil',
+            navDatabase: 'Base de données',
+            navEntries: 'Écritures',
+            navEmails: 'E-mails',
+            totalLabel: 'Total :',
+            emailsSuffix: 'e-mails',
+            pageLabel: 'Page :',
+            pageOfWord: 'sur',
+            paginationAria: 'Pagination des e-mails',
+            pagePrevLink: 'Précédent',
+            pageNextLink: 'Suivant',
+            floatingCloseBtn: 'Compris',
+            quickSettingsAria: 'Paramètres rapides',
+            quickTitle: 'Paramètres rapides',
+            quickViewAllBtn: 'Voir tous les paramètres',
+            quickDensityTitle: 'Densité',
+            quickDensityDefault: 'Par défaut',
+            quickDensityComfortable: 'Confortable',
+            quickDensityCompact: 'Compacte',
+            quickThemeTitle: 'Thème',
+            quickThemeViewAll: 'Voir tout',
+            quickThemeDefaultTitle: 'Thème par défaut',
+            quickThemeSoftTitle: 'Thème doux',
+            quickInboxTitle: 'Type de boîte de réception',
+            quickInboxDefault: 'Par défaut',
+            quickInboxImportant: 'Importants d’abord',
+            quickInboxUnread: 'Non lus d’abord',
+            quickInboxStarred: 'Suivis d’abord',
+            quickInboxPriority: 'Prioritaires',
+            quickInboxMultiple: 'Boîtes de réception multiples',
+            quickPersonalize: 'Personnaliser',
+            quickReadingTitle: 'Volet de lecture',
+            quickReadingNone: 'Sans division',
+            quickReadingRight: 'À droite de la boîte de réception',
+            quickReadingBottom: 'Sous la boîte de réception',
+            quickConversationTitle: 'Conversations par e-mail',
+            quickConversationLabel: 'Vue en conversation',
+            fullSettingsTitle: 'Paramètres',
+            fullSettingsTabGeneral: 'Général',
+            fullSettingsTabForwarding: 'Transfert et POP/IMAP',
+            labelLanguage: 'Langue :',
+            labelDisplayLanguage: 'Langue d’affichage :',
+            helpLangProducts: 'Modifier les paramètres de langue des autres produits',
+            helpLangAll: 'Afficher toutes les options de langue',
+            labelPageSize: 'Taille maximale de la page :',
+            labelShow: 'Afficher',
+            labelConversationsPerPage: 'conversations par page',
+            labelUndoSend: 'Annuler l’envoi :',
+            labelUndoPeriod: 'Délai d’annulation de l’envoi :',
+            labelSeconds: 'secondes',
+            labelReplyDefault: 'Comportement de réponse par défaut :',
+            helpMoreReply: 'En savoir plus',
+            labelReply: 'Répondre',
+            labelReplyAll: 'Répondre à tous',
+            labelHoverActions: 'Actions au survol d’un élément :',
+            labelHoverEnable: 'Activer les actions au survol d’un élément',
+            labelHoverDisable: 'Désactiver les actions au survol d’un élément',
+            labelSendArchive: 'Envoyer et archiver',
+            helpMoreSendArchive: 'En savoir plus',
+            labelSendArchiveShow: 'Afficher le bouton Envoyer et archiver dans les réponses',
+            labelSendArchiveHide: 'Masquer le bouton Envoyer et archiver dans les réponses',
+            labelDefaultTextStyle: 'Style de texte par défaut :',
+            labelDefaultTextStyleHelp: '(Utilisez le bouton "Effacer le formatage" de la barre d’outils pour réinitialiser le style de texte par défaut)',
+            labelTextPreview: 'Voici à quoi ressemblera le texte du corps du message.',
+            labelImages: 'Images :',
+            labelImagesShow: 'Toujours afficher les images externes',
+            labelImagesAsk: 'Demander avant d’afficher les images externes',
+            labelDynamicEmail: 'E-mail dynamique :',
+            labelDynamicEmailEnable: 'Activer l’e-mail dynamique',
+            btnGeneralCancel: 'Annuler',
+            btnGeneralSave: 'Enregistrer les modifications',
+            labelForwarding: 'Transfert :',
+            helpMoreForwarding: 'En savoir plus',
+            btnAddForwarding: 'Ajouter une adresse de transfert',
+            forwardingPlaceholder: 'email@domaine.com',
+            labelForwardingTip: 'Conseil : si vous souhaitez transférer seulement certains messages, créez un filtre.',
+            labelPopDownload: 'Téléchargement POP :',
+            helpMorePop: 'En savoir plus',
+            labelPopStatus: '1. État : le courrier POP est désactivé.',
+            labelPopAll: 'Activer POP pour tous les messages',
+            labelPopNew: 'Activer POP pour les messages reçus à partir de maintenant',
+            labelPopAccess: '2. Quand les messages sont consultés via POP',
+            popActionKeep: 'conserver la copie dans Boîte de réception',
+            popActionArchive: 'archiver la copie',
+            popActionDelete: 'supprimer la copie',
+            labelPopClient: '3. Configurer le client de messagerie',
+            helpPopSetup: 'Instructions de configuration',
+            labelImapAccess: 'Accès IMAP :',
+            labelImapSub: 'Accédez au courrier depuis d’autres clients via IMAP.',
+            helpMoreImap: 'En savoir plus',
+            labelImapMarked: 'Quand un message est marqué comme supprimé en IMAP :',
+            labelImapMarkedAuto: 'Suppression automatique : mettre immédiatement le serveur à jour',
+            labelImapMarkedManual: 'Ne pas supprimer automatiquement : attendre que le client mette le serveur à jour',
+            labelImapDeleteRule: 'Quand un message est marqué supprimé et retiré du dernier dossier IMAP visible :',
+            labelImapDeleteArchive: 'Archiver le message (par défaut)',
+            labelImapDeleteTrash: 'Déplacer le message vers la corbeille',
+            labelImapDeleteNow: 'Supprimer le message immédiatement et définitivement',
+            labelImapFolderLimit: 'Limites de taille des dossiers',
+            labelImapLimitNone: 'Ne pas limiter le nombre de messages dans un dossier IMAP (par défaut)',
+            labelImapLimitValue: 'Limiter les dossiers IMAP pour qu’ils ne contiennent pas plus de messages que cette quantité',
+            btnForwardingCancel: 'Annuler',
+            btnForwardingSave: 'Enregistrer les modifications',
+            statusGeneralSaved: '✅ Les paramètres généraux ont été enregistrés.',
+            statusForwardingSaved: '✅ Les paramètres Transfert et POP/IMAP ont été enregistrés.',
+            languageNameEs: 'Espagnol',
+            languageNameEn: 'Anglais',
+            languageNameFr: 'Français'
+        };
+    }
+
+    return {
+        pageTitle: 'Correos',
+        detectedEmails: 'Correos detectados',
+        searchPlaceholder: '🔍 Buscar correo...',
+        searchHint: 'Escribe para filtrar correos en tiempo real',
+        manualSendAlert: 'El envío es manual. Selecciona los correos a enviar y confirma antes de continuar.',
+        emailHeader: 'Correo',
+        manualConfirm: 'Confirmo que deseo enviar manualmente solo los correos seleccionados.',
+        sendSelected: 'Enviar seleccionados',
+        sendArchive: 'Enviar y archivar',
+        noDetected: 'No se detectaron correos en el archivo.',
+        noEmails: 'No hay correos para mostrar. Procesa Asientos para generar los correos automáticamente.',
+        panelPrefix: 'Panel',
+        panelNone: 'Sin división',
+        panelRight: 'Derecha',
+        panelBottom: 'Debajo',
+        chipLanguage: 'Idioma',
+        chipUndo: 'Deshacer',
+        chipReply: 'Respuesta',
+        chipReplyAll: 'Responder a todos',
+        chipImages: 'Imágenes',
+        chipAsk: 'Preguntar',
+        chipShow: 'Mostrar',
+        chipDynamic: 'Correo dinámico',
+        logoutBtn: 'Cerrar sesión',
+        navHome: 'Home',
+        navDatabase: 'Base de Datos',
+        navEntries: 'Asientos',
+        navEmails: 'Correos',
+        totalLabel: 'Total:',
+        emailsSuffix: 'correos',
+        pageLabel: 'Página:',
+        pageOfWord: 'de',
+        paginationAria: 'Paginación de correos',
+        pagePrevLink: 'Anterior',
+        pageNextLink: 'Siguiente',
+        floatingCloseBtn: 'Entendido',
+        quickSettingsAria: 'Ajustes rápidos',
+        quickTitle: 'Ajustes rápidos',
+        quickViewAllBtn: 'Ver todos los ajustes',
+        quickDensityTitle: 'Densidad',
+        quickDensityDefault: 'Predeterminada',
+        quickDensityComfortable: 'Cómoda',
+        quickDensityCompact: 'Compacta',
+        quickThemeTitle: 'Tema',
+        quickThemeViewAll: 'Ver todo',
+        quickThemeDefaultTitle: 'Tema predeterminado',
+        quickThemeSoftTitle: 'Tema suave',
+        quickInboxTitle: 'Tipo de bandeja de entrada',
+        quickInboxDefault: 'Predeterminada',
+        quickInboxImportant: 'Importantes primero',
+        quickInboxUnread: 'No leídos primero',
+        quickInboxStarred: 'Destacados primero',
+        quickInboxPriority: 'Prioritarios',
+        quickInboxMultiple: 'Varias bandejas de entrada',
+        quickPersonalize: 'Personalizar',
+        quickReadingTitle: 'Panel de lectura',
+        quickReadingNone: 'Sin división',
+        quickReadingRight: 'A la derecha de la bandeja de entrada',
+        quickReadingBottom: 'Debajo de la bandeja de entrada',
+        quickConversationTitle: 'Conversaciones de correo',
+        quickConversationLabel: 'Vista de conversación',
+        fullSettingsTitle: 'Configuración',
+        fullSettingsTabGeneral: 'General',
+        fullSettingsTabForwarding: 'Reenvío y correo POP/IMAP',
+        labelLanguage: 'Idioma:',
+        labelDisplayLanguage: 'Idioma de visualización:',
+        helpLangProducts: 'Cambiar la configuración de idioma de otros productos',
+        helpLangAll: 'Mostrar todas las opciones de idioma',
+        labelPageSize: 'Tamaño máximo de la página:',
+        labelShow: 'Mostrar',
+        labelConversationsPerPage: 'conversaciones por página',
+        labelUndoSend: 'Deshacer el envío:',
+        labelUndoPeriod: 'Periodo de cancelación de envío:',
+        labelSeconds: 'segundos',
+        labelReplyDefault: 'Forma predeterminada de respuesta:',
+        helpMoreReply: 'Más información',
+        labelReply: 'Responder',
+        labelReplyAll: 'Responder a todos',
+        labelHoverActions: 'Acciones de colocar el cursor sobre un elemento:',
+        labelHoverEnable: 'Habilitar acciones de colocar el cursor sobre un elemento',
+        labelHoverDisable: 'Inhabilitar acciones de colocar el cursor sobre un elemento',
+        labelSendArchive: 'Enviar y archivar',
+        helpMoreSendArchive: 'Más información',
+        labelSendArchiveShow: 'Mostrar el botón Enviar y archivar en la respuesta',
+        labelSendArchiveHide: 'Ocultar el botón Enviar y archivar en la respuesta',
+        labelDefaultTextStyle: 'Estilo de texto predeterminado:',
+        labelDefaultTextStyleHelp: '(Usa el botón "Eliminar formato" de la barra de herramientas para restablecer el estilo de texto predeterminado)',
+        labelTextPreview: 'Así se verá el texto del cuerpo del mensaje.',
+        labelImages: 'Imágenes:',
+        labelImagesShow: 'Mostrar siempre las imágenes externas',
+        labelImagesAsk: 'Preguntar antes de mostrar imágenes externas',
+        labelDynamicEmail: 'Correo dinámico:',
+        labelDynamicEmailEnable: 'Habilitar el correo dinámico',
+        btnGeneralCancel: 'Cancelar',
+        btnGeneralSave: 'Guardar cambios',
+        labelForwarding: 'Reenvío:',
+        helpMoreForwarding: 'Más información',
+        btnAddForwarding: 'Añadir una dirección de reenvío',
+        forwardingPlaceholder: 'correo@dominio.com',
+        labelForwardingTip: 'Sugerencia: si solo quieres reenviar algunos mensajes, crea un filtro.',
+        labelPopDownload: 'Descarga de correo POP:',
+        helpMorePop: 'Más información',
+        labelPopStatus: '1. Estado: El correo POP está inhabilitado.',
+        labelPopAll: 'Habilitar POP para todos los mensajes',
+        labelPopNew: 'Habilitar POP para los mensajes que se reciban a partir de ahora',
+        labelPopAccess: '2. Cuando se accede a los mensajes a través de POP',
+        popActionKeep: 'conservar la copia en Recibidos',
+        popActionArchive: 'archivar la copia',
+        popActionDelete: 'eliminar la copia',
+        labelPopClient: '3. Configura el cliente de correo electrónico',
+        helpPopSetup: 'Instrucciones para la configuración',
+        labelImapAccess: 'Acceso IMAP:',
+        labelImapSub: 'Accede al correo desde otros clientes mediante IMAP.',
+        helpMoreImap: 'Más información',
+        labelImapMarked: 'Cuando se marque un mensaje en IMAP como eliminado:',
+        labelImapMarkedAuto: 'Eliminar automáticamente: actualizar inmediatamente el servidor',
+        labelImapMarkedManual: 'No eliminar automáticamente: esperar a que el cliente actualice el servidor',
+        labelImapDeleteRule: 'Cuando un mensaje se marque como eliminado y se borre de la última carpeta IMAP visible:',
+        labelImapDeleteArchive: 'Archivar el mensaje (predeterminado)',
+        labelImapDeleteTrash: 'Mover el mensaje a la papelera',
+        labelImapDeleteNow: 'Eliminar el mensaje de forma inmediata y definitiva',
+        labelImapFolderLimit: 'Límites de tamaño de las carpetas',
+        labelImapLimitNone: 'No limitar el número de mensajes en una carpeta IMAP (predeterminado)',
+        labelImapLimitValue: 'Limitar las carpetas IMAP para que no contengan más mensajes que esta cantidad',
+        btnForwardingCancel: 'Cancelar',
+        btnForwardingSave: 'Guardar cambios',
+        statusGeneralSaved: '✅ Ajustes generales guardados correctamente.',
+        statusForwardingSaved: '✅ Ajustes de Reenvío y POP/IMAP guardados correctamente.',
+        languageNameEs: 'Español',
+        languageNameEn: 'English',
+        languageNameFr: 'Français'
+    };
+}
+
+function applyLanguageToUI(languageCode) {
+    const t = getUILanguageStrings(languageCode);
+
+    document.title = t.pageTitle;
+
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) pageTitle.textContent = t.pageTitle;
+
+    document.querySelectorAll('[data-i18n="detectedEmails"]').forEach((el) => {
+        el.textContent = t.detectedEmails;
+    });
+
+    const searchBox = document.getElementById('searchBox');
+    if (searchBox) searchBox.placeholder = t.searchPlaceholder;
+
+    const searchHint = document.getElementById('searchHintText');
+    if (searchHint) searchHint.textContent = t.searchHint;
+
+    const manualAlert = document.getElementById('manualSendAlertText');
+    if (manualAlert) manualAlert.textContent = t.manualSendAlert;
+
+    const emailHeader = document.getElementById('emailHeaderText');
+    if (emailHeader) emailHeader.textContent = t.emailHeader;
+
+    const manualConfirm = document.getElementById('manualConfirmLabel');
+    if (manualConfirm) manualConfirm.textContent = t.manualConfirm;
+
+    const sendSelectedBtn = document.getElementById('sendSelectedBtn');
+    if (sendSelectedBtn) sendSelectedBtn.textContent = t.sendSelected;
+
+    const sendArchiveBtn = document.getElementById('sendArchiveBtn');
+    if (sendArchiveBtn) sendArchiveBtn.textContent = t.sendArchive;
+
+    const noDetected = document.getElementById('noDetectedText');
+    if (noDetected) noDetected.textContent = t.noDetected;
+
+    const noEmails = document.getElementById('noEmailsText');
+    if (noEmails) noEmails.textContent = t.noEmails;
+
+    const simpleIds = [
+        'logoutBtn', 'navHome', 'navDatabase', 'navEntries', 'navEmails',
+        'totalLabel', 'emailsSuffix', 'pageLabel', 'pageOfWord',
+        'pagePrevLink', 'pageNextLink', 'floatingCloseBtn'
+    ];
+
+    simpleIds.forEach((id) => {
+        const element = document.getElementById(id);
+        if (element && t[id]) {
+            element.textContent = t[id];
+        }
+    });
+
+    const paginationNav = document.getElementById('paginationNav');
+    if (paginationNav) {
+        paginationNav.setAttribute('aria-label', t.paginationAria);
+    }
+
+    const quickSettingsBtn = document.getElementById('quickSettingsBtn');
+    if (quickSettingsBtn) {
+        quickSettingsBtn.title = t.quickSettingsAria;
+        quickSettingsBtn.setAttribute('aria-label', t.quickSettingsAria);
+    }
+
+    const quickSettingsPanel = document.getElementById('quickSettingsPanel');
+    if (quickSettingsPanel) {
+        quickSettingsPanel.setAttribute('aria-label', t.quickSettingsAria);
+    }
+
+    const themeDefault = document.getElementById('themeDefault');
+    if (themeDefault) themeDefault.title = t.quickThemeDefaultTitle;
+
+    const themeSoft = document.getElementById('themeSoft');
+    if (themeSoft) themeSoft.title = t.quickThemeSoftTitle;
+
+    ['quickInboxDefaultCustomize', 'quickInboxPriorityCustomize', 'quickInboxMultipleCustomize'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = t.quickPersonalize;
+    });
+
+    const textIds = [
+        'quickTitle', 'quickViewAllBtn',
+        'quickDensityTitle', 'quickDensityDefault', 'quickDensityComfortable', 'quickDensityCompact',
+        'quickThemeTitle', 'quickThemeViewAll',
+        'quickInboxTitle', 'quickInboxDefault', 'quickInboxImportant', 'quickInboxUnread', 'quickInboxStarred', 'quickInboxPriority', 'quickInboxMultiple',
+        'quickReadingTitle', 'quickReadingNone', 'quickReadingRight', 'quickReadingBottom',
+        'quickConversationTitle', 'quickConversationLabel',
+        'fullSettingsTitle', 'fullSettingsTabGeneral', 'fullSettingsTabForwarding',
+        'labelLanguage', 'labelDisplayLanguage', 'helpLangProducts', 'helpLangAll',
+        'labelPageSize', 'labelShow', 'labelConversationsPerPage',
+        'labelUndoSend', 'labelUndoPeriod', 'labelSeconds',
+        'labelReplyDefault', 'helpMoreReply', 'labelReply', 'labelReplyAll',
+        'labelHoverActions', 'labelHoverEnable', 'labelHoverDisable',
+        'labelSendArchive', 'helpMoreSendArchive', 'labelSendArchiveShow', 'labelSendArchiveHide',
+        'labelDefaultTextStyle', 'labelDefaultTextStyleHelp', 'labelTextPreview',
+        'labelImages', 'labelImagesShow', 'labelImagesAsk',
+        'labelDynamicEmail', 'labelDynamicEmailEnable',
+        'btnGeneralCancel', 'btnGeneralSave',
+        'labelForwarding', 'helpMoreForwarding', 'btnAddForwarding', 'labelForwardingTip',
+        'labelPopDownload', 'helpMorePop', 'labelPopStatus', 'labelPopAccess',
+        'labelPopClient', 'helpPopSetup',
+        'labelImapAccess', 'labelImapSub', 'helpMoreImap',
+        'labelImapMarked', 'labelImapMarkedAuto', 'labelImapMarkedManual',
+        'labelImapDeleteRule', 'labelImapDeleteArchive', 'labelImapDeleteTrash', 'labelImapDeleteNow',
+        'labelImapFolderLimit', 'labelImapLimitNone', 'labelImapLimitValue',
+        'btnForwardingCancel', 'btnForwardingSave'
+    ];
+
+    textIds.forEach((id) => {
+        const element = document.getElementById(id);
+        if (element && t[id]) {
+            element.textContent = t[id];
+        }
+    });
+
+    const forwardingEmail = document.getElementById('forwardingEmail');
+    if (forwardingEmail) forwardingEmail.placeholder = t.forwardingPlaceholder;
+
+    const languageSelect = document.getElementById('generalLanguage');
+    if (languageSelect) {
+        const esOption = languageSelect.querySelector('option[value="es"]');
+        const enOption = languageSelect.querySelector('option[value="en"]');
+        const frOption = languageSelect.querySelector('option[value="fr"]');
+        if (esOption) esOption.textContent = t.languageNameEs;
+        if (enOption) enOption.textContent = t.languageNameEn;
+        if (frOption) frOption.textContent = t.languageNameFr;
+    }
+
+    const popAction = document.getElementById('popAction');
+    if (popAction) {
+        const keep = popAction.querySelector('option[value="keep"]');
+        const archive = popAction.querySelector('option[value="archive"]');
+        const del = popAction.querySelector('option[value="delete"]');
+        if (keep) keep.textContent = t.popActionKeep;
+        if (archive) archive.textContent = t.popActionArchive;
+        if (del) del.textContent = t.popActionDelete;
+    }
+
+    const popAll = document.getElementById('labelPopAll');
+    if (popAll) popAll.innerHTML = `${t.labelPopAll.includes('all messages') || t.labelPopAll.includes('todos los mensajes') || t.labelPopAll.includes('tous les messages') ? t.labelPopAll.replace('all messages', '<strong>all messages</strong>').replace('todos los mensajes', '<strong>todos los mensajes</strong>').replace('tous les messages', '<strong>tous les messages</strong>') : t.labelPopAll}`;
+
+    const popNew = document.getElementById('labelPopNew');
+    if (popNew) popNew.innerHTML = `${t.labelPopNew.includes('from now on') || t.labelPopNew.includes('a partir de ahora') || t.labelPopNew.includes('à partir de maintenant') ? t.labelPopNew.replace('from now on', '<strong>from now on</strong>').replace('a partir de ahora', '<strong>a partir de ahora</strong>').replace('à partir de maintenant', '<strong>à partir de maintenant</strong>') : t.labelPopNew}`;
+}
+
+function applyGeneralSettings(settings) {
+    document.documentElement.lang = settings.language || 'es';
+    applyLanguageToUI(settings.language || 'es');
+    const t = getUILanguageStrings(settings.language || 'es');
+
+    const languageChip = document.getElementById('generalLanguageChip');
+    if (languageChip) {
+        const languageDisplay = settings.language === 'en'
+            ? t.languageNameEn
+            : settings.language === 'fr'
+                ? t.languageNameFr
+                : t.languageNameEs;
+        languageChip.textContent = `${t.chipLanguage}: ${languageDisplay}`;
+    }
+
+    const undoChip = document.getElementById('generalUndoChip');
+    if (undoChip) {
+        undoChip.textContent = `${t.chipUndo}: ${settings.undoSeconds || '5'}s`;
+    }
+
+    const replyChip = document.getElementById('generalReplyChip');
+    if (replyChip) {
+        replyChip.textContent = `${t.chipReply}: ${settings.replyMode === 'reply_all' ? t.chipReplyAll : t.chipReply}`;
+    }
+
+    const imagesChip = document.getElementById('generalImagesChip');
+    if (imagesChip) {
+        imagesChip.textContent = `${t.chipImages}: ${settings.externalImages === 'ask' ? t.chipAsk : t.chipShow}`;
+    }
+
+    const dynamicChip = document.getElementById('generalDynamicChip');
+    if (dynamicChip) {
+        dynamicChip.textContent = `${t.chipDynamic}: ${settings.dynamicEmail ? 'ON' : 'OFF'}`;
+    }
+
+    const mainPane = document.querySelector('.mail-main-pane');
+    if (mainPane) {
+        mainPane.classList.remove('general-font-sans', 'general-font-serif', 'general-font-mono', 'general-size-small', 'general-size-normal', 'general-size-large');
+        mainPane.classList.add(`general-font-${settings.font || 'sans'}`);
+        mainPane.classList.add(`general-size-${settings.fontSize || 'normal'}`);
+    }
+
+    const table = document.getElementById('emailsTable');
+    if (table) {
+        table.classList.remove('mail-hover-actions-enabled', 'mail-hover-actions-disabled');
+        table.classList.add(settings.hoverActions === 'disabled' ? 'mail-hover-actions-disabled' : 'mail-hover-actions-enabled');
+    }
+
+    const sendArchiveBtn = document.getElementById('sendArchiveBtn');
+    if (sendArchiveBtn) {
+        sendArchiveBtn.classList.toggle('d-none', settings.sendArchive !== 'show');
+    }
+
+    applyPageSizeToMail(Number(settings.pageSize || 50));
 }
 
 function openConfigModal() {
@@ -1049,7 +2849,471 @@ function initConfigFromQuery() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', initConfigFromQuery);
+function openQuickSettings() {
+    document.getElementById('quickSettingsOverlay').style.display = 'block';
+    document.getElementById('quickSettingsPanel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuickSettings() {
+    document.getElementById('quickSettingsOverlay').style.display = 'none';
+    document.getElementById('quickSettingsPanel').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function openFullSettings(tabName) {
+    closeQuickSettings();
+    document.getElementById('fullSettingsOverlay').style.display = 'block';
+    document.getElementById('fullSettingsModal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    const target = tabName || 'general';
+    const tabBtn = document.querySelector(`.full-settings-tab[data-target="${target}"]`);
+    switchFullSettingsTab(target, tabBtn);
+}
+
+function closeFullSettings() {
+    document.getElementById('fullSettingsOverlay').style.display = 'none';
+    document.getElementById('fullSettingsModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function switchFullSettingsTab(targetName, clickedButton) {
+    document.querySelectorAll('.settings-screen').forEach((screen) => {
+        screen.classList.remove('active');
+    });
+    const targetScreen = document.getElementById(`screen-${targetName}`);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+    }
+
+    document.querySelectorAll('.full-settings-tab').forEach((tab) => {
+        tab.classList.remove('active');
+    });
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    }
+}
+
+function showSettingsStatus(message) {
+    const status = document.getElementById('settingsStatus');
+    status.className = 'settings-status show ok';
+    status.textContent = message;
+}
+
+function enableForwardingField() {
+    const input = document.getElementById('forwardingEmail');
+    input.disabled = false;
+    input.focus();
+}
+
+function saveGeneralSettings() {
+    const payload = collectGeneralSettingsFromUI();
+
+    localStorage.setItem('fullSettingsGeneral', JSON.stringify(payload));
+    applyGeneralSettings(payload);
+    const t = getUILanguageStrings(payload.language || 'es');
+    showSettingsStatus(t.statusGeneralSaved);
+}
+
+function saveForwardingSettings() {
+    const payload = {
+        forwardingEmail: document.getElementById('forwardingEmail').value.trim(),
+        popMode: document.querySelector('input[name="popMode"]:checked')?.value || 'new',
+        popAction: document.getElementById('popAction').value,
+        imapMarkedDeleted: document.querySelector('input[name="imapMarkedDeleted"]:checked')?.value || 'manual',
+        imapDeleteMode: document.querySelector('input[name="imapDeleteMode"]:checked')?.value || 'archive',
+        imapFolderLimitMode: document.querySelector('input[name="imapFolderLimitMode"]:checked')?.value || 'none',
+        imapFolderLimitCount: document.getElementById('imapFolderLimitCount').value
+    };
+
+    localStorage.setItem('fullSettingsForwarding', JSON.stringify(payload));
+    const currentLanguage = document.getElementById('generalLanguage')?.value || document.documentElement.lang || 'es';
+    const t = getUILanguageStrings(currentLanguage);
+    showSettingsStatus(t.statusForwardingSaved);
+}
+
+let originalMailOrder = [];
+
+function getMailRows() {
+    return Array.from(document.querySelectorAll('tbody tr.mail-row'));
+}
+
+function sortMailRows(compareFn) {
+    const tbody = document.querySelector('tbody');
+    if (!tbody) return;
+    const rows = getMailRows();
+    rows.sort(compareFn);
+    rows.forEach((row) => tbody.appendChild(row));
+}
+
+function restoreOriginalMailOrder() {
+    const tbody = document.querySelector('tbody');
+    if (!tbody || originalMailOrder.length === 0) return;
+
+    const rowsByEmail = new Map();
+    getMailRows().forEach((row) => rowsByEmail.set(row.dataset.email, row));
+
+    originalMailOrder.forEach((email) => {
+        const row = rowsByEmail.get(email);
+        if (row) {
+            tbody.appendChild(row);
+        }
+    });
+}
+
+function toggleColorMode() {
+    const current = localStorage.getItem('uiColorMode') || 'light';
+    const nextMode = current === 'dark' ? 'light' : 'dark';
+    applyColorMode(nextMode);
+}
+
+function applyColorMode(mode) {
+    const body = document.body;
+    const button = document.getElementById('themeToggleBtn');
+    if (!body || !button) return;
+
+    if (mode === 'dark') {
+        body.classList.add('qs-dark-mode');
+        button.textContent = '☀️';
+    } else {
+        body.classList.remove('qs-dark-mode');
+        button.textContent = '🌙';
+    }
+
+    localStorage.setItem('uiColorMode', mode);
+}
+
+function setDensity(mode) {
+    document.body.classList.remove('qs-density-comfortable', 'qs-density-compact');
+
+    if (mode === 'comfortable') {
+        document.body.classList.add('qs-density-comfortable');
+        document.getElementById('densityComfortable').checked = true;
+    } else if (mode === 'compact') {
+        document.body.classList.add('qs-density-compact');
+        document.getElementById('densityCompact').checked = true;
+    } else {
+        document.getElementById('densityDefault').checked = true;
+    }
+
+    localStorage.setItem('quickDensity', mode);
+}
+
+function setThemeMode(mode) {
+    document.getElementById('themeDefault').classList.remove('active');
+    document.getElementById('themeSoft').classList.remove('active');
+
+    if (document.body.classList.contains('qs-dark-mode')) {
+        applyColorMode('light');
+    }
+
+    if (mode === 'soft') {
+        document.getElementById('themeSoft').classList.add('active');
+        document.body.classList.add('qs-soft-mode');
+    } else {
+        document.getElementById('themeDefault').classList.add('active');
+        document.body.classList.remove('qs-soft-mode');
+    }
+
+    localStorage.setItem('quickThemeMode', mode);
+}
+
+function setInboxType(mode) {
+    const mapping = {
+        default: 'inboxDefault',
+        important: 'inboxImportant',
+        unread: 'inboxUnread',
+        starred: 'inboxStarred',
+        priority: 'inboxPriority',
+        multiple: 'inboxMultiple'
+    };
+
+    const targetId = mapping[mode] || 'inboxDefault';
+    const target = document.getElementById(targetId);
+    if (target) {
+        target.checked = true;
+    }
+
+    localStorage.setItem('quickInboxType', mode);
+    applyInboxTypeToMail(mode);
+}
+
+function applyInboxTypeToMail(mode) {
+    const importantKeywords = ['gerencia', 'admin', 'rrhh', 'facturacion', 'tesoreria', 'soporte', 'unprg', 'distriluz'];
+
+    const scoreByMode = (email) => {
+        const value = (email || '').toLowerCase();
+        const isChecked = !!document.querySelector(`input[name="selected_emails"][value="${email}"]`)?.checked;
+
+        if (mode === 'important') {
+            return importantKeywords.some((k) => value.includes(k)) ? 0 : 1;
+        }
+        if (mode === 'unread') {
+            return isChecked ? 1 : 0;
+        }
+        if (mode === 'starred') {
+            return value.includes('vip') || value.includes('director') ? 0 : 1;
+        }
+        if (mode === 'priority') {
+            return importantKeywords.some((k) => value.includes(k)) || value.includes('vip') ? 0 : 1;
+        }
+        if (mode === 'multiple') {
+            const domain = value.split('@')[1] || '';
+            return domain;
+        }
+        return 0;
+    };
+
+    if (mode === 'default') {
+        restoreOriginalMailOrder();
+        return;
+    }
+
+    sortMailRows((a, b) => {
+        const aEmail = a.dataset.email || '';
+        const bEmail = b.dataset.email || '';
+        const aScore = scoreByMode(aEmail);
+        const bScore = scoreByMode(bEmail);
+
+        if (typeof aScore === 'string' || typeof bScore === 'string') {
+            return String(aScore).localeCompare(String(bScore)) || aEmail.localeCompare(bEmail);
+        }
+        return aScore - bScore || aEmail.localeCompare(bEmail);
+    });
+}
+
+function setReadingMode(mode) {
+    if (mode === 'right') {
+        document.getElementById('readingRight').checked = true;
+    } else if (mode === 'bottom') {
+        document.getElementById('readingBottom').checked = true;
+    } else {
+        document.getElementById('readingNone').checked = true;
+    }
+
+    localStorage.setItem('quickReadingMode', mode);
+    applyReadingModeToMail(mode);
+}
+
+function applyReadingModeToMail(mode) {
+    const workspace = document.getElementById('mailWorkspace');
+    const modeLabel = document.getElementById('mailReadingModeLabel');
+    const t = getUILanguageStrings((document.documentElement.lang || 'es').startsWith('en') ? 'en' : 'es');
+    if (!workspace) return;
+
+    workspace.classList.remove('mail-reading-none', 'mail-reading-right', 'mail-reading-bottom');
+
+    if (mode === 'right') {
+        workspace.classList.add('mail-reading-right');
+        if (modeLabel) modeLabel.textContent = `${t.panelPrefix}: ${t.panelRight}`;
+    } else if (mode === 'bottom') {
+        workspace.classList.add('mail-reading-bottom');
+        if (modeLabel) modeLabel.textContent = `${t.panelPrefix}: ${t.panelBottom}`;
+    } else {
+        workspace.classList.add('mail-reading-none');
+        if (modeLabel) modeLabel.textContent = `${t.panelPrefix}: ${t.panelNone}`;
+    }
+}
+
+function toggleConversation(enabled) {
+    localStorage.setItem('quickConversation', enabled ? '1' : '0');
+    applyConversationToMail(enabled);
+}
+
+function applyConversationToMail(enabled) {
+    getMailRows().forEach((row) => {
+        const emailCell = row.cells[1];
+        if (!emailCell) return;
+        const email = row.dataset.email || emailCell.textContent.trim();
+
+        if (!row.dataset.baseEmailText) {
+            row.dataset.baseEmailText = email;
+        }
+
+        const domain = email.split('@')[1] || 'dominio';
+        if (enabled) {
+            emailCell.innerHTML = `${row.dataset.baseEmailText}<span class="conversation-tag">Hilo: ${domain}</span>`;
+        } else {
+            emailCell.textContent = row.dataset.baseEmailText;
+        }
+    });
+}
+
+function initQuickSettings() {
+    const quickBtn = document.getElementById('quickSettingsBtn');
+    if (quickBtn) {
+        quickBtn.addEventListener('click', openQuickSettings);
+    }
+
+    const savedDensity = localStorage.getItem('quickDensity') || 'default';
+    setDensity(savedDensity);
+
+    const savedTheme = localStorage.getItem('quickThemeMode') || 'default';
+    setThemeMode(savedTheme);
+
+    const savedInboxType = localStorage.getItem('quickInboxType') || 'default';
+    setInboxType(savedInboxType);
+
+    const savedReadingMode = localStorage.getItem('quickReadingMode') || 'none';
+    setReadingMode(savedReadingMode);
+
+    const savedConversation = localStorage.getItem('quickConversation') !== '0';
+    const conversationToggle = document.getElementById('conversationToggle');
+    if (conversationToggle) {
+        conversationToggle.checked = savedConversation;
+    }
+    toggleConversation(savedConversation);
+
+    const savedColorMode = localStorage.getItem('uiColorMode') || 'light';
+    applyColorMode(savedColorMode);
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeFullSettings();
+            closeQuickSettings();
+        }
+    });
+}
+
+function initMailInteractions() {
+    const rows = getMailRows();
+    originalMailOrder = rows.map((row) => row.dataset.email || '').filter(Boolean);
+
+    rows.forEach((row) => {
+        row.dataset.searchMatch = '1';
+        row.addEventListener('click', (event) => {
+            if (event.target && event.target.tagName === 'INPUT') {
+                return;
+            }
+
+            rows.forEach((r) => r.classList.remove('mail-row-selected'));
+            row.classList.add('mail-row-selected');
+
+            const checkbox = row.querySelector('input[name="selected_emails"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+        });
+    });
+}
+
+function initFullSettings() {
+    const savedGeneral = localStorage.getItem('fullSettingsGeneral');
+    if (savedGeneral) {
+        try {
+            const cfg = JSON.parse(savedGeneral);
+            document.getElementById('generalLanguage').value = cfg.language || 'es';
+            document.getElementById('generalPageSize').value = cfg.pageSize || '50';
+            document.getElementById('generalUndoSeconds').value = cfg.undoSeconds || '5';
+            const replyMode = cfg.replyMode || 'reply';
+            const replyRadio = document.querySelector(`input[name="generalReplyMode"][value="${replyMode}"]`);
+            if (replyRadio) replyRadio.checked = true;
+
+            const hoverActions = cfg.hoverActions || 'enabled';
+            const hoverRadio = document.querySelector(`input[name="generalHoverActions"][value="${hoverActions}"]`);
+            if (hoverRadio) hoverRadio.checked = true;
+
+            const sendArchive = cfg.sendArchive || 'hide';
+            const sendArchiveRadio = document.querySelector(`input[name="generalSendArchive"][value="${sendArchive}"]`);
+            if (sendArchiveRadio) sendArchiveRadio.checked = true;
+
+            document.getElementById('generalFont').value = cfg.font || 'sans';
+            document.getElementById('generalFontSize').value = cfg.fontSize || 'normal';
+
+            const externalImages = cfg.externalImages || 'always';
+            const externalImagesRadio = document.querySelector(`input[name="generalExternalImages"][value="${externalImages}"]`);
+            if (externalImagesRadio) externalImagesRadio.checked = true;
+
+            document.getElementById('generalDynamicEmail').checked = cfg.dynamicEmail !== false;
+            applyGeneralSettings(cfg);
+        } catch (_) {}
+    } else {
+        const defaultReply = document.querySelector('input[name="generalReplyMode"][value="reply"]');
+        const defaultHover = document.querySelector('input[name="generalHoverActions"][value="enabled"]');
+        const defaultSendArchive = document.querySelector('input[name="generalSendArchive"][value="hide"]');
+        const defaultImages = document.querySelector('input[name="generalExternalImages"][value="always"]');
+        if (defaultReply) defaultReply.checked = true;
+        if (defaultHover) defaultHover.checked = true;
+        if (defaultSendArchive) defaultSendArchive.checked = true;
+        if (defaultImages) defaultImages.checked = true;
+        document.getElementById('generalDynamicEmail').checked = true;
+        applyGeneralSettings(collectGeneralSettingsFromUI());
+    }
+
+    const savedForwarding = localStorage.getItem('fullSettingsForwarding');
+    if (savedForwarding) {
+        try {
+            const cfg = JSON.parse(savedForwarding);
+            const forwardingInput = document.getElementById('forwardingEmail');
+            forwardingInput.value = cfg.forwardingEmail || '';
+            if (forwardingInput.value) {
+                forwardingInput.disabled = false;
+            }
+
+            const popRadio = document.querySelector(`input[name="popMode"][value="${cfg.popMode || 'new'}"]`);
+            if (popRadio) popRadio.checked = true;
+
+            document.getElementById('popAction').value = cfg.popAction || 'keep';
+
+            const markedDeletedRadio = document.querySelector(`input[name="imapMarkedDeleted"][value="${cfg.imapMarkedDeleted || 'manual'}"]`);
+            if (markedDeletedRadio) markedDeletedRadio.checked = true;
+
+            const deleteRadio = document.querySelector(`input[name="imapDeleteMode"][value="${cfg.imapDeleteMode || 'archive'}"]`);
+            if (deleteRadio) deleteRadio.checked = true;
+
+            const folderLimitRadio = document.querySelector(`input[name="imapFolderLimitMode"][value="${cfg.imapFolderLimitMode || 'none'}"]`);
+            if (folderLimitRadio) folderLimitRadio.checked = true;
+
+            document.getElementById('imapFolderLimitCount').value = cfg.imapFolderLimitCount || '1000';
+        } catch (_) {}
+    } else {
+        const popDefault = document.querySelector('input[name="popMode"][value="new"]');
+        const markedDeletedDefault = document.querySelector('input[name="imapMarkedDeleted"][value="manual"]');
+        const deleteDefault = document.querySelector('input[name="imapDeleteMode"][value="archive"]');
+        const folderLimitDefault = document.querySelector('input[name="imapFolderLimitMode"][value="none"]');
+        if (popDefault) popDefault.checked = true;
+        if (markedDeletedDefault) markedDeletedDefault.checked = true;
+        if (deleteDefault) deleteDefault.checked = true;
+        if (folderLimitDefault) folderLimitDefault.checked = true;
+        document.getElementById('popAction').value = 'keep';
+        document.getElementById('imapFolderLimitCount').value = '1000';
+    }
+}
+
+function initGeneralLiveEffects() {
+    const selectors = [
+        '#generalLanguage',
+        '#generalPageSize',
+        '#generalUndoSeconds',
+        '#generalFont',
+        '#generalFontSize',
+        '#generalDynamicEmail',
+        'input[name="generalReplyMode"]',
+        'input[name="generalHoverActions"]',
+        'input[name="generalSendArchive"]',
+        'input[name="generalExternalImages"]'
+    ];
+
+    selectors.forEach((selector) => {
+        document.querySelectorAll(selector).forEach((element) => {
+            const eventName = element.type === 'checkbox' || element.type === 'radio' ? 'change' : 'input';
+            element.addEventListener(eventName, () => {
+                const settings = collectGeneralSettingsFromUI();
+                applyGeneralSettings(settings);
+                localStorage.setItem('fullSettingsGeneral', JSON.stringify(settings));
+            });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initConfigFromQuery();
+    initMailInteractions();
+    initQuickSettings();
+    initFullSettings();
+    initGeneralLiveEffects();
+});
 </script>
 
 </body>

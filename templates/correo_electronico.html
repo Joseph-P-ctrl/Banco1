@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Correo electrónico</title>
+  <title>Configuración de correo</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background: #edf1f7; color: #0f172a; }
@@ -15,12 +15,79 @@
     .main { padding: 8px 22px 24px; }
     .top-search { background: #fff; border: 1px solid #dbe3ef; border-radius: 999px; height: 40px; display: flex; align-items: center; padding: 0 14px; color: #64748b; max-width: 420px; }
     .center-wrap { max-width: 760px; margin: 24px auto; }
-    .title { font-size: 34px; font-weight: 700; margin-bottom: 6px; }
+    .title { font-size: 36px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
     .sub { color: #64748b; margin-bottom: 14px; }
-    .panel-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+    .panel-card { background: #fff; border: 1px solid #dfe7f5; border-radius: 14px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
     .panel-head { padding: 14px 16px; border-bottom: 1px solid #eef2f7; font-weight: 700; }
-    .panel-body { padding: 16px; }
-    .footer-mini { color: #64748b; font-size: 12px; margin-top: 24px; display: flex; gap: 14px; }
+    .panel-body { padding: 20px; }
+    .login-caption { color: #475569; font-size: 14px; margin-bottom: 12px; }
+    .profile-card { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start; }
+    .profile-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .profile-name { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+    .profile-email { color: #475569; margin-bottom: 10px; }
+    .profile-meta { display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 8px; }
+    .profile-pill {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .profile-pill strong { display: block; color: #0f172a; font-size: 12px; margin-bottom: 2px; }
+    .linked-side-card {
+      margin-top: 12px;
+      background: #ffffff;
+      border: 1px solid #dfe7f5;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .linked-side-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .linked-side-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+    .linked-side-email {
+      font-size: 12px;
+      color: #475569;
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+    .linked-side-meta {
+      font-size: 12px;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+    .linked-side-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .linked-side-actions .btn {
+      width: 100%;
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
     @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .sidebar { min-height: auto; } }
   </style>
 </head>
@@ -28,24 +95,20 @@
   <div class="layout">
     <aside class="sidebar">
       <div class="brand">ENSA Cuenta</div>
-      <a class="nav-pill" href="/correos">Inicio</a>
-      <a class="nav-pill" href="/informacion_personal">Información personal</a>
-      <a class="nav-pill" href="/seguridad_inicio_sesion">Seguridad e inicio de sesión</a>
-      <a class="nav-pill" href="/mi_contrasena">Contraseña ENSA</a>
-      <a class="nav-pill" href="/dispositivos">Conexiones de terceros</a>
-      <a class="nav-pill" href="/datos_privacidad">Datos y privacidad</a>
-      <a class="nav-pill active" href="/correo_electronico">Contactos y compartir</a>
+      <a class="nav-pill active" href="/correo_electronico">Correo electrónico</a>
     </aside>
 
     <main class="main">
       <div class="d-flex justify-content-between align-items-center">
         <div class="top-search">🔎&nbsp;&nbsp;Buscar en tu cuenta ENSA</div>
-        <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="/correos?open_config=1&panel=correo">Volver</a></div>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-danger" href="/cerrar_sesion">Cerrar sesión</a>
+        </div>
       </div>
 
       <div class="center-wrap">
-        <div class="title">Correo electrónico</div>
-        <div class="sub">Administra la cuenta de envío principal usada para reportes y notificaciones.</div>
+        <div class="title">Configuración de correo</div>
+        <div class="sub">Este panel es independiente del inicio de sesión. Aquí ajustas la cuenta de envío después de entrar al sistema.</div>
 
         {% if message %}
           <div class="alert alert-info">{{ message }}</div>
@@ -54,7 +117,8 @@
         <div class="panel-card">
           <div class="panel-head">Configuración de correo</div>
           <div class="panel-body">
-            <form method="POST" action="/correo_electronico/guardar">
+            <div class="login-caption">Puedes actualizar usuario/clave de envío o mantener la contraseña actual en blanco.</div>
+            <form method="POST" action="/configurar_correo">
               <div class="mb-3">
                 <label class="form-label">Usuario</label>
                 <input type="email" class="form-control" name="sender" value="{{ sender }}" required>
@@ -64,27 +128,12 @@
                 <input type="password" class="form-control" name="password" placeholder="••••••••">
                 <small class="text-muted">Déjala vacía para mantener la actual.</small>
               </div>
-              <div class="mb-3 text-muted small">
-                Servidor: {{ smtp_host }} | Puerto: {{ smtp_port }} | Seguridad: {{ smtp_security|upper }}
-              </div>
               <div class="d-flex justify-content-end">
-                <button class="btn btn-primary" type="submit">Guardar correo</button>
+                <button class="btn btn-primary" type="submit">Guardar configuración</button>
               </div>
             </form>
           </div>
         </div>
-
-        <div class="panel-card">
-          <div class="panel-body d-flex justify-content-between align-items-center">
-            <div>
-              <strong>Contactos y compartir</strong>
-              <div class="text-muted">Conecta este correo con contactos, familia y preferencias de compartición.</div>
-            </div>
-            <a class="btn btn-sm btn-outline-primary" href="/contactos_compartir">Abrir módulo</a>
-          </div>
-        </div>
-
-        <div class="footer-mini"><span>Privacidad</span><span>Términos</span><span>Ayuda</span></div>
       </div>
     </main>
   </div>
