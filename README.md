@@ -15,6 +15,10 @@ pip install -r requirements.txt
 python app.py
 ```
 
+### Ejecutar en Windows (doble clic)
+
+También puede ejecutar `iniciar_app.bat` para abrir la aplicación sin usar comandos.
+
 ## Deploy en Vercel
 
 Este proyecto ya incluye:
