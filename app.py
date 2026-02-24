@@ -209,33 +209,113 @@ def _parse_smtp_port(port_value):
         return 587
 
 
+def _should_retry_with_port_25(smtp_port, conn_ex):
+    if int(smtp_port or 0) != 587:
+        return False
+
+    error_text = str(conn_ex or '').lower()
+    return any(token in error_text for token in (
+        'winerror 10061',
+        'connection refused',
+        'actively refused',
+        'timed out',
+        'timeout',
+    ))
+
+
 def _require_worker_microsoft_login():
-    if session.get('system_authenticated', False):
-        return None
-    if session.get('smtp_authenticated', False):
+    system_authenticated = bool(session.get('system_authenticated', False))
+    smtp_authenticated = bool(session.get('smtp_authenticated', False))
+
+    if not system_authenticated and not smtp_authenticated:
+        session['login_message'] = 'Inicia sesión con tu correo Microsoft para continuar.'
+        return redirect(url_for('iniciar_sesion'))
+
+    if smtp_authenticated:
         session['system_authenticated'] = True
-        return None
-    session['login_message'] = 'Inicia sesión con tu correo Microsoft para continuar.'
-    return redirect(url_for('iniciar_sesion'))
+
+    quick_verified = bool(session.get('quick_password_verified', False))
+    if not quick_verified:
+        current_endpoint = str(request.endpoint or '').strip()
+        allow_endpoints = {'correos', 'configurar_correo'}
+        if current_endpoint not in allow_endpoints:
+            session['quick_password_message'] = 'Verifica tu contraseña para continuar.'
+            return redirect(url_for('correos', open_quick_password='1'))
+
+    return None
+
+
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_BLOCK_MINUTES = 10
+
+
+def _get_login_lock_state():
+    block_until_raw = str(session.get('login_block_until', '')).strip()
+    if not block_until_raw:
+        return False, 0
+
+    block_until = pd.to_datetime(block_until_raw, errors='coerce')
+    if pd.isna(block_until):
+        session.pop('login_block_until', None)
+        return False, 0
+
+    now_value = pd.Timestamp.now()
+    if now_value >= block_until:
+        session.pop('login_block_until', None)
+        session['login_attempts'] = 0
+        return False, 0
+
+    remaining_minutes = int(max((block_until - now_value).total_seconds(), 0) // 60) + 1
+    return True, remaining_minutes
+
+
+def _register_login_failure(base_message):
+    attempts = int(session.get('login_attempts', 0) or 0) + 1
+    session['login_attempts'] = attempts
+
+    remaining = max(MAX_LOGIN_ATTEMPTS - attempts, 0)
+    if remaining <= 0:
+        block_until = pd.Timestamp.now() + pd.Timedelta(minutes=LOGIN_BLOCK_MINUTES)
+        session['login_block_until'] = block_until.strftime('%Y-%m-%d %H:%M:%S')
+        session['login_attempts'] = 0
+        session['login_message'] = (
+            f'{base_message} Alcanzaste el máximo de {MAX_LOGIN_ATTEMPTS} intentos. '
+            f'Intenta nuevamente en {LOGIN_BLOCK_MINUTES} minutos.'
+        )
+        return
+
+    session['login_message'] = f'{base_message} Intentos restantes: {remaining}.'
+
+
+def _reset_login_failures():
+    session['login_attempts'] = 0
+    session.pop('login_block_until', None)
 
 
 def _validate_microsoft365_api_login(username, password):
+    settings = load_general_settings()
+    microsoft365_settings = settings.get('microsoft365', {}) if isinstance(settings, dict) else {}
+
     tenant_id = (
         os.environ.get('M365_TENANT_ID', '').strip()
         or os.environ.get('MICROSOFT_TENANT_ID', '').strip()
+        or str(microsoft365_settings.get('tenant_id', '')).strip()
         or 'common'
     )
     client_id = (
         os.environ.get('M365_CLIENT_ID', '').strip()
         or os.environ.get('MICROSOFT_CLIENT_ID', '').strip()
+        or str(microsoft365_settings.get('client_id', '')).strip()
     )
     client_secret = (
         os.environ.get('M365_CLIENT_SECRET', '').strip()
         or os.environ.get('MICROSOFT_CLIENT_SECRET', '').strip()
+        or str(microsoft365_settings.get('client_secret', '')).strip()
     )
     scope = (
         os.environ.get('M365_SCOPE', '').strip()
         or os.environ.get('MICROSOFT_SCOPE', '').strip()
+        or str(microsoft365_settings.get('scope', '')).strip()
         or 'https://graph.microsoft.com/User.Read openid profile email'
     )
 
@@ -296,9 +376,13 @@ def _validate_microsoft365_api_login(username, password):
 
 
 def _is_microsoft365_graph_configured():
+    settings = load_general_settings()
+    microsoft365_settings = settings.get('microsoft365', {}) if isinstance(settings, dict) else {}
+
     client_id = (
         os.environ.get('M365_CLIENT_ID', '').strip()
         or os.environ.get('MICROSOFT_CLIENT_ID', '').strip()
+        or str(microsoft365_settings.get('client_id', '')).strip()
     )
     return bool(client_id)
 
@@ -325,6 +409,12 @@ def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
             smtp_conn.starttls()
             smtp_conn.ehlo()
             used_security = 'starttls'
+        elif _should_retry_with_port_25(smtp_port, conn_ex):
+            smtp_conn = smtplib.SMTP(smtp_host, 25, timeout=30)
+            smtp_conn.ehlo()
+            smtp_conn.starttls()
+            smtp_conn.ehlo()
+            used_security = 'starttls'
         else:
             return False, sender, used_security, f'No se pudo conectar al servidor SMTP ({smtp_host}:{smtp_port}): {conn_ex}'
 
@@ -345,7 +435,7 @@ def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
                 False,
                 sender,
                 used_security,
-                'Error de autenticación SMTP (535). Usuario o contraseña incorrectos, o la cuenta no está habilitada/vinculada en Microsoft 365 para SMTP.'
+                'No se pudieron validar tus credenciales de correo. Verifica usuario y contraseña e inténtalo nuevamente.'
             )
         except Exception as login_ex:
             return False, sender, used_security, f'No se pudo autenticar en SMTP: {login_ex}'
@@ -367,7 +457,7 @@ def _validate_office365_and_smtp_login(sender, password, smtp_host, smtp_port, s
         session['worker_login_via_graph'] = False
         session['worker_graph_verified'] = False
         session['worker_auth_method'] = 'SMTP OWA'
-        session['worker_graph_warning'] = 'Office 365 Graph no está configurado (falta M365_CLIENT_ID).'
+        session['worker_graph_warning'] = 'Microsoft 365 Graph no está configurado. Se inició sesión con SMTP.'
         return True, validated_sender, used_security, ''
 
     graph_ok, graph_error = _validate_microsoft365_api_login(validated_sender, password)
@@ -375,13 +465,13 @@ def _validate_office365_and_smtp_login(sender, password, smtp_host, smtp_port, s
         session['worker_login_via_graph'] = False
         session['worker_graph_verified'] = False
         session['worker_auth_method'] = 'SMTP OWA'
-        session['worker_graph_warning'] = 'Conexión SMTP correcta, pero no se pudo validar Office 365 (Microsoft Graph): ' + graph_error
+        session['worker_graph_warning'] = 'Conexión SMTP correcta, pero Microsoft 365 no validó: ' + graph_error
         return True, validated_sender, used_security, ''
 
     session['worker_login_via_graph'] = True
     session['worker_graph_verified'] = True
     session.pop('worker_graph_warning', None)
-    session['worker_auth_method'] = 'SMTP OWA + Microsoft Graph'
+    session['worker_auth_method'] = 'SMTP OWA + Microsoft 365 Graph'
     return True, validated_sender, used_security, ''
 
 
@@ -536,6 +626,12 @@ def load_general_settings():
         'contactos': {
             'correo_soporte': '',
             'correo_copia': ''
+        },
+        'microsoft365': {
+            'tenant_id': 'common',
+            'client_id': '',
+            'client_secret': '',
+            'scope': 'https://graph.microsoft.com/User.Read openid profile email'
         }
     }
 
@@ -1294,17 +1390,16 @@ def build_saludo_cliente(nombre_cliente):
 def build_voucher_email_text(saludo):
     return f"""{saludo}
 
-Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre:
+Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalles:
 
 
 
-Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual ENSA: https://servicios.distriluz.com.pe/oficinavirtual.
+Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de Oficina Virtual ENSA.
+https://servicios.distriluz.com.pe/oficinavirtual
 
 En esta plataforma, podrá registrarse como Cliente Empresa para gestionar la cancelación de los suministros afiliados a su representada y agregar otros suministros. Podrá adjuntar la constancia del pago o transferencia realizada para completar el proceso.
 
-Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.
-
-Para cualquier consulta comunicarse al  979 450 731 o al correo electrónico: recaudacionensa@distriluz.com.pe
+Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional al CEL. 979 450 731 o al correo electrónico: recaudacionensa@distriluz.com.pe
 """
 
 
@@ -1340,7 +1435,7 @@ def build_voucher_email_html(saludo, voucher_info=None):
                 </p>
                 <p style="margin:0 0 14px 0; font-size:15px;">{saludo}</p>
                 <p style="margin:0 0 14px 0; font-size:14px; color:#374151;">
-                    Nos complace informarle que hemos recibido un abono en nuestra cuenta corriente a su nombre.
+                    Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalles.
                 </p>
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe6f5; border-radius:10px; margin:0 0 14px 0; overflow:hidden;">
@@ -1394,9 +1489,7 @@ def build_voucher_email_html(saludo, voucher_info=None):
             </div>
 
             <div style="border-top:1px solid #e5e7eb; background:#fafbfc; padding:14px 22px; font-size:13px; color:#4b5563;">
-                Esperamos que esta herramienta le sea de gran utilidad. Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.
-                <br><br>
-                Para cualquier consulta comunicarse al CEL. 979 450 731 o al correo electrónico: <strong>recaudacionensa@distriluz.com.pe</strong>
+                Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional al CEL. 979 450 731 o al correo electrónico: <strong>recaudacionensa@distriluz.com.pe</strong>
             </div>
         </div>
     </body>
@@ -1474,7 +1567,7 @@ def find_latest_voucher_for_email(recipient_email):
     except Exception:
         return None
 
-def render_correos_page(emails=None, mensaje_exito=None, page=1):
+def render_correos_page(emails=None, mensaje_exito=None, page=1, quick_password_message=None, force_quick_password=False):
     if emails is None:
         emails = []
     page_size = 50
@@ -1568,6 +1661,8 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1):
         page_size=page_size,
         total_emails=total,
         mensaje_exito=mensaje_exito,
+        quick_password_message=quick_password_message,
+        force_quick_password=force_quick_password,
         total_vouchers=total_vouchers,
         vouchers_generados=vouchers_generados,
         smtp_config=smtp_config,
@@ -1609,11 +1704,38 @@ def extract_emails_from_excel_upload(file_storage):
             pass
     return sorted(emails)
 
+
+def _enforce_step_flow(current_step: str):
+    required_next_step = session.get('required_next_step')
+    if not required_next_step:
+        return None
+
+    if current_step == required_next_step:
+        return None
+
+    step_to_endpoint = {
+        'home': 'home',
+        'basedatos': 'basedatos',
+        'asiento': 'asiento_get',
+        'correos': 'correos',
+    }
+
+    endpoint = step_to_endpoint.get(required_next_step)
+    if endpoint is None:
+        session.pop('required_next_step', None)
+        return None
+
+    return redirect(url_for(endpoint))
+
 @app.route('/', methods=['POST','GET'])
 def home():
     auth_redirect = _require_worker_microsoft_login()
     if auth_redirect is not None:
         return auth_redirect
+
+    flow_redirect = _enforce_step_flow('home')
+    if flow_redirect is not None:
+        return flow_redirect
 
     if request.method == 'POST':
         files = request.files.getlist('file')
@@ -1645,6 +1767,7 @@ def home():
                 guardaMovimientos(accountService.movimientos)
                 guardaRecaudos(accountService.recaudos)
                 resumen = {"movements": accountService.error, "providers": providerService.error, "transfers": transferService.error, "interbanks": interbankService.error}
+                session['required_next_step'] = 'asiento'
                
                 return render_template("response.html", data= resumen) 
     
@@ -1698,6 +1821,10 @@ def basedatos():
     if auth_redirect is not None:
         return auth_redirect
 
+    flow_redirect = _enforce_step_flow('basedatos')
+    if flow_redirect is not None:
+        return flow_redirect
+
     if request.method == 'POST':
         files    = request.files.getlist('file')
         
@@ -1717,7 +1844,8 @@ def basedatos():
             
             base_datos_service = BaseDatosService()  
             base_datos_service.GuardarAchivos(files)  
-            return render_template('base-datos.html',mensaje_exito=mensaje_exito)
+            session['required_next_step'] = 'home'
+            return redirect(url_for('home'))
                 
         except Exception as e:
             error_message = str(e)
@@ -1732,6 +1860,10 @@ def asiento_procesar():
     auth_redirect = _require_worker_microsoft_login()
     if auth_redirect is not None:
         return auth_redirect
+
+    flow_redirect = _enforce_step_flow('asiento')
+    if flow_redirect is not None:
+        return flow_redirect
 
     logging.error('asiento_procesar: start')
     files = request.files.getlist('file')
@@ -1789,6 +1921,7 @@ def asiento_procesar():
                     session['asiento_email_warning'] = 'No se encontraron correos para líneas sin voucher. Verifique Referencia y CORREO DE CONTACTO en Base de Datos > Clientes.'
                 else:
                     session.pop('asiento_email_warning', None)
+                session['required_next_step'] = 'correos'
                 # guardaAsientos ya escribió files/asientos.xlsx, descargamos directamente
                 ruta_archivo = files_path('asientos.xlsx')
                 return send_file(ruta_archivo, as_attachment=True, download_name='asientos.xlsx')
@@ -1812,6 +1945,10 @@ def asiento_get():
     if auth_redirect is not None:
         return auth_redirect
 
+    flow_redirect = _enforce_step_flow('asiento')
+    if flow_redirect is not None:
+        return flow_redirect
+
     return render_template('asiento.html')
 
 
@@ -1821,6 +1958,13 @@ def correos():
     if auth_redirect is not None:
         return auth_redirect
 
+    flow_redirect = _enforce_step_flow('correos')
+    if flow_redirect is not None:
+        return flow_redirect
+
+    if session.get('required_next_step') == 'correos':
+        session.pop('required_next_step', None)
+
     sess_emails = session.get('asiento_emails', [])
     if not sess_emails:
         sess_emails = load_emails_cache()
@@ -1828,6 +1972,8 @@ def correos():
             session['asiento_emails'] = sess_emails
     warning_message = session.pop('asiento_email_warning', None)
     config_message = session.pop('config_message', None)
+    quick_password_message = session.pop('quick_password_message', None)
+    force_quick_password = not bool(session.get('quick_password_verified', False))
     page_message = config_message or warning_message
 
     try:
@@ -1837,7 +1983,13 @@ def correos():
     if page < 1:
         page = 1
 
-    return render_correos_page(emails=sess_emails, mensaje_exito=page_message, page=page)
+    return render_correos_page(
+        emails=sess_emails,
+        mensaje_exito=page_message,
+        page=page,
+        quick_password_message=quick_password_message,
+        force_quick_password=force_quick_password
+    )
 
 
 @app.route('/gestor_contrasenas', methods=['GET'])
@@ -2472,18 +2624,34 @@ def correo_electronico():
 
 @app.route('/iniciar_sesion', methods=['GET'])
 def iniciar_sesion():
+    is_blocked, lock_minutes = _get_login_lock_state()
+    attempts_used = int(session.get('login_attempts', 0) or 0)
     login_message = session.pop('login_message', None)
     prefill_sender = str(session.get('worker_sender', '')).strip()
     return render_template(
         'iniciar_sesion.html',
         sender=prefill_sender,
-        message=login_message
+        message=login_message,
+        login_attempts_used=attempts_used,
+        login_attempts_remaining=max(MAX_LOGIN_ATTEMPTS - attempts_used, 0),
+        login_blocked=is_blocked,
+        login_block_minutes=lock_minutes
     )
 
 
 @app.route('/iniciar_sesion', methods=['POST'])
 @app.route('/correo_electronico/guardar', methods=['POST'])
 def correo_electronico_guardar():
+    is_login_route = request.path == '/iniciar_sesion'
+    if is_login_route:
+        is_blocked, lock_minutes = _get_login_lock_state()
+        if is_blocked:
+            session['login_message'] = (
+                f'Has agotado los intentos permitidos. '
+                f'Intenta nuevamente en {lock_minutes} minuto(s).'
+            )
+            return redirect(url_for('iniciar_sesion'))
+
     existing = load_secure_smtp_credentials()
     sender = request.form.get('sender', '').strip()
     password = request.form.get('password', '').strip()
@@ -2499,7 +2667,10 @@ def correo_electronico_guardar():
         session['system_authenticated'] = False
         session['smtp_authenticated'] = False
         session['smtp_link_verified'] = False
-        session['login_message'] = 'Ingresa tu correo para iniciar sesión con Microsoft 365.'
+        if is_login_route:
+            _register_login_failure('Ingresa tu correo para iniciar sesión con Microsoft 365.')
+        else:
+            session['login_message'] = 'Ingresa tu correo para iniciar sesión con Microsoft 365.'
         return redirect(url_for('iniciar_sesion'))
 
     if not password:
@@ -2511,7 +2682,10 @@ def correo_electronico_guardar():
             session['system_authenticated'] = False
             session['smtp_authenticated'] = False
             session['smtp_link_verified'] = False
-            session['login_message'] = 'No hay una contraseña guardada para ese correo. Configura la cuenta primero.'
+            if is_login_route:
+                _register_login_failure('No hay una contraseña guardada para ese correo. Configura la cuenta primero.')
+            else:
+                session['login_message'] = 'No hay una contraseña guardada para ese correo. Configura la cuenta primero.'
             return redirect(url_for('iniciar_sesion'))
 
     if not confirm_password:
@@ -2521,7 +2695,10 @@ def correo_electronico_guardar():
         session['system_authenticated'] = False
         session['smtp_authenticated'] = False
         session['smtp_link_verified'] = False
-        session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
+        if is_login_route:
+            _register_login_failure('Las contraseñas no coinciden. Verifica e intenta nuevamente.')
+        else:
+            session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
         return redirect(url_for('iniciar_sesion'))
 
     is_valid, validated_sender, used_security, error_message = _validate_office365_and_smtp_login(
@@ -2537,7 +2714,10 @@ def correo_electronico_guardar():
         session['smtp_link_verified'] = False
         session['worker_login_via_graph'] = False
         session['worker_auth_method'] = ''
-        session['login_message'] = error_message
+        if is_login_route:
+            _register_login_failure(error_message)
+        else:
+            session['login_message'] = error_message
         return redirect(url_for('iniciar_sesion'))
 
     try:
@@ -2558,7 +2738,10 @@ def correo_electronico_guardar():
         session['worker_smtp_port'] = str(smtp_port)
         session['worker_smtp_security'] = used_security
         session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-        session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
+        session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA + Microsoft 365 Graph'
+        session['quick_password_verified'] = False
+        if is_login_route:
+            _reset_login_failures()
         add_account_activity('Correo electrónico', f'Sesión iniciada para {validated_sender}')
         session.pop('email_settings_message', None)
         session.pop('login_message', None)
@@ -2568,7 +2751,10 @@ def correo_electronico_guardar():
         session['smtp_link_verified'] = False
         session['worker_login_via_graph'] = False
         session['worker_auth_method'] = ''
-        session['login_message'] = f'Error iniciando sesión: {ex}'
+        if is_login_route:
+            _register_login_failure(f'Error iniciando sesión: {ex}')
+        else:
+            session['login_message'] = f'Error iniciando sesión: {ex}'
         return redirect(url_for('iniciar_sesion'))
 
     return redirect(url_for('basedatos'))
@@ -2625,6 +2811,21 @@ def correo_electronico_verificar_vinculo():
 
 @app.route('/configurar_correo', methods=['POST'])
 def configurar_correo():
+    return_to = str(request.form.get('return_to', '')).strip().lower()
+    redirect_to_correos = return_to == 'correos'
+
+    def _redirect_after_password(message_text, is_error=False):
+        if redirect_to_correos:
+            if is_error:
+                session['quick_password_message'] = message_text
+                session['quick_password_verified'] = False
+                return redirect(url_for('correos', open_quick_password='1'))
+            session['config_message'] = message_text
+            return redirect(url_for('correos'))
+
+        session['email_settings_message'] = message_text
+        return redirect(url_for('correo_electronico'))
+
     auth_redirect = _require_worker_microsoft_login()
     if auth_redirect is not None:
         return auth_redirect
@@ -2637,8 +2838,7 @@ def configurar_correo():
     smtp_security = _normalize_smtp_security(request.form.get('smtp_security', '').strip().lower() or existing.get('smtp_security', '').strip().lower() or 'starttls')
 
     if not sender or not password:
-        session['email_settings_message'] = 'Completa remitente y clave para guardar la configuración de correo.'
-        return redirect(url_for('correo_electronico'))
+        return _redirect_after_password('Completa remitente y contraseña para continuar.', is_error=True)
 
     is_valid, validated_sender, used_security, error_message = _validate_office365_and_smtp_login(
         sender,
@@ -2651,8 +2851,7 @@ def configurar_correo():
         session['smtp_link_verified'] = False
         session['worker_login_via_graph'] = False
         session['worker_auth_method'] = ''
-        session['email_settings_message'] = error_message
-        return redirect(url_for('correo_electronico'))
+        return _redirect_after_password('Contraseña incorrecta. Intenta de nuevo.', is_error=True)
 
     try:
         save_secure_smtp_credentials(
@@ -2672,12 +2871,11 @@ def configurar_correo():
         session['worker_smtp_port'] = str(smtp_port)
         session['worker_smtp_security'] = used_security
         session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
-        add_account_activity('Configuración de correo', f'Sesión iniciada para {validated_sender}')
-        session['email_settings_message'] = '✅ Configuración de correo actualizada correctamente.'
+        session['quick_password_verified'] = True
+        add_account_activity('Contraseña de correo', f'Sesión iniciada para {validated_sender}')
+        return _redirect_after_password('✅ Contraseña de correo actualizada correctamente.')
     except Exception as ex:
-        session['email_settings_message'] = f'Error guardando configuración de correo: {ex}'
-
-    return redirect(url_for('correo_electronico'))
+        return _redirect_after_password('No se pudo guardar la contraseña de correo. Intenta nuevamente.', is_error=True)
 
 
 @app.route('/configurar_google', methods=['POST'])
@@ -3294,22 +3492,25 @@ def send_emails():
     sent_ok = []
     sent_fail = []
     sent_with_voucher_html = []
+    used_security = smtp_security
+    used_port = smtp_port
     
     try:
         # Conexión SMTP configurable (ssl | starttls | auto)
-        used_security = smtp_security
         smtp_conn = None
         try:
             if smtp_security == 'ssl':
                 smtp_conn = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30)
                 smtp_conn.ehlo()
                 used_security = 'ssl'
+                used_port = smtp_port
             else:
                 smtp_conn = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
                 smtp_conn.ehlo()
                 smtp_conn.starttls()
                 smtp_conn.ehlo()
                 used_security = 'starttls'
+                used_port = smtp_port
         except Exception as conn_ex:
             wrong_version = 'WRONG_VERSION_NUMBER' in str(conn_ex).upper()
             can_retry_starttls = smtp_security in ('ssl', 'auto') and wrong_version
@@ -3322,6 +3523,17 @@ def send_emails():
                 smtp_conn.starttls()
                 smtp_conn.ehlo()
                 used_security = 'starttls'
+                used_port = smtp_port
+            elif _should_retry_with_port_25(smtp_port, conn_ex):
+                logging.warning(
+                    f"SMTP {smtp_host}:{smtp_port} rechazó conexión ({conn_ex}). Reintentando por puerto 25 con STARTTLS."
+                )
+                smtp_conn = smtplib.SMTP(smtp_host, 25, timeout=30)
+                smtp_conn.ehlo()
+                smtp_conn.starttls()
+                smtp_conn.ehlo()
+                used_security = 'starttls'
+                used_port = 25
             else:
                 raise
 
@@ -3340,16 +3552,30 @@ def send_emails():
                         )
                     except smtplib.SMTPAuthenticationError:
                         return _redirect_correos_with_message(
-                            'Error de autenticación SMTP (535). '
+                            'No se pudieron validar tus credenciales de correo. '
                             'El usuario guardado tiene dominio typo. Usa tu correo con @distriluz.com.pe en las credenciales SMTP. '
                             'No se envió ningún correo.'
                         )
                 else:
                     return _redirect_correos_with_message(
-                        'Error de autenticación SMTP (535). '
+                        'No se pudieron validar tus credenciales de correo. '
                         'Verifica usuario/clave en credenciales SMTP o confirma con TI que la cuenta tenga SMTP AUTH habilitado en owa.fonafe.gob.pe. '
                         'No se envió ningún correo.'
                     )
+
+            if should_save_smtp and sender and password and (used_port != smtp_port or used_security != smtp_security):
+                try:
+                    save_secure_smtp_credentials(
+                        sender,
+                        password,
+                        smtp_host_value=smtp_host,
+                        smtp_port_value=str(used_port),
+                        smtp_security_value=used_security
+                    )
+                    session['worker_smtp_port'] = str(used_port)
+                    session['worker_smtp_security'] = used_security
+                except Exception as save_ex:
+                    logging.warning(f'No se pudo persistir fallback SMTP efectivo: {save_ex}')
 
             for recipient in emails_to_send:
                 try:
@@ -3428,7 +3654,7 @@ def send_emails():
         return _redirect_correos_with_message(message)
     except Exception as ex:
         return _redirect_correos_with_message(
-            f'Error enviando por Outlook/Microsoft 365 ({smtp_host}:{smtp_port}, {smtp_security}): {ex}'
+            f'Error enviando por Outlook/Microsoft 365 ({smtp_host}:{used_port}, {used_security}): {ex}'
         )
 
 

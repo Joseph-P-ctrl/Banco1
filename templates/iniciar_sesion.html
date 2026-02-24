@@ -278,6 +278,16 @@
       </div>
     {% endif %}
 
+    {% if login_blocked %}
+      <div class="alert-wrap">
+        <div class="alert alert-danger mb-0">Cuenta temporalmente bloqueada. Intenta de nuevo en {{ login_block_minutes }} minuto(s).</div>
+      </div>
+    {% elif login_attempts_remaining is defined %}
+      <div class="alert-wrap">
+        <div class="alert alert-light mb-0">Intentos disponibles: {{ login_attempts_remaining }} de 5.</div>
+      </div>
+    {% endif %}
+
     <div class="row g-4 align-items-start">
       <div class="col-lg-6">
         <div class="logo-ensa">
@@ -314,7 +324,7 @@
 
             <div class="actions mt-4">
               <a class="helper-link m-0" href="#" onclick="event.preventDefault();">¿Olvidaste la contraseña?</a>
-            <button class="btn-next" type="submit">Siguiente</button>
+            <button class="btn-next" type="submit" {% if login_blocked %}disabled{% endif %}>Siguiente</button>
             </div>
           </div>
         </form>
@@ -387,7 +397,12 @@
       passwordInput.type = showPassword.checked ? 'text' : 'password';
     });
 
-    loginForm.addEventListener('submit', () => {
+    loginForm.addEventListener('submit', (event) => {
+      const loginBlocked = {{ 'true' if login_blocked else 'false' }};
+      if (loginBlocked) {
+        event.preventDefault();
+        return;
+      }
       showLoading();
     });
 

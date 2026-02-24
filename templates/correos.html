@@ -267,6 +267,181 @@
             margin-bottom: 0;
         }
 
+        .quick-btn-password {
+            width: calc(100% - 24px);
+            margin: 10px 12px 0;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-weight: 600;
+            background: #fff;
+            color: #1f2937;
+            text-align: left;
+        }
+
+        .quick-password-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.28);
+            z-index: 10020;
+            display: none;
+        }
+
+        .quick-password-modal {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: min(1040px, 94vw);
+            background: #f8fafc;
+            border-radius: 26px;
+            border: 1px solid #dbe4f0;
+            padding: 30px 34px;
+            box-shadow: 0 22px 64px rgba(15, 23, 42, 0.2);
+            z-index: 10021;
+            display: none;
+        }
+
+        .quick-password-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 34px;
+            align-items: center;
+        }
+
+        .quick-password-left {
+            background: linear-gradient(160deg, #ffffff 0%, #f3f6fb 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 28px;
+        }
+
+        .quick-password-right {
+            padding-right: 4px;
+        }
+
+        .quick-password-name {
+            font-size: 54px;
+            line-height: 1.04;
+            color: #202124;
+            margin-bottom: 16px;
+            font-weight: 500;
+            text-transform: lowercase;
+        }
+
+        .quick-password-email {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #9ca3af;
+            border-radius: 999px;
+            min-height: 42px;
+            padding: 7px 16px;
+            font-size: 18px;
+            color: #111827;
+            background: #fff;
+        }
+
+        .quick-password-right-title {
+            font-size: 28px;
+            color: #111827;
+            line-height: 1.18;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .quick-password-field {
+            border: 2px solid #2563eb;
+            border-radius: 8px;
+            min-height: 58px;
+            font-size: 20px;
+            padding: 10px 14px;
+            background: #fff;
+            box-shadow: none;
+        }
+
+        .quick-password-check {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            color: #1f2937;
+        }
+
+        .quick-password-check input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .quick-password-actions {
+            margin-top: 22px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0;
+        }
+
+        .quick-password-next {
+            border: none;
+            border-radius: 999px;
+            background: #1d4ed8;
+            color: #fff;
+            min-width: 150px;
+            height: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 10px 22px rgba(29, 78, 216, 0.3);
+        }
+
+        .quick-password-next:hover {
+            background: #1e40af;
+        }
+
+        .quick-password-right .alert {
+            border-radius: 10px;
+            font-size: 14px;
+            border: 1px solid #f8d585;
+            background: #fff8e6;
+            color: #7a5600;
+        }
+
+        @media (max-width: 1100px) {
+            .quick-password-grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .quick-password-name {
+                font-size: 30px;
+            }
+
+            .quick-password-right-title,
+            .quick-password-check,
+            .quick-password-next,
+            .quick-password-field {
+                font-size: 20px;
+            }
+
+            .quick-password-right-title {
+                font-size: 24px;
+            }
+
+            .quick-password-email {
+                font-size: 16px;
+            }
+
+            .quick-password-next {
+                min-width: 140px;
+                height: 46px;
+                font-size: 16px;
+            }
+
+            .quick-password-field {
+                min-height: 48px;
+                font-size: 18px;
+            }
+        }
+
         .quick-section {
             border-top: 1px solid #e5e7eb;
             padding: 12px;
@@ -1216,6 +1391,7 @@
     </div>
     <div class="quick-body">
         <button id="quickViewAllBtn" type="button" class="quick-btn-all" onclick="openFullSettings('general')">Ver todos los ajustes</button>
+        <button id="quickPasswordBtn" type="button" class="quick-btn-password" onclick="openQuickPasswordModal()">Configuración de correo</button>
 
         <div class="quick-section">
             <h6 id="quickDensityTitle">Densidad</h6>
@@ -1328,6 +1504,39 @@
     </div>
 </aside>
 
+<div id="quickPasswordOverlay" class="quick-password-overlay"></div>
+<section id="quickPasswordModal" class="quick-password-modal" aria-label="Configuración de correo">
+    <form action="/configurar_correo" method="POST" class="quick-password-grid">
+        <div class="quick-password-left">
+            <div class="quick-password-name">
+                {{ general_settings.perfil.nombre_mostrar if general_settings is defined and general_settings.perfil.nombre_mostrar else 'cuenta de correo' }}
+            </div>
+            <div class="quick-password-email">
+                {{ smtp_config.sender if smtp_config is defined and smtp_config.sender else 'correo@empresa.com' }}
+            </div>
+        </div>
+
+        <div class="quick-password-right">
+            <div class="quick-password-right-title">Debes verificar que eres tú para poder continuar</div>
+            <input type="hidden" name="sender" value="{{ smtp_config.sender if smtp_config is defined else '' }}">
+            <input type="hidden" name="return_to" value="correos">
+            {% if quick_password_message %}
+                <div class="alert alert-warning" style="font-size: 14px; padding: 10px 12px; margin-bottom: 10px;">{{ quick_password_message }}</div>
+            {% endif %}
+            <input id="quickPasswordInput" type="password" name="password" class="form-control quick-password-field" placeholder="Introduce tu contraseña" required>
+
+            <label class="quick-password-check" for="quickPasswordShow">
+                <input id="quickPasswordShow" type="checkbox" onclick="toggleQuickPasswordVisibility()" onchange="toggleQuickPasswordVisibility()">
+                <span>Mostrar contraseña</span>
+            </label>
+
+            <div class="quick-password-actions">
+                <button type="submit" class="quick-password-next">Siguiente</button>
+            </div>
+        </div>
+    </form>
+</section>
+
 <div id="fullSettingsOverlay" class="full-settings-overlay" onclick="closeFullSettings()"></div>
 <section id="fullSettingsModal" class="full-settings-modal" aria-label="Configuración completa">
     <div class="full-settings-header">
@@ -1337,7 +1546,6 @@
 
     <div class="full-settings-tabs">
         <button id="fullSettingsTabGeneral" type="button" class="full-settings-tab active" data-target="general" onclick="switchFullSettingsTab('general', this)">General</button>
-        <button id="fullSettingsTabForwarding" type="button" class="full-settings-tab" data-target="forwarding" onclick="switchFullSettingsTab('forwarding', this)">Reenvío y correo POP/IMAP</button>
     </div>
 
     <div class="full-settings-body">
@@ -1475,94 +1683,6 @@
             </div>
         </div>
 
-        <div id="screen-forwarding" class="settings-screen settings-main-wrap">
-            <div class="settings-row">
-                <div>
-                    <div id="labelForwarding" class="settings-row-title">Reenvío:</div>
-                    <a id="helpMoreForwarding" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
-                </div>
-                <div class="settings-row-content settings-line-group">
-                    <div>
-                        <button id="btnAddForwarding" type="button" class="btn btn-sm btn-outline-primary" onclick="enableForwardingField()">Añadir una dirección de reenvío</button>
-                    </div>
-                    <input type="email" id="forwardingEmail" class="form-control form-control-sm" placeholder="correo@dominio.com" disabled>
-                    <div id="labelForwardingTip" class="settings-note">Sugerencia: si solo quieres reenviar algunos mensajes, crea un filtro.</div>
-                </div>
-            </div>
-
-            <div class="settings-row">
-                <div>
-                    <div id="labelPopDownload" class="settings-row-title">Descarga de correo POP:</div>
-                    <a id="helpMorePop" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
-                </div>
-                <div class="settings-row-content settings-line-group">
-                    <div id="labelPopStatus" class="settings-section-title">1. Estado: El correo POP está inhabilitado.</div>
-                    <div class="settings-radio-list">
-                        <label><input type="radio" name="popMode" value="all"> <span id="labelPopAll">Habilitar POP para <strong>todos los mensajes</strong></span></label>
-                        <label><input type="radio" name="popMode" value="new"> <span id="labelPopNew">Habilitar POP para los <strong>mensajes que se reciban a partir de ahora</strong></span></label>
-                    </div>
-
-                    <div class="settings-inline">
-                        <strong id="labelPopAccess">2. Cuando se accede a los mensajes a través de POP</strong>
-                        <select id="popAction" class="form-select form-select-sm">
-                            <option value="keep">conservar la copia en Recibidos</option>
-                            <option value="archive">archivar la copia</option>
-                            <option value="delete">eliminar la copia</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <strong id="labelPopClient">3. Configura el cliente de correo electrónico</strong>
-                        <a id="helpPopSetup" class="settings-help-link" href="#" onclick="event.preventDefault();">Instrucciones para la configuración</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-row">
-                <div>
-                    <div id="labelImapAccess" class="settings-row-title">Acceso IMAP:</div>
-                    <div id="labelImapSub" class="settings-row-subtext">Accede al correo desde otros clientes mediante IMAP.</div>
-                    <a id="helpMoreImap" class="settings-help-link" href="#" onclick="event.preventDefault();">Más información</a>
-                </div>
-                <div class="settings-row-content settings-line-group">
-                    <div>
-                        <div id="labelImapMarked" class="settings-section-title">Cuando se marque un mensaje en IMAP como eliminado:</div>
-                        <div class="settings-radio-list">
-                            <label><input type="radio" name="imapMarkedDeleted" value="auto"> <span id="labelImapMarkedAuto">Eliminar automáticamente: actualizar inmediatamente el servidor</span></label>
-                            <label><input type="radio" name="imapMarkedDeleted" value="manual"> <span id="labelImapMarkedManual">No eliminar automáticamente: esperar a que el cliente actualice el servidor</span></label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div id="labelImapDeleteRule" class="settings-section-title">Cuando un mensaje se marque como eliminado y se borre de la última carpeta IMAP visible:</div>
-                        <div class="settings-radio-list">
-                            <label><input type="radio" name="imapDeleteMode" value="archive"> <span id="labelImapDeleteArchive">Archivar el mensaje (predeterminado)</span></label>
-                            <label><input type="radio" name="imapDeleteMode" value="trash"> <span id="labelImapDeleteTrash">Mover el mensaje a la papelera</span></label>
-                            <label><input type="radio" name="imapDeleteMode" value="delete"> <span id="labelImapDeleteNow">Eliminar el mensaje de forma inmediata y definitiva</span></label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div id="labelImapFolderLimit" class="settings-section-title">Límites de tamaño de las carpetas</div>
-                        <div class="settings-radio-list">
-                            <label><input type="radio" name="imapFolderLimitMode" value="none"> <span id="labelImapLimitNone">No limitar el número de mensajes en una carpeta IMAP (predeterminado)</span></label>
-                            <label class="settings-inline"><input type="radio" name="imapFolderLimitMode" value="limit"> <span id="labelImapLimitValue">Limitar las carpetas IMAP para que no contengan más mensajes que esta cantidad</span>
-                                <select id="imapFolderLimitCount" class="form-select form-select-sm" style="max-width:120px;">
-                                    <option value="500">500</option>
-                                    <option value="1000">1000</option>
-                                    <option value="2000">2000</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="settings-actions">
-                <button id="btnForwardingCancel" type="button" class="btn btn-outline-secondary" onclick="closeFullSettings()">Cancelar</button>
-                <button id="btnForwardingSave" type="button" class="btn btn-primary" onclick="saveForwardingSettings()">Guardar cambios</button>
-            </div>
-        </div>
     </div>
 </section>
 
@@ -1596,8 +1716,12 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" name="password" placeholder="••••••••">
-                            <small class="text-muted">Déjalo vacío para mantener la contraseña actual.</small>
+                            <div class="input-group">
+                                <input id="emailPasswordInput" type="password" class="form-control" name="password" placeholder="••••••••" autocomplete="new-password">
+                                <button id="emailPasswordToggleBtn" type="button" class="btn btn-outline-secondary" onclick="toggleEmailPasswordProtection()">Ver clave</button>
+                            </div>
+                            <small id="emailPasswordHelp" class="text-muted">Déjalo vacío para mantener la contraseña actual.</small><br>
+                            <small id="emailPasswordState" class="text-muted">🔒 Clave protegida</small>
                         </div>
                         <div class="d-flex justify-content-end mt-3">
                             <button type="submit" class="btn btn-success">Guardar correo</button>
@@ -2053,6 +2177,40 @@ function closeFloatingAlert() {
     document.getElementById('floatingOverlay').style.display = 'none';
 }
 
+function toggleEmailPasswordProtection() {
+    const input = document.getElementById('emailPasswordInput');
+    const button = document.getElementById('emailPasswordToggleBtn');
+    const state = document.getElementById('emailPasswordState');
+
+    if (!input || !button || !state) {
+        return;
+    }
+
+    const isProtected = input.type === 'password';
+    if (isProtected) {
+        input.type = 'text';
+        button.textContent = 'Proteger clave';
+        state.textContent = '👁️ Clave visible';
+    } else {
+        input.type = 'password';
+        button.textContent = 'Ver clave';
+        state.textContent = '🔒 Clave protegida';
+    }
+}
+
+function initSettingsPasswordToggle() {
+    const showPasswordCheckbox = document.getElementById('settingsShowPassword');
+    const passwordInput = document.getElementById('settingsPasswordInput');
+
+    if (!showPasswordCheckbox || !passwordInput) {
+        return;
+    }
+
+    showPasswordCheckbox.addEventListener('change', () => {
+        passwordInput.type = showPasswordCheckbox.checked ? 'text' : 'password';
+    });
+}
+
 function toggleAll(source) {
     const checkboxes = document.querySelectorAll('input[name="selected_emails"]');
     checkboxes.forEach((checkbox) => {
@@ -2201,7 +2359,7 @@ function getUILanguageStrings(languageCode) {
             quickConversationLabel: 'Conversation view',
             fullSettingsTitle: 'Settings',
             fullSettingsTabGeneral: 'General',
-            fullSettingsTabForwarding: 'Forwarding and POP/IMAP',
+            fullSettingsTabForwarding: 'Email password',
             labelLanguage: 'Language:',
             labelDisplayLanguage: 'Display language:',
             helpLangProducts: 'Change language settings for other products',
@@ -2233,7 +2391,7 @@ function getUILanguageStrings(languageCode) {
             labelDynamicEmailEnable: 'Enable dynamic email',
             btnGeneralCancel: 'Cancel',
             btnGeneralSave: 'Save changes',
-            labelForwarding: 'Forwarding:',
+            labelForwarding: 'Email password',
             helpMoreForwarding: 'More information',
             btnAddForwarding: 'Add a forwarding address',
             forwardingPlaceholder: 'email@domain.com',
@@ -2337,7 +2495,7 @@ function getUILanguageStrings(languageCode) {
             quickConversationLabel: 'Vue en conversation',
             fullSettingsTitle: 'Paramètres',
             fullSettingsTabGeneral: 'Général',
-            fullSettingsTabForwarding: 'Transfert et POP/IMAP',
+            fullSettingsTabForwarding: 'Mot de passe e-mail',
             labelLanguage: 'Langue :',
             labelDisplayLanguage: 'Langue d’affichage :',
             helpLangProducts: 'Modifier les paramètres de langue des autres produits',
@@ -2369,7 +2527,7 @@ function getUILanguageStrings(languageCode) {
             labelDynamicEmailEnable: 'Activer l’e-mail dynamique',
             btnGeneralCancel: 'Annuler',
             btnGeneralSave: 'Enregistrer les modifications',
-            labelForwarding: 'Transfert :',
+            labelForwarding: 'Mot de passe e-mail',
             helpMoreForwarding: 'En savoir plus',
             btnAddForwarding: 'Ajouter une adresse de transfert',
             forwardingPlaceholder: 'email@domaine.com',
@@ -2472,7 +2630,7 @@ function getUILanguageStrings(languageCode) {
         quickConversationLabel: 'Vista de conversación',
         fullSettingsTitle: 'Configuración',
         fullSettingsTabGeneral: 'General',
-        fullSettingsTabForwarding: 'Reenvío y correo POP/IMAP',
+        fullSettingsTabForwarding: 'Configuración de correo',
         labelLanguage: 'Idioma:',
         labelDisplayLanguage: 'Idioma de visualización:',
         helpLangProducts: 'Cambiar la configuración de idioma de otros productos',
@@ -2504,7 +2662,7 @@ function getUILanguageStrings(languageCode) {
         labelDynamicEmailEnable: 'Habilitar el correo dinámico',
         btnGeneralCancel: 'Cancelar',
         btnGeneralSave: 'Guardar cambios',
-        labelForwarding: 'Reenvío:',
+        labelForwarding: 'Configuración de correo',
         helpMoreForwarding: 'Más información',
         btnAddForwarding: 'Añadir una dirección de reenvío',
         forwardingPlaceholder: 'correo@dominio.com',
@@ -2837,6 +2995,12 @@ function initConfigFromQuery() {
     const params = new URLSearchParams(window.location.search);
     const openConfig = params.get('open_config');
     const panel = params.get('panel');
+    const openQuickPassword = params.get('open_quick_password');
+    const forceQuickPassword = {{ 'true' if force_quick_password else 'false' }};
+
+    if (openQuickPassword === '1' || forceQuickPassword) {
+        openQuickPasswordModal();
+    }
 
     if (openConfig === '1') {
         openConfigModal();
@@ -2859,6 +3023,57 @@ function closeQuickSettings() {
     document.getElementById('quickSettingsOverlay').style.display = 'none';
     document.getElementById('quickSettingsPanel').classList.remove('open');
     document.body.style.overflow = '';
+}
+
+function openQuickPasswordModal() {
+    closeQuickSettings();
+    const overlay = document.getElementById('quickPasswordOverlay');
+    const modal = document.getElementById('quickPasswordModal');
+    const passwordInput = document.getElementById('quickPasswordInput');
+    const showPassword = document.getElementById('quickPasswordShow');
+    if (overlay) overlay.style.display = 'block';
+    if (modal) modal.style.display = 'block';
+    if (passwordInput && showPassword) {
+        toggleQuickPasswordVisibility();
+        passwordInput.focus();
+    }
+    document.body.style.overflow = 'hidden';
+}
+
+function isQuickPasswordModalOpen() {
+    const modal = document.getElementById('quickPasswordModal');
+    return !!(modal && modal.style.display === 'block');
+}
+
+function trapQuickPasswordOutsideClick(event) {
+    if (!isQuickPasswordModalOpen()) {
+        return;
+    }
+
+    const modal = document.getElementById('quickPasswordModal');
+    if (!modal) {
+        return;
+    }
+
+    if (!modal.contains(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+}
+
+function toggleQuickPasswordVisibility() {
+    const quickPasswordShow = document.getElementById('quickPasswordShow');
+    const quickPasswordInput = document.getElementById('quickPasswordInput');
+
+    if (!quickPasswordShow || !quickPasswordInput) {
+        return;
+    }
+
+    quickPasswordInput.type = quickPasswordShow.checked ? 'text' : 'password';
+}
+
+function closeQuickPasswordModal() {
+    return;
 }
 
 function openFullSettings(tabName) {
@@ -3169,6 +3384,12 @@ function initQuickSettings() {
     applyColorMode(savedColorMode);
 
     document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isQuickPasswordModalOpen()) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
         if (event.key === 'Escape') {
             closeFullSettings();
             closeQuickSettings();
@@ -3313,6 +3534,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initQuickSettings();
     initFullSettings();
     initGeneralLiveEffects();
+    initSettingsPasswordToggle();
+
+    const quickPasswordShow = document.getElementById('quickPasswordShow');
+    if (quickPasswordShow) {
+        quickPasswordShow.addEventListener('change', toggleQuickPasswordVisibility);
+        quickPasswordShow.addEventListener('click', toggleQuickPasswordVisibility);
+    }
+
+    document.addEventListener('mousedown', trapQuickPasswordOutsideClick, true);
+    document.addEventListener('click', trapQuickPasswordOutsideClick, true);
+    document.addEventListener('touchstart', trapQuickPasswordOutsideClick, true);
 });
 </script>
 

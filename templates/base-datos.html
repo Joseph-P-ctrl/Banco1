@@ -5,8 +5,98 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <title>Base Datos</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .corner-theme-btn {
+            position: fixed;
+            top: 16px;
+            right: 214px;
+            z-index: 10001;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #cfd8e3;
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+            cursor: pointer;
+        }
+
+        .corner-quick-btn {
+            position: fixed;
+            top: 16px;
+            right: 160px;
+            z-index: 10001;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #cfd8e3;
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+            text-decoration: none;
+        }
+
+        .corner-logout-btn {
+            position: fixed;
+            top: 16px;
+            right: 14px;
+            z-index: 10001;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+
+        .corner-theme-btn:hover,
+        .corner-quick-btn:hover {
+            background: #f8fafc;
+        }
+
+        body.theme-dark {
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        body.theme-dark nav,
+        body.theme-dark .bg-body-tertiary {
+            background: #111827 !important;
+        }
+
+        body.theme-dark .nav-link {
+            color: #cbd5e1 !important;
+        }
+
+        body.theme-dark .nav-link.active {
+            color: #93c5fd !important;
+        }
+    </style>
+    <script>
+        function applyThemeMode() {
+            const mode = localStorage.getItem('ensaThemeMode') || 'light';
+            document.body.classList.toggle('theme-dark', mode === 'dark');
+        }
+
+        function toggleColorMode() {
+            const isDark = document.body.classList.contains('theme-dark');
+            const next = isDark ? 'light' : 'dark';
+            localStorage.setItem('ensaThemeMode', next);
+            applyThemeMode();
+        }
+
+        document.addEventListener('DOMContentLoaded', applyThemeMode);
+    </script>
 </head>
 <body>
+   <button type="button" class="corner-theme-btn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
+   <a class="corner-quick-btn" href="/correos" title="Ajustes" aria-label="Ajustes">⚙</a>
+   <a href="/cerrar_sesion" class="btn btn-outline-danger corner-logout-btn">Cerrar sesión</a>
    <header>
     <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
 
@@ -26,10 +116,6 @@
                         <li class="nav-item">
                                 <a class="nav-link " href="/correos">Correos</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-danger" href="/cerrar_sesion">Cerrar sesión</a>
-                        </li>
-       
       </ul>
    </nav>
     <div class="container container-maxwidth-sm mx-auto text-center">
