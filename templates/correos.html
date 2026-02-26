@@ -18,6 +18,35 @@
             border-radius: 15px;
             overflow: hidden;
         }
+
+        .floating-alert.toast-success {
+            top: 74px;
+            right: 14px;
+            left: auto;
+            transform: none;
+            min-width: 240px;
+            max-width: 300px;
+            border-radius: 10px;
+            animation: slideInRight 0.35s ease-out;
+            z-index: 10002;
+        }
+
+        .floating-alert.toast-success .alert-header {
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
         
         @keyframes slideDown {
             from {
@@ -279,6 +308,10 @@
             text-align: left;
         }
 
+        .quick-body > *:not(#quickPasswordBtn) {
+            display: none !important;
+        }
+
         .quick-password-overlay {
             position: fixed;
             inset: 0;
@@ -300,6 +333,18 @@
             box-shadow: 0 22px 64px rgba(15, 23, 42, 0.2);
             z-index: 10021;
             display: none;
+        }
+
+        .quick-password-close {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            border: none;
+            background: transparent;
+            font-size: 28px;
+            line-height: 1;
+            color: #6b7280;
+            cursor: pointer;
         }
 
         .quick-password-grid {
@@ -378,7 +423,18 @@
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            gap: 0;
+            gap: 10px;
+        }
+
+        .quick-password-cancel {
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            background: #fff;
+            color: #1f2937;
+            min-width: 130px;
+            height: 50px;
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .quick-password-next {
@@ -1379,7 +1435,6 @@
     </style>
 </head>
 <body>
-<a id="logoutBtn" href="/cerrar_sesion" class="btn btn-outline-danger corner-logout-btn">Cerrar sesión</a>
 <button type="button" class="corner-theme-btn" id="themeToggleBtn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
 <button type="button" class="corner-quick-btn" id="quickSettingsBtn" title="Ajustes rápidos" aria-label="Ajustes rápidos">⚙</button>
 
@@ -1390,122 +1445,13 @@
         <button type="button" class="quick-close" onclick="closeQuickSettings()">×</button>
     </div>
     <div class="quick-body">
-        <button id="quickViewAllBtn" type="button" class="quick-btn-all" onclick="openFullSettings('general')">Ver todos los ajustes</button>
         <button id="quickPasswordBtn" type="button" class="quick-btn-password" onclick="openQuickPasswordModal()">Configuración de correo</button>
-
-        <div class="quick-section">
-            <h6 id="quickDensityTitle">Densidad</h6>
-
-            <div class="quick-option" onclick="setDensity('default')">
-                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityDefault"></div>
-                <label id="quickDensityDefault" class="quick-option-text">Predeterminada</label>
-                <div class="quick-preview lines"></div>
-            </div>
-
-            <div class="quick-option" onclick="setDensity('comfortable')">
-                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityComfortable"></div>
-                <label id="quickDensityComfortable" class="quick-option-text">Cómoda</label>
-                <div class="quick-preview lines"></div>
-            </div>
-
-            <div class="quick-option" onclick="setDensity('compact')">
-                <div class="quick-radio"><input type="radio" name="quickDensity" id="densityCompact"></div>
-                <label id="quickDensityCompact" class="quick-option-text">Compacta</label>
-                <div class="quick-preview lines"></div>
-            </div>
-        </div>
-
-        <div class="quick-section">
-            <div class="quick-theme-header">
-                <h6 id="quickThemeTitle" style="margin:0;">Tema</h6>
-                <a id="quickThemeViewAll" href="#" class="quick-theme-link" onclick="event.preventDefault(); openFullSettings('general');">Ver todo</a>
-            </div>
-            <div class="quick-theme-list">
-                <button type="button" class="quick-theme-item default" id="themeDefault" onclick="setThemeMode('default')" title="Tema predeterminado"></button>
-                <button type="button" class="quick-theme-item soft" id="themeSoft" onclick="setThemeMode('soft')" title="Tema suave"></button>
-            </div>
-        </div>
-
-        <div class="quick-section">
-            <h6 id="quickInboxTitle">Tipo de bandeja de entrada</h6>
-
-            <div class="quick-option" onclick="setInboxType('default')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxDefault"></div>
-                <div class="quick-option-text">
-                    <span id="quickInboxDefault">Predeterminada</span>
-                    <a id="quickInboxDefaultCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
-                </div>
-                <div class="quick-preview lines"></div>
-            </div>
-
-            <div class="quick-option" onclick="setInboxType('important')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxImportant"></div>
-                <div id="quickInboxImportant" class="quick-option-text">Importantes primero</div>
-                <div class="quick-preview important"></div>
-            </div>
-
-            <div class="quick-option" onclick="setInboxType('unread')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxUnread"></div>
-                <div id="quickInboxUnread" class="quick-option-text">No leídos primero</div>
-                <div class="quick-preview unread"></div>
-            </div>
-
-            <div class="quick-option" onclick="setInboxType('starred')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxStarred"></div>
-                <div id="quickInboxStarred" class="quick-option-text">Destacados primero</div>
-                <div class="quick-preview starred"></div>
-            </div>
-
-            <div class="quick-option" onclick="setInboxType('priority')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxPriority"></div>
-                <div class="quick-option-text">
-                    <span id="quickInboxPriority">Prioritarios</span>
-                    <a id="quickInboxPriorityCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
-                </div>
-                <div class="quick-preview lines"></div>
-            </div>
-
-            <div class="quick-option" onclick="setInboxType('multiple')">
-                <div class="quick-radio"><input type="radio" name="quickInboxType" id="inboxMultiple"></div>
-                <div class="quick-option-text">
-                    <span id="quickInboxMultiple">Varias bandejas de entrada</span>
-                    <a id="quickInboxMultipleCustomize" href="#" class="quick-personalize" onclick="event.preventDefault(); openFullSettings('general');">Personalizar</a>
-                </div>
-                <div class="quick-preview multibox"></div>
-            </div>
-        </div>
-
-        <div class="quick-section">
-            <h6 id="quickReadingTitle">Panel de lectura</h6>
-            <div class="quick-option" onclick="setReadingMode('none')">
-                <div class="quick-radio"><input type="radio" name="quickReading" id="readingNone"></div>
-                <label id="quickReadingNone" class="quick-option-text">Sin división</label>
-                <div class="quick-preview lines"></div>
-            </div>
-            <div class="quick-option" onclick="setReadingMode('right')">
-                <div class="quick-radio"><input type="radio" name="quickReading" id="readingRight"></div>
-                <label id="quickReadingRight" class="quick-option-text">A la derecha de la bandeja de entrada</label>
-                <div class="quick-preview split-right"></div>
-            </div>
-            <div class="quick-option" onclick="setReadingMode('bottom')">
-                <div class="quick-radio"><input type="radio" name="quickReading" id="readingBottom"></div>
-                <label id="quickReadingBottom" class="quick-option-text">Debajo de la bandeja de entrada</label>
-                <div class="quick-preview split-bottom"></div>
-            </div>
-        </div>
-
-        <div class="quick-section">
-            <h6 id="quickConversationTitle">Conversaciones de correo</h6>
-            <div class="quick-check">
-                <input type="checkbox" id="conversationToggle" onchange="toggleConversation(this.checked)">
-                <label id="quickConversationLabel" for="conversationToggle">Vista de conversación</label>
-            </div>
-        </div>
     </div>
 </aside>
 
-<div id="quickPasswordOverlay" class="quick-password-overlay"></div>
+<div id="quickPasswordOverlay" class="quick-password-overlay" onclick="closeQuickPasswordModal()"></div>
 <section id="quickPasswordModal" class="quick-password-modal" aria-label="Configuración de correo">
+    <button type="button" class="quick-password-close" aria-label="Cerrar" onclick="closeQuickPasswordModal()">×</button>
     <form action="/configurar_correo" method="POST" class="quick-password-grid">
         <div class="quick-password-left">
             <div class="quick-password-name">
@@ -1518,7 +1464,7 @@
 
         <div class="quick-password-right">
             <div class="quick-password-right-title">Debes verificar que eres tú para poder continuar</div>
-            <input type="hidden" name="sender" value="{{ smtp_config.sender if smtp_config is defined else '' }}">
+            <input id="quickSenderInput" type="email" name="sender" class="form-control quick-password-field" placeholder="Ingresa tu correo" value="{{ smtp_config.sender if smtp_config is defined else '' }}" required>
             <input type="hidden" name="return_to" value="correos">
             {% if quick_password_message %}
                 <div class="alert alert-warning" style="font-size: 14px; padding: 10px 12px; margin-bottom: 10px;">{{ quick_password_message }}</div>
@@ -1531,7 +1477,8 @@
             </label>
 
             <div class="quick-password-actions">
-                <button type="submit" class="quick-password-next">Siguiente</button>
+                <button type="button" class="quick-password-cancel" onclick="closeQuickPasswordModal()">Cerrar</button>
+                <button type="submit" class="quick-password-next">GUARDAR</button>
             </div>
         </div>
     </form>
@@ -2043,7 +1990,10 @@
                     <div id="mailWorkspace" class="mail-workspace mail-reading-none">
                     <div class="mail-main-pane">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div><strong id="totalLabel">Total:</strong> <span id="emailCount">{{ total_emails }}</span> <span id="emailsSuffix">correos</span></div>
+                        <div>
+                            <strong id="totalLabel">Total:</strong> <span id="emailCount">{{ total_emails }}</span> <span id="emailsSuffix">correos</span>
+                            <span class="ms-2 text-muted" id="selectedSummary">Seleccionados: 0</span>
+                        </div>
                         <div>
                             <span id="mailReadingModeLabel" class="mail-reading-mode-label me-2">Panel: Sin división</span>
                             <strong id="pageLabel">Página:</strong> {{ page }} <span id="pageOfWord">de</span> {{ total_pages }}
@@ -2055,7 +2005,7 @@
                             <thead>
                                 <tr>
                                     <th style="width:40px; text-align:center;">
-                                        <input type="checkbox" id="check-all" onclick="toggleAll(this)">
+                                        <input type="checkbox" id="check-all" onclick="toggleAll(this)" checked>
                                     </th>
                                     <th id="emailHeaderText">Correo</th>
                                 </tr>
@@ -2064,7 +2014,7 @@
                             {% for e in page_emails %}
                                 <tr data-email="{{ e }}" class="mail-row">
                                     <td style="text-align:center;">
-                                        <input type="checkbox" name="selected_emails" value="{{ e }}">
+                                        <input type="checkbox" name="selected_emails" value="{{ e }}" checked>
                                     </td>
                                     <td style="text-align:left;">{{ e }}</td>
                                 </tr>
@@ -2118,63 +2068,23 @@
     {% endif %}
 
     {% if mensaje_exito %}
-        {% set is_error_message = ('Error' in mensaje_exito) or ('error' in mensaje_exito) %}
-        {% set is_warning_message = ('NO ENVIADOS' in mensaje_exito) or ('⚠️' in mensaje_exito) %}
-        <div class="floating-overlay" id="floatingOverlay" onclick="closeFloatingAlert()"></div>
-        <div class="floating-alert" id="floatingAlert">
-            <div class="alert-header {% if is_warning_message or is_error_message %}warning-header{% endif %}">
-                {% if is_error_message %}
-                    ❌ Error de Envío
-                {% elif is_warning_message %}
-                    ⚠️ Reporte de Envío
-                {% else %}
-                    ✅ Envío Completado
-                {% endif %}
-            </div>
-            <div class="alert-body">
-                {% set lines = mensaje_exito.split('\n') %}
-                {% for line in lines %}
-                    {% if 'Enviados:' in line %}
-                        {% set parts = line.split('.') %}
-                        {% for part in parts %}
-                            {% if 'Enviados:' in part %}
-                                <span class="stats-box stats-success">{{ part.strip() }}</span>
-                            {% elif 'Fallidos:' in part %}
-                                <span class="stats-box stats-danger">{{ part.strip() }}</span>
-                            {% endif %}
-                        {% endfor %}
-                    {% elif 'CORREOS NO ENVIADOS' in line %}
-                        <div class="email-list">
-                            <h5 style="color: #f5576c; margin-bottom: 15px;">
-                                <strong>{{ line }}</strong>
-                            </h5>
-                    {% elif line.startswith('•') %}
-                            <div class="email-item">{{ line.replace('•', '📧') }}</div>
-                    {% elif line.strip() and not line.startswith('✅') and not line.startswith('⚠️') %}
-                        {% if 'Revisa' in line %}
-                            <p style="margin-top: 15px; color: #6c757d; font-size: 0.9rem;">{{ line }}</p>
-                        {% elif '... y' in line %}
-                            <p style="margin-top: 10px; font-style: italic; color: #6c757d;">{{ line }}</p>
-                        {% elif line.strip() %}
-                            <p>{{ line }}</p>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-                {% if 'NO ENVIADOS' in mensaje_exito %}
-                        </div>
-                {% endif %}
-                <div style="text-align: center;">
-                    <button id="floatingCloseBtn" class="close-btn-float" onclick="closeFloatingAlert()">Entendido</button>
-                </div>
-            </div>
+        <div class="floating-alert toast-success" id="floatingAlert" data-auto-dismiss="1">
+            <div class="alert-header">✅ Guardado exitosamente</div>
         </div>
     {% endif %}
 </div>
 
 <script>
 function closeFloatingAlert() {
-    document.getElementById('floatingAlert').style.display = 'none';
-    document.getElementById('floatingOverlay').style.display = 'none';
+    const floatingAlert = document.getElementById('floatingAlert');
+    const floatingOverlay = document.getElementById('floatingOverlay');
+    if (floatingAlert) floatingAlert.style.display = 'none';
+    if (floatingOverlay) floatingOverlay.style.display = 'none';
+}
+
+const floatingAlert = document.getElementById('floatingAlert');
+if (floatingAlert && floatingAlert.dataset.autoDismiss === '1') {
+    setTimeout(closeFloatingAlert, 2200);
 }
 
 function toggleEmailPasswordProtection() {
@@ -2218,6 +2128,35 @@ function toggleAll(source) {
             checkbox.checked = source.checked;
         }
     });
+    updateSelectionSummary();
+}
+
+function updateSelectionSummary() {
+    const allCheckboxes = Array.from(document.querySelectorAll('input[name="selected_emails"]'));
+    const selectedCount = allCheckboxes.filter((checkbox) => checkbox.checked).length;
+    const summary = document.getElementById('selectedSummary');
+    if (summary) {
+        summary.textContent = `Seleccionados: ${selectedCount}`;
+    }
+
+    const checkAll = document.getElementById('check-all');
+    if (checkAll && allCheckboxes.length > 0) {
+        checkAll.checked = allCheckboxes.every((checkbox) => checkbox.checked);
+    }
+}
+
+function initDefaultEmailSelection() {
+    const checkboxes = Array.from(document.querySelectorAll('input[name="selected_emails"]'));
+    if (checkboxes.length === 0) {
+        return;
+    }
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.checked = true;
+        checkbox.addEventListener('change', updateSelectionSummary);
+    });
+
+    updateSelectionSummary();
 }
 
 function getCurrentGeneralPageSize() {
@@ -3029,13 +2968,16 @@ function openQuickPasswordModal() {
     closeQuickSettings();
     const overlay = document.getElementById('quickPasswordOverlay');
     const modal = document.getElementById('quickPasswordModal');
+    const senderInput = document.getElementById('quickSenderInput');
     const passwordInput = document.getElementById('quickPasswordInput');
     const showPassword = document.getElementById('quickPasswordShow');
     if (overlay) overlay.style.display = 'block';
     if (modal) modal.style.display = 'block';
+    if (senderInput) {
+        senderInput.focus();
+    }
     if (passwordInput && showPassword) {
         toggleQuickPasswordVisibility();
-        passwordInput.focus();
     }
     document.body.style.overflow = 'hidden';
 }
@@ -3073,7 +3015,11 @@ function toggleQuickPasswordVisibility() {
 }
 
 function closeQuickPasswordModal() {
-    return;
+    const overlay = document.getElementById('quickPasswordOverlay');
+    const modal = document.getElementById('quickPasswordModal');
+    if (overlay) overlay.style.display = 'none';
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 function openFullSettings(tabName) {
@@ -3201,33 +3147,38 @@ function applyColorMode(mode) {
 
 function setDensity(mode) {
     document.body.classList.remove('qs-density-comfortable', 'qs-density-compact');
+    const densityDefault = document.getElementById('densityDefault');
+    const densityComfortable = document.getElementById('densityComfortable');
+    const densityCompact = document.getElementById('densityCompact');
 
     if (mode === 'comfortable') {
         document.body.classList.add('qs-density-comfortable');
-        document.getElementById('densityComfortable').checked = true;
+        if (densityComfortable) densityComfortable.checked = true;
     } else if (mode === 'compact') {
         document.body.classList.add('qs-density-compact');
-        document.getElementById('densityCompact').checked = true;
+        if (densityCompact) densityCompact.checked = true;
     } else {
-        document.getElementById('densityDefault').checked = true;
+        if (densityDefault) densityDefault.checked = true;
     }
 
     localStorage.setItem('quickDensity', mode);
 }
 
 function setThemeMode(mode) {
-    document.getElementById('themeDefault').classList.remove('active');
-    document.getElementById('themeSoft').classList.remove('active');
+    const themeDefault = document.getElementById('themeDefault');
+    const themeSoft = document.getElementById('themeSoft');
+    if (themeDefault) themeDefault.classList.remove('active');
+    if (themeSoft) themeSoft.classList.remove('active');
 
     if (document.body.classList.contains('qs-dark-mode')) {
         applyColorMode('light');
     }
 
     if (mode === 'soft') {
-        document.getElementById('themeSoft').classList.add('active');
+        if (themeSoft) themeSoft.classList.add('active');
         document.body.classList.add('qs-soft-mode');
     } else {
-        document.getElementById('themeDefault').classList.add('active');
+        if (themeDefault) themeDefault.classList.add('active');
         document.body.classList.remove('qs-soft-mode');
     }
 
@@ -3299,12 +3250,16 @@ function applyInboxTypeToMail(mode) {
 }
 
 function setReadingMode(mode) {
+    const readingNone = document.getElementById('readingNone');
+    const readingRight = document.getElementById('readingRight');
+    const readingBottom = document.getElementById('readingBottom');
+
     if (mode === 'right') {
-        document.getElementById('readingRight').checked = true;
+        if (readingRight) readingRight.checked = true;
     } else if (mode === 'bottom') {
-        document.getElementById('readingBottom').checked = true;
+        if (readingBottom) readingBottom.checked = true;
     } else {
-        document.getElementById('readingNone').checked = true;
+        if (readingNone) readingNone.checked = true;
     }
 
     localStorage.setItem('quickReadingMode', mode);
@@ -3535,6 +3490,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFullSettings();
     initGeneralLiveEffects();
     initSettingsPasswordToggle();
+    initDefaultEmailSelection();
 
     const quickPasswordShow = document.getElementById('quickPasswordShow');
     if (quickPasswordShow) {

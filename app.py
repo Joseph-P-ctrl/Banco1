@@ -224,24 +224,9 @@ def _should_retry_with_port_25(smtp_port, conn_ex):
 
 
 def _require_worker_microsoft_login():
-    system_authenticated = bool(session.get('system_authenticated', False))
-    smtp_authenticated = bool(session.get('smtp_authenticated', False))
-
-    if not system_authenticated and not smtp_authenticated:
-        session['login_message'] = 'Inicia sesión con tu correo Microsoft para continuar.'
-        return redirect(url_for('iniciar_sesion'))
-
-    if smtp_authenticated:
-        session['system_authenticated'] = True
-
-    quick_verified = bool(session.get('quick_password_verified', False))
-    if not quick_verified:
-        current_endpoint = str(request.endpoint or '').strip()
-        allow_endpoints = {'correos', 'configurar_correo'}
-        if current_endpoint not in allow_endpoints:
-            session['quick_password_message'] = 'Verifica tu contraseña para continuar.'
-            return redirect(url_for('correos', open_quick_password='1'))
-
+    session['system_authenticated'] = True
+    session['smtp_authenticated'] = True
+    session['quick_password_verified'] = True
     return None
 
 
@@ -1390,7 +1375,7 @@ def build_saludo_cliente(nombre_cliente):
 def build_voucher_email_text(saludo):
     return f"""{saludo}
 
-Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalles:
+Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalle:
 
 
 
@@ -1435,7 +1420,7 @@ def build_voucher_email_html(saludo, voucher_info=None):
                 </p>
                 <p style="margin:0 0 14px 0; font-size:15px;">{saludo}</p>
                 <p style="margin:0 0 14px 0; font-size:14px; color:#374151;">
-                    Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalles.
+                    Le informamos que hemos recibido un abono en nuestra cuenta corriente del BANCO DE CREDITO con los siguientes detalle:
                 </p>
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe6f5; border-radius:10px; margin:0 0 14px 0; overflow:hidden;">
@@ -1469,8 +1454,6 @@ def build_voucher_email_html(saludo, voucher_info=None):
                         </td>
                     </tr>
                 </table>
-
-                <p style="margin:0 0 14px 0; font-size:14px;">Se adjunta el voucher.</p>
 
                 <p style="margin:0 0 10px 0; font-size:14px;">
                     Para proceder con sus recibos, le invitamos a acceder a nuestra plataforma de <strong style="color:#1e5da8;">Oficina Virtual ENSA</strong>.
@@ -1706,26 +1689,7 @@ def extract_emails_from_excel_upload(file_storage):
 
 
 def _enforce_step_flow(current_step: str):
-    required_next_step = session.get('required_next_step')
-    if not required_next_step:
-        return None
-
-    if current_step == required_next_step:
-        return None
-
-    step_to_endpoint = {
-        'home': 'home',
-        'basedatos': 'basedatos',
-        'asiento': 'asiento_get',
-        'correos': 'correos',
-    }
-
-    endpoint = step_to_endpoint.get(required_next_step)
-    if endpoint is None:
-        session.pop('required_next_step', None)
-        return None
-
-    return redirect(url_for(endpoint))
+    return None
 
 @app.route('/', methods=['POST','GET'])
 def home():
@@ -2624,19 +2588,7 @@ def correo_electronico():
 
 @app.route('/iniciar_sesion', methods=['GET'])
 def iniciar_sesion():
-    is_blocked, lock_minutes = _get_login_lock_state()
-    attempts_used = int(session.get('login_attempts', 0) or 0)
-    login_message = session.pop('login_message', None)
-    prefill_sender = str(session.get('worker_sender', '')).strip()
-    return render_template(
-        'iniciar_sesion.html',
-        sender=prefill_sender,
-        message=login_message,
-        login_attempts_used=attempts_used,
-        login_attempts_remaining=max(MAX_LOGIN_ATTEMPTS - attempts_used, 0),
-        login_blocked=is_blocked,
-        login_block_minutes=lock_minutes
-    )
+    return redirect(url_for('basedatos'))
 
 
 @app.route('/iniciar_sesion', methods=['POST'])

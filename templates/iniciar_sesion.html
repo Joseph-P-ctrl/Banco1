@@ -307,7 +307,7 @@
         <form method="POST" action="/iniciar_sesion" class="form-side">
           <div id="stepEmail" class="step-panel active">
             <label class="field-label">Correo electrónico</label>
-            <input type="email" class="form-control input-like-google mb-1" id="sender" name="sender" value="{{ sender }}" required>
+            <input type="email" class="form-control input-like-google mb-1" id="sender" name="sender" value="" required>
 
             <div class="actions">
               <button class="btn-next" type="button" id="btnNextEmail">Siguiente</button>
@@ -376,7 +376,7 @@
         stepEmail.classList.remove('active');
         stepPassword.classList.add('active');
         leftTitle.textContent = 'Te damos la bienvenida';
-        accountPillText.textContent = email;
+        accountPillText.textContent = 'Cuenta seleccionada';
         accountPill.style.display = 'inline-flex';
         passwordInput.focus();
         hideLoading();
