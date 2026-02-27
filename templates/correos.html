@@ -20,14 +20,14 @@
         }
 
         .floating-alert.toast-success {
-            top: 74px;
-            right: 14px;
-            left: auto;
-            transform: none;
-            min-width: 240px;
-            max-width: 300px;
+            top: 50%;
+            left: 50%;
+            right: auto;
+            transform: translate(-50%, -50%);
+            min-width: 280px;
+            max-width: 360px;
             border-radius: 10px;
-            animation: slideInRight 0.35s ease-out;
+            animation: slideDown 0.35s ease-out;
             z-index: 10002;
         }
 
@@ -225,6 +225,219 @@
 
         .corner-quick-btn:hover {
             background: #f8fafc;
+        }
+
+        .menu-collapse-btn {
+            position: fixed;
+            top: 16px;
+            left: 14px;
+            z-index: 10003;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            border: 1px solid #cfd8e3;
+            background: #10b981;
+            color: #ffffff;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+            cursor: pointer;
+        }
+
+        .menu-collapse-btn:hover {
+            background: #059669;
+        }
+
+        .collapsed-topbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            height: 74px;
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #dbe4f0;
+            backdrop-filter: blur(4px);
+            padding: 0 18px;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .collapsed-topbar img {
+            width: 46px;
+            height: 46px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .collapsed-topbar-brand {
+            font-size: 44px;
+            line-height: 1;
+            font-weight: 700;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
+            margin-top: -4px;
+        }
+
+        .collapsed-userbar {
+            display: none;
+            position: fixed;
+            top: 74px;
+            left: 0;
+            right: 0;
+            z-index: 998;
+            height: 74px;
+            background: rgba(255, 255, 255, 0.55);
+            border-bottom: 1px solid #dbe4f0;
+        }
+
+        .menu-side-nav {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            z-index: 1000;
+            padding: 16px 14px 14px;
+            background: linear-gradient(180deg, #1f3b55 0%, #1b3148 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.25s ease;
+        }
+
+        body.menu-hidden .menu-side-nav {
+            transform: translateX(-100%);
+        }
+
+        .menu-card {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            max-width: 220px;
+        }
+
+        .menu-side-nav.bg-body-tertiary {
+            background: linear-gradient(180deg, #1f3b55 0%, #1b3148 100%) !important;
+        }
+
+        .menu-side-nav .btn-primary {
+            border-radius: 6px;
+        }
+
+        .menu-side-nav .nav-link {
+            color: #dbeafe;
+            font-weight: 500;
+        }
+
+        .menu-side-nav .nav-link.active {
+            background: #2f64d8;
+            color: #ffffff;
+        }
+
+        .menu-side-nav .nav-link:not(.active):hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .content-with-menu {
+            margin-left: 270px;
+            width: calc(100vw - 270px);
+            max-width: none;
+            margin-right: 0;
+        }
+
+        body.menu-hidden .content-with-menu {
+            margin-left: 0;
+            width: 100vw;
+            padding-left: 18px;
+            padding-right: 18px;
+            padding-top: 150px;
+        }
+
+        body.menu-hidden .collapsed-topbar {
+            display: flex;
+        }
+
+        body.menu-hidden .collapsed-userbar {
+            display: block;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 14px;
+            margin-top: 14px;
+            color: #d1d5db;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .sidebar-brand-logo {
+            width: 118px;
+            height: 118px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            object-fit: cover;
+            margin-bottom: 8px;
+            background: #ffffff;
+        }
+
+        .sidebar-brand-logo-wrap {
+            width: 118px;
+            height: 118px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .sidebar-brand-logo-fallback {
+            width: 118px;
+            height: 118px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, #c7d2fe, #93c5fd);
+            color: #1e3a8a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .sidebar-brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 1200px) {
+            .menu-side-nav {
+                position: static;
+                width: 100%;
+                max-width: 340px;
+                height: auto;
+                margin: 10px auto 0;
+                padding: 10px;
+                border-right: 0;
+            }
+
+            .content-with-menu {
+                margin-left: 0;
+                width: auto;
+                max-width: 100%;
+            }
         }
 
         .quick-settings-overlay {
@@ -1435,6 +1648,12 @@
     </style>
 </head>
 <body>
+<button type="button" class="menu-collapse-btn" title="Ocultar/mostrar menú" aria-label="Ocultar/mostrar menú" onclick="toggleMainSidebar()">☰</button>
+<header class="collapsed-topbar" aria-hidden="true">
+    <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+    <div class="collapsed-topbar-brand">Ensa</div>
+</header>
+<div class="collapsed-userbar" aria-hidden="true"></div>
 <button type="button" class="corner-theme-btn" id="themeToggleBtn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
 <button type="button" class="corner-quick-btn" id="quickSettingsBtn" title="Ajustes rápidos" aria-label="Ajustes rápidos">⚙</button>
 
@@ -1948,20 +2167,43 @@
     </div>
 </div>
 
-<header>
-    <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
-</header>
-<nav class="bg-body-tertiary">
-    <ul class="nav nav-pills justify-content-center mb-3">
-        <li class="nav-item"><a id="navHome" class="nav-link" href="/">Home</a></li>
-        <li class="nav-item"><a id="navDatabase" class="nav-link" href="/basedatos">Base de Datos</a></li>
-        <li class="nav-item"><a id="navEntries" class="nav-link" href="/asiento">Asientos</a></li>
-        <li class="nav-item"><a id="navEmails" class="nav-link active" href="/correos">Correos</a></li>
-    </ul>
+<nav class="bg-body-tertiary py-2 menu-side-nav">
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-logo-wrap">
+            {% if has_profile_photo %}
+                <img class="sidebar-brand-logo" src="{{ profile_photo_url }}" alt="ENSA">
+            {% else %}
+                <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+            {% endif %}
+            <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto" onclick="openAvatarUpload()">📷</button>
+        </div>
+        <div>ELECTRONORTE S.A.</div>
+    </div>
+    <div class="menu-card">
+        <div class="w-100">
+            <button
+                id="mainMenuToggle"
+                type="button"
+                class="btn btn-primary w-100"
+                aria-expanded="false"
+                aria-controls="mainMenuList"
+                onclick="toggleMainMenuList()"
+            >Menú</button>
+            <ul class="nav nav-pills flex-column gap-2 mt-2 d-none" id="mainMenuList">
+                <li class="nav-item"><a id="navHome" class="nav-link text-center" href="/">Home</a></li>
+                <li class="nav-item"><a id="navDatabase" class="nav-link text-center" href="/basedatos">Base de Datos</a></li>
+                <li class="nav-item"><a id="navEntries" class="nav-link text-center" href="/asiento">Asientos</a></li>
+                <li class="nav-item"><a id="navEmails" class="nav-link active text-center" href="/correos">Correos</a></li>
+            </ul>
+        </div>
+    </div>
 </nav>
 
-<div class="container text-center">
-    <h1 id="pageTitle">Correos</h1>
+<div class="container text-center content-with-menu">
+    <div class="d-flex justify-content-center align-items-center gap-3">
+        <a class="btn btn-outline-secondary btn-sm" href="/asiento">← Regresar</a>
+        <h1 id="pageTitle" class="mb-0">Correos</h1>
+    </div>
 
     {% if emails is defined %}
         <div class="card p-3 mt-3">
@@ -2069,7 +2311,7 @@
 
     {% if mensaje_exito %}
         <div class="floating-alert toast-success" id="floatingAlert" data-auto-dismiss="1">
-            <div class="alert-header">✅ Guardado exitosamente</div>
+            <div class="alert-header" style="white-space: pre-line; text-align: left;">{{ mensaje_exito|replace('\n', '<br>')|safe }}</div>
         </div>
     {% endif %}
 </div>
@@ -3128,6 +3370,47 @@ function toggleColorMode() {
     const nextMode = current === 'dark' ? 'light' : 'dark';
     applyColorMode(nextMode);
 }
+
+function applySidebarState() {
+    const hidden = localStorage.getItem('ensaSidebarHidden') === '1';
+    document.body.classList.toggle('menu-hidden', hidden);
+}
+
+function applyMainMenuState() {
+    const menu = document.getElementById('mainMenuList');
+    const toggle = document.getElementById('mainMenuToggle');
+    if (!menu || !toggle) {
+        return;
+    }
+
+    const expanded = localStorage.getItem('ensaMainMenuExpanded') === '1';
+    menu.classList.toggle('d-none', !expanded);
+    toggle.setAttribute('aria-expanded', String(expanded));
+}
+
+function toggleMainMenuList() {
+    const menu = document.getElementById('mainMenuList');
+    const toggle = document.getElementById('mainMenuToggle');
+    if (!menu || !toggle) {
+        return;
+    }
+
+    const hidden = menu.classList.toggle('d-none');
+    const expanded = !hidden;
+    toggle.setAttribute('aria-expanded', String(expanded));
+    localStorage.setItem('ensaMainMenuExpanded', expanded ? '1' : '0');
+}
+
+function toggleMainSidebar() {
+    const hidden = !document.body.classList.contains('menu-hidden');
+    document.body.classList.toggle('menu-hidden', hidden);
+    localStorage.setItem('ensaSidebarHidden', hidden ? '1' : '0');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    applySidebarState();
+    applyMainMenuState();
+});
 
 function applyColorMode(mode) {
     const body = document.body;

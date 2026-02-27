@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <style>
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #dbeafe 0%, #e5e7eb 45%, #f1f5f9 100%);
+        }
+
+        .menu-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 12px 14px 18px;
+        }
+
+        .menu-frame {
+            width: 100%;
+            min-height: calc(100vh - 128px);
+            border: 1px solid #d5dde7;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .brand {
+            height: 42px;
+            object-fit: contain;
+        }
+
+        .top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .menu-title {
+            margin: 0;
+            color: #1f2937;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .menu-side-nav {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            z-index: 1000;
+            padding: 16px 14px 14px;
+            background: linear-gradient(180deg, #1f3b55 0%, #1b3148 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .menu-card {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .menu-side-nav .btn-primary {
+            border-radius: 6px;
+        }
+
+        .menu-side-nav .nav-link {
+            color: #dbeafe;
+            font-weight: 500;
+        }
+
+        .menu-side-nav .nav-link.active {
+            background: #2f64d8;
+            color: #ffffff;
+        }
+
+        .menu-side-nav .nav-link:not(.active):hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .menu-content {
+            margin-left: 270px;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 14px;
+            margin-top: 14px;
+            color: #d1d5db;
+            padding: 6px;
+        }
+
+        .sidebar-brand-logo {
+            width: 118px;
+            height: 118px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            object-fit: cover;
+            margin-bottom: 8px;
+            background: #ffffff;
+        }
+
+        .sidebar-brand-logo-wrap {
+            width: 118px;
+            height: 118px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .avatar-upload-btn {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #94a3b8;
+            background: #fff;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+        }
+
+        .sidebar-brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 1200px) {
+            .menu-side-nav {
+                position: static;
+                width: 100%;
+                max-width: 340px;
+                height: auto;
+                margin: 10px auto 0;
+                padding: 10px;
+                border-right: 0;
+            }
+
+            .menu-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="menu-wrapper">
+    <nav class="menu-side-nav">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-logo-wrap">
+                <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+                <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto">📷</button>
+            </div>
+            <div>ELECTRONORTE S.A.</div>
+        </div>
+        <div class="menu-card">
+            <div class="w-100">
+            <button
+                id="mainMenuToggle"
+                type="button"
+                class="btn btn-primary w-100"
+                aria-expanded="false"
+                aria-controls="mainMenuList"
+                onclick="toggleMainMenuList()"
+            >Menú</button>
+            <ul class="nav nav-pills flex-column gap-2 mt-2 d-none" id="mainMenuList">
+                <li class="nav-item"><a class="nav-link text-center {% if active_tab == 'home' %}active{% endif %}" href="{{ url_for('menu', tab='home') }}">Home</a></li>
+                <li class="nav-item"><a class="nav-link text-center {% if active_tab == 'basedatos' %}active{% endif %}" href="{{ url_for('menu', tab='basedatos') }}">Base de Datos</a></li>
+                <li class="nav-item"><a class="nav-link text-center {% if active_tab == 'asiento' %}active{% endif %}" href="{{ url_for('menu', tab='asiento') }}">Asientos</a></li>
+                <li class="nav-item"><a class="nav-link text-center {% if active_tab == 'correos' %}active{% endif %}" href="{{ url_for('menu', tab='correos') }}">Correos</a></li>
+            </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="menu-content">
+        <iframe class="menu-frame" src="{{ tab_map[active_tab] }}" title="Contenido del módulo" loading="eager"></iframe>
+    </div>
+</div>
+<script>
+    function applyMainMenuState() {
+        const menu = document.getElementById('mainMenuList');
+        const toggle = document.getElementById('mainMenuToggle');
+        if (!menu || !toggle) {
+            return;
+        }
+
+        const expanded = localStorage.getItem('ensaMainMenuExpanded') === '1';
+        menu.classList.toggle('d-none', !expanded);
+        toggle.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function toggleMainMenuList() {
+        const menu = document.getElementById('mainMenuList');
+        const toggle = document.getElementById('mainMenuToggle');
+        if (!menu || !toggle) {
+            return;
+        }
+
+        const hidden = menu.classList.toggle('d-none');
+        const expanded = !hidden;
+        toggle.setAttribute('aria-expanded', String(expanded));
+        localStorage.setItem('ensaMainMenuExpanded', expanded ? '1' : '0');
+    }
+
+    document.addEventListener('DOMContentLoaded', applyMainMenuState);
+</script>
+</body>
+</html>

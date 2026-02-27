@@ -10,6 +10,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
    
     <style>
+        .floating-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10002;
+            min-width: 300px;
+            max-width: 420px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+            animation: fadeInScale 0.25s ease-out;
+        }
+
+        .floating-alert .alert-header {
+            background: linear-gradient(135deg, #2563eb 0%, #16a34a 100%);
+            color: #ffffff;
+            padding: 12px 16px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .upload-stack {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: translate(-50%, -46%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
         .loader {
             position: fixed;
             top: 50%;
@@ -58,6 +90,74 @@
             text-decoration: none;
         }
 
+        .menu-collapse-btn {
+            position: fixed;
+            top: 16px;
+            left: 14px;
+            z-index: 10003;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            border: 1px solid #cfd8e3;
+            background: #10b981;
+            color: #ffffff;
+            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14);
+            cursor: pointer;
+        }
+
+        .menu-collapse-btn:hover {
+            background: #059669;
+        }
+
+        .collapsed-topbar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            height: 74px;
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #dbe4f0;
+            backdrop-filter: blur(4px);
+            padding: 0 18px;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .collapsed-topbar img {
+            width: 46px;
+            height: 46px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .collapsed-topbar-brand {
+            font-size: 44px;
+            line-height: 1;
+            font-weight: 700;
+            color: #1e3a8a;
+            letter-spacing: 0.5px;
+            margin-top: -4px;
+        }
+
+        .collapsed-userbar {
+            display: none;
+            position: fixed;
+            top: 74px;
+            left: 0;
+            right: 0;
+            z-index: 998;
+            height: 74px;
+            background: rgba(255, 255, 255, 0.55);
+            border-bottom: 1px solid #dbe4f0;
+        }
+
         .corner-logout-btn {
             position: fixed;
             top: 16px;
@@ -90,22 +190,249 @@
         body.theme-dark .nav-link.active {
             color: #93c5fd !important;
         }
+
+        .menu-side-nav {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            z-index: 1000;
+            padding: 16px 14px 14px;
+            background: linear-gradient(180deg, #1f3b55 0%, #1b3148 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .menu-card {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            max-width: 220px;
+        }
+
+        .menu-side-nav.bg-body-tertiary {
+            background: linear-gradient(180deg, #1f3b55 0%, #1b3148 100%) !important;
+        }
+
+        .menu-side-nav .btn-primary {
+            border-radius: 6px;
+        }
+
+        .menu-side-nav .nav-link {
+            color: #dbeafe;
+            font-weight: 500;
+        }
+
+        .menu-side-nav .nav-link.active {
+            background: #2f64d8;
+            color: #ffffff;
+        }
+
+        .menu-side-nav .nav-link:not(.active):hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+        }
+
+        .menu-side-nav {
+            transition: transform 0.25s ease;
+        }
+
+        body.menu-hidden .menu-side-nav {
+            transform: translateX(-100%);
+        }
+
+        .content-with-menu {
+            margin-left: 270px;
+            width: calc(100vw - 270px);
+            max-width: none;
+            margin-right: 0;
+        }
+
+        body.menu-hidden .content-with-menu {
+            margin-left: 0;
+            width: 100vw;
+            padding-left: 18px;
+            padding-right: 18px;
+            padding-top: 150px;
+        }
+
+        body.menu-hidden .collapsed-topbar {
+            display: flex;
+        }
+
+        body.menu-hidden .collapsed-userbar {
+            display: block;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 14px;
+            margin-top: 14px;
+            color: #d1d5db;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .sidebar-brand-logo {
+            width: 118px;
+            height: 118px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            object-fit: cover;
+            margin-bottom: 8px;
+            background: #ffffff;
+        }
+
+        .sidebar-brand-logo-wrap {
+            width: 118px;
+            height: 118px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .sidebar-brand-logo-fallback {
+            width: 118px;
+            height: 118px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            background: linear-gradient(135deg, #c7d2fe, #93c5fd);
+            color: #1e3a8a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .avatar-upload-btn {
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #94a3b8;
+            background: #fff;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .avatar-upload-btn:hover {
+            background: #f8fafc;
+        }
+
+        .sidebar-brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f1f5f9;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 1200px) {
+            .menu-side-nav {
+                position: static;
+                width: 100%;
+                max-width: 340px;
+                height: auto;
+                margin: 10px auto 0;
+                padding: 10px;
+                border-right: 0;
+            }
+
+            .content-with-menu {
+                margin-left: 0;
+                width: auto;
+                max-width: 100%;
+            }
+        }
     </style>
    <script>
+function showProcessFeedback(message, level) {
+    const box = document.getElementById('processFeedback');
+    if (!box) {
+        return;
+    }
+    const css = level === 'error' ? 'alert alert-danger mt-2' : 'alert alert-success mt-2';
+    box.className = css;
+    box.textContent = message;
+    box.style.display = 'block';
+}
 
+function closeFloatingAlert() {
+    const floatingAlert = document.getElementById('floatingAlert');
+    if (floatingAlert) floatingAlert.style.display = 'none';
+}
 
+async function handleAsientoSubmit(event) {
+    event.preventDefault();
 
-    window.addEventListener("load", function () {
-        document.querySelector("form").addEventListener("submit", function () {
-            var target = document.getElementById("loader");
-            var spinner = new Spinner().spin(target);
-            document.getElementById("submitBtn").setAttribute("disabled", "true");
-            target.style.display = "inline-block";
+    const form = event.currentTarget;
+    const submitBtn = document.getElementById('submitBtn');
+    const loaderTarget = document.getElementById('loader');
+    const spinner = new Spinner().spin(loaderTarget);
 
+    submitBtn.setAttribute('disabled', 'true');
+    loaderTarget.style.display = 'inline-block';
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            credentials: 'same-origin'
         });
-      
-    });
 
+        const contentDisposition = response.headers.get('content-disposition') || '';
+        const contentType = response.headers.get('content-type') || '';
+        const isDownload = contentDisposition.toLowerCase().includes('attachment') ||
+            contentType.includes('application/vnd.openxmlformats-officedocument') ||
+            contentType.includes('application/octet-stream');
+
+        if (response.ok && isDownload) {
+            const blob = await response.blob();
+            let filename = 'asientos.xlsx';
+            const fileMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+            if (fileMatch) {
+                filename = decodeURIComponent(fileMatch[1] || fileMatch[2] || filename);
+            }
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            form.reset();
+            window.location.href = '/correos';
+            return;
+        }
+
+        const html = await response.text();
+        const cleanMessage = (html.match(/Error:\s*([^<\n]+)/i) || [])[1] || 'No se pudo procesar los archivos. Verifica el formato e inténtalo de nuevo.';
+        showProcessFeedback(`❌ ${cleanMessage}`, 'error');
+    } catch (error) {
+        showProcessFeedback('❌ Ocurrió un error al procesar el archivo. Inténtalo nuevamente.', 'error');
+    } finally {
+        spinner.stop();
+        loaderTarget.style.display = 'none';
+        submitBtn.removeAttribute('disabled');
+    }
+}
 </script>
 <script>
     function applyThemeMode() {
@@ -120,41 +447,119 @@
         applyThemeMode();
     }
 
-    document.addEventListener('DOMContentLoaded', applyThemeMode);
+    function applySidebarState() {
+        const hidden = localStorage.getItem('ensaSidebarHidden') === '1';
+        document.body.classList.toggle('menu-hidden', hidden);
+    }
+
+    function applyMainMenuState() {
+        const menu = document.getElementById('mainMenuList');
+        const toggle = document.getElementById('mainMenuToggle');
+        if (!menu || !toggle) {
+            return;
+        }
+
+        const expanded = localStorage.getItem('ensaMainMenuExpanded') === '1';
+        menu.classList.toggle('d-none', !expanded);
+        toggle.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function toggleMainMenuList() {
+        const menu = document.getElementById('mainMenuList');
+        const toggle = document.getElementById('mainMenuToggle');
+        if (!menu || !toggle) {
+            return;
+        }
+
+        const hidden = menu.classList.toggle('d-none');
+        const expanded = !hidden;
+        toggle.setAttribute('aria-expanded', String(expanded));
+        localStorage.setItem('ensaMainMenuExpanded', expanded ? '1' : '0');
+    }
+
+    function openAvatarUpload() {
+        const fileInput = document.getElementById('avatarUploadInput');
+        if (fileInput) {
+            fileInput.click();
+        }
+    }
+
+    function submitAvatarUpload() {
+        const fileInput = document.getElementById('avatarUploadInput');
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            document.getElementById('avatarUploadForm').submit();
+        }
+    }
+
+    function toggleMainSidebar() {
+        const hidden = !document.body.classList.contains('menu-hidden');
+        document.body.classList.toggle('menu-hidden', hidden);
+        localStorage.setItem('ensaSidebarHidden', hidden ? '1' : '0');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        applyThemeMode();
+        applySidebarState();
+        applyMainMenuState();
+    });
 </script>
 </head>
 
 <body>
+    <button type="button" class="menu-collapse-btn" title="Ocultar/mostrar menú" aria-label="Ocultar/mostrar menú" onclick="toggleMainSidebar()">☰</button>
+    <header class="collapsed-topbar" aria-hidden="true">
+        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+        <div class="collapsed-topbar-brand">Ensa</div>
+    </header>
+    <div class="collapsed-userbar" aria-hidden="true"></div>
     <button type="button" class="corner-theme-btn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
     <a class="corner-quick-btn" href="/correos" title="Ajustes" aria-label="Ajustes">⚙</a>
-    <header>
-        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="Imagen" width="150" height="80">
-
-    </header>
-    <nav class="bg-body-tertiary">
-
-        <ul class="nav nav-pills justify-content-center mb-3 " id="pills-tab" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link " href="/">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link " href="/basedatos">Base de Datos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="/asiento">Asientos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link " href="/correos">Correos</a>
-            </li>
-        </ul>
+    <form id="avatarUploadForm" action="/subir_foto_perfil" method="POST" enctype="multipart/form-data" style="display:none;">
+        <input id="avatarUploadInput" type="file" name="profile_image" accept=".png,.jpg,.jpeg,.webp" onchange="submitAvatarUpload()">
+    </form>
+    <nav class="bg-body-tertiary py-2 menu-side-nav">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-logo-wrap">
+                <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+                <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto" onclick="openAvatarUpload()">📷</button>
+            </div>
+            <div>ELECTRONORTE S.A.</div>
+        </div>
+        <div class="menu-card">
+            <div class="w-100">
+                <button
+                    id="mainMenuToggle"
+                    type="button"
+                    class="btn btn-primary w-100"
+                    aria-expanded="false"
+                    aria-controls="mainMenuList"
+                    onclick="toggleMainMenuList()"
+                >Menú</button>
+                <ul class="nav nav-pills flex-column gap-2 mt-2 d-none" id="mainMenuList" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link text-center" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-center" href="/basedatos">Base de Datos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active text-center" href="/asiento">Asientos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-center" href="/correos">Correos</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </nav>
-    <div class="container container-maxwidth-sm mx-auto text-center">
+    <div class="flex-grow-1 container text-center content-with-menu">
         <div class="row">
 
             <div class="col">
 
 
                 <h1 class="justify-content-center"> Asientos</h1>
+                <div id="processFeedback" style="display:none;"></div>
                 <span class="error">
                     {% if error_message %}
                     <p>Error: {{ error_message }}</p>
@@ -163,19 +568,51 @@
                 </span>
                 <span class="success">
                     {% if mensaje_exito %}
-                    <p>{{ mensaje_exito }}</p>
+                    <div class="floating-alert" id="floatingAlert" data-auto-dismiss="1">
+                        <div class="alert-header">✅ {{ mensaje_exito }}</div>
+                    </div>
                     {% endif %}
 
                 </span>
-
+                {% if show_result_mode %}
+                <div class="card p-3 mt-3">
+                    <h5>Correos detectados</h5>
+                    {% if total_vouchers is defined and total_vouchers > 0 %}
+                    <div class="alert alert-info mt-2" role="alert">
+                        <strong>📄 Vouchers disponibles:</strong> {{ total_vouchers }} voucher(s) se enviarán en formato HTML dentro del correo correspondiente.
+                    </div>
+                    {% endif %}
+                    {% if asiento_emails %}
+                    <div class="table-responsive mt-2">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Correo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in asiento_emails %}
+                                <tr>
+                                    <td style="text-align:left;">{{ e }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="mb-0 mt-2">No se detectaron correos en el archivo.</p>
+                    {% endif %}
+                    <div class="d-flex justify-content-center mt-3">
+                        <a href="/correos" class="btn btn-primary">Ir a Correos</a>
+                    </div>
+                </div>
+                {% else %}
                 <form method="POST" action="/asiento" enctype="multipart/form-data">
 
-
-
-
+                    <div class="upload-stack">
                     <div class="row align-items-start">
 
-                        <div class="col ">
+                        <div class="col-12">
                             <div>
                                 <div class=" box input-group mb-3">
                                     <input type="file" class="form-control" name="file" id="mov"
@@ -189,7 +626,7 @@
 
 
                         </div>
-                        <div class="col">
+                        <div class="col-12">
                             <div class="box input-group mb-3">
                                 <input type="file" class="form-control" name="file" id="mov"
                                     accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -215,7 +652,9 @@
                         </div>
 
                     </div>
+                    </div>
                 </form>
+                {% endif %}
 
 
 
@@ -229,6 +668,20 @@
 
 
 
+<script>
+const floatingAlert = document.getElementById('floatingAlert');
+if (floatingAlert && floatingAlert.dataset.autoDismiss === '1') {
+    setTimeout(closeFloatingAlert, 2200);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.querySelector('form[action="/asiento"]');
+    if (!form) {
+        return;
+    }
+    form.addEventListener('submit', handleAsientoSubmit);
+});
+</script>
 </body>
 
 </html>

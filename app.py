@@ -1701,11 +1701,27 @@ def home():
     if flow_redirect is not None:
         return flow_redirect
 
+    if request.method == 'GET' and request.args.get('reset') == '1':
+        session.pop('home_processing_result', None)
+        session.pop('home_success_message', None)
+
+    general_settings = load_general_settings()
+    photo_path = _profile_photo_path()
+    has_profile_photo = os.path.exists(photo_path)
+    profile_photo_version = general_settings.get('perfil', {}).get('foto_version', 0)
+
     if request.method == 'POST':
         files = request.files.getlist('file')
         filtered_files = [x for x in files if x.filename!=""]
         if len(filtered_files) <= 1:
-            return render_template('home.html', error_message= 'Debe subir por lo menos un archivo.')
+            return render_template(
+                'home.html',
+                error_message='Debe subir por lo menos un archivo.',
+                processing_result=session.get('home_processing_result'),
+                mensaje_exito=session.get('home_success_message'),
+                has_profile_photo=has_profile_photo,
+                profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
+            )
         else:
             try:
                 accountService = AccountService()    
@@ -1732,15 +1748,48 @@ def home():
                 guardaRecaudos(accountService.recaudos)
                 resumen = {"movements": accountService.error, "providers": providerService.error, "transfers": transferService.error, "interbanks": interbankService.error}
                 session['required_next_step'] = 'asiento'
-               
-                return render_template("response.html", data= resumen) 
+                session['home_processing_result'] = resumen
+                session['home_success_message'] = 'Proceso exitosamente.'
+                return redirect(url_for('home'))
     
                 #return redirect(url_for('upload'))
             except Exception as e:
                 error_message = str(e)
-                return render_template('home.html', error_message= error_message)
+                return render_template(
+                    'home.html',
+                    error_message=error_message,
+                    processing_result=session.get('home_processing_result'),
+                    mensaje_exito=session.get('home_success_message'),
+                    has_profile_photo=has_profile_photo,
+                    profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
+                )
     else:
-        return render_template('home.html')
+        return render_template(
+            'home.html',
+            processing_result=session.get('home_processing_result'),
+            mensaje_exito=session.get('home_success_message'),
+            has_profile_photo=has_profile_photo,
+            profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
+        )
+
+
+@app.route('/menu', methods=['GET'])
+def menu():
+    auth_redirect = _require_worker_microsoft_login()
+    if auth_redirect is not None:
+        return auth_redirect
+
+    tab = request.args.get('tab', 'home').strip().lower()
+    tab_map = {
+        'home': '/',
+        'basedatos': '/basedatos',
+        'asiento': '/asiento',
+        'correos': '/correos'
+    }
+    if tab not in tab_map:
+        tab = 'home'
+
+    return render_template('menu.html', active_tab=tab, tab_map=tab_map)
 
 def guardaMovimientos(movimientos):
     movimientos["Fecha"] = pd.to_datetime(movimientos["Fecha"], format="%d/%m/%Y").dt.strftime("%d/%m/%Y")
@@ -1804,12 +1853,12 @@ def basedatos():
             if invalid_files:
                 return render_template('base-datos.html', error_message='Archivo(s) no reconocido(s): ' + ', '.join(invalid_files))
 
-            mensaje_exito = 'Base de datos actualizada correctamente.'
+            mensaje_exito = 'Proceso exitosamente.'
             
             base_datos_service = BaseDatosService()  
             base_datos_service.GuardarAchivos(files)  
             session['required_next_step'] = 'home'
-            return redirect(url_for('home'))
+            return render_template('base-datos.html', mensaje_exito=mensaje_exito)
                 
         except Exception as e:
             error_message = str(e)
@@ -1880,6 +1929,7 @@ def asiento_procesar():
                 # guardar en session para uso posterior y redirigir al flujo de correos
                 sorted_emails = sorted(set(emails))
                 session['asiento_emails'] = sorted_emails
+                session['correos_ready'] = True
                 save_emails_cache(sorted_emails)
                 if len(sorted_emails) == 0:
                     session['asiento_email_warning'] = 'No se encontraron correos para líneas sin voucher. Verifique Referencia y CORREO DE CONTACTO en Base de Datos > Clientes.'
@@ -1913,7 +1963,16 @@ def asiento_get():
     if flow_redirect is not None:
         return flow_redirect
 
-    return render_template('asiento.html')
+    show_result_mode = request.args.get('resultado_correo', '0') == '1'
+    asiento_emails = session.get('asiento_emails', [])
+    vouchers_generados = session.get('vouchers_generados', [])
+
+    return render_template(
+        'asiento.html',
+        show_result_mode=show_result_mode,
+        asiento_emails=asiento_emails,
+        total_vouchers=len(vouchers_generados)
+    )
 
 
 @app.route('/correos', methods=['GET','POST'])
@@ -1926,14 +1985,21 @@ def correos():
     if flow_redirect is not None:
         return flow_redirect
 
-    if session.get('required_next_step') == 'correos':
+    arrived_from_asiento = session.get('required_next_step') == 'correos'
+    if arrived_from_asiento:
         session.pop('required_next_step', None)
 
-    sess_emails = session.get('asiento_emails', [])
-    if not sess_emails:
-        sess_emails = load_emails_cache()
-        if sess_emails:
-            session['asiento_emails'] = sess_emails
+    ready_from_asiento = bool(session.pop('correos_ready', False))
+    allow_results = arrived_from_asiento and ready_from_asiento
+
+    if allow_results:
+        sess_emails = session.get('asiento_emails', [])
+    else:
+        session.pop('asiento_emails', None)
+        session.pop('vouchers_generados', None)
+        session.pop('asiento_email_warning', None)
+        sess_emails = []
+
     warning_message = session.pop('asiento_email_warning', None)
     config_message = session.pop('config_message', None)
     quick_password_message = session.pop('quick_password_message', None)
@@ -3274,12 +3340,16 @@ def subir_foto_perfil():
         session['config_message'] = 'Selecciona una imagen para subir.'
         if next_url == 'informacion_personal':
             return redirect(url_for('informacion_personal'))
+        if next_url == 'home':
+            return redirect(url_for('home'))
         return redirect(url_for('correos'))
 
     if not _allowed_image_extension(image_file.filename):
         session['config_message'] = 'Formato no válido. Usa PNG, JPG, JPEG o WEBP.'
         if next_url == 'informacion_personal':
             return redirect(url_for('informacion_personal'))
+        if next_url == 'home':
+            return redirect(url_for('home'))
         return redirect(url_for('correos'))
 
     try:
@@ -3301,6 +3371,9 @@ def subir_foto_perfil():
         if 'config_message' in session:
             session['personal_info_message'] = session.pop('config_message')
         return redirect(url_for('informacion_personal'))
+
+    if next_url == 'home':
+        return redirect(url_for('home'))
 
     return redirect(url_for('correos'))
 
@@ -3580,11 +3653,30 @@ def send_emails():
                 detail_part = fail.split(':', 1)[1].strip() if ':' in fail else 'error'
                 report.write(f'failed,{email_part},"{detail_part}"\n')
 
-        # Identificar correos NO enviados (olvidados)
-        emails_no_enviados = [email for email in emails if email not in emails_to_send]
+        sent_ok_set = {email.strip().lower() for email in sent_ok}
+        remaining_emails = [email for email in emails if email.strip().lower() not in sent_ok_set]
+        emails_no_enviados = remaining_emails[:]
+
+        if len(sent_ok) > 0:
+            session['asiento_emails'] = remaining_emails
+            save_emails_cache(remaining_emails)
+
+            vouchers_restantes = []
+            for voucher in vouchers_generados:
+                voucher_email = str(voucher.get('email', '')).strip().lower()
+                if voucher_email not in sent_ok_set:
+                    vouchers_restantes.append(voucher)
+            session['vouchers_generados'] = vouchers_restantes
+
+            if remaining_emails:
+                session.pop('asiento_email_warning', None)
+            else:
+                session.pop('asiento_email_warning', None)
         
         if len(sent_ok) == 0 and len(sent_fail) > 0:
             message = f"⚠️ Envío finalizado con errores. Enviados: {len(sent_ok)}. Fallidos: {len(sent_fail)}."
+        elif len(sent_ok) > 0 and len(sent_fail) == 0:
+            message = "✅ Envío exitosamente"
         else:
             message = f"✅ Envío finalizado. Enviados: {len(sent_ok)}. Fallidos: {len(sent_fail)}."
         
@@ -3602,7 +3694,7 @@ def send_emails():
 
         if len(sent_ok) > 0:
             message += '\n\nSi no lo ves en Bandeja de Entrada, revisa la carpeta Enviados del remitente.'
-        
+
         return _redirect_correos_with_message(message)
     except Exception as ex:
         return _redirect_correos_with_message(
