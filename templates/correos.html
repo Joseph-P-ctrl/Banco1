@@ -251,7 +251,7 @@
         }
 
         .collapsed-topbar {
-            display: none;
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
@@ -284,7 +284,7 @@
         }
 
         .collapsed-userbar {
-            display: none;
+            display: block;
             position: fixed;
             top: 74px;
             left: 0;
@@ -353,6 +353,7 @@
             width: calc(100vw - 270px);
             max-width: none;
             margin-right: 0;
+            padding-top: 150px;
         }
 
         body.menu-hidden .content-with-menu {
@@ -361,14 +362,6 @@
             padding-left: 18px;
             padding-right: 18px;
             padding-top: 150px;
-        }
-
-        body.menu-hidden .collapsed-topbar {
-            display: flex;
-        }
-
-        body.menu-hidden .collapsed-userbar {
-            display: block;
         }
 
         .sidebar-brand {
@@ -1650,7 +1643,11 @@
 <body>
 <button type="button" class="menu-collapse-btn" title="Ocultar/mostrar menú" aria-label="Ocultar/mostrar menú" onclick="toggleMainSidebar()">☰</button>
 <header class="collapsed-topbar" aria-hidden="true">
-    <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+    {% if has_profile_photo %}
+        <img src="{{ profile_photo_url }}" alt="ENSA">
+    {% else %}
+        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+    {% endif %}
     <div class="collapsed-topbar-brand">Ensa</div>
 </header>
 <div class="collapsed-userbar" aria-hidden="true"></div>
@@ -1908,7 +1905,6 @@
                                             JP
                                         {% endif %}
                                     </div>
-                                    <button type="button" class="avatar-upload-btn" title="Subir foto" onclick="openAvatarUpload()">📷</button>
                                 </div>
                                 <div class="inicio-name">{{ general_settings.perfil.nombre_mostrar if general_settings is defined and general_settings.perfil.nombre_mostrar else 'Cuenta principal' }}</div>
                                 <div class="inicio-email">{{ smtp_config.sender if smtp_config is defined and smtp_config.sender else 'correo@empresa.com' }}</div>
@@ -2175,7 +2171,6 @@
             {% else %}
                 <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
             {% endif %}
-            <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto" onclick="openAvatarUpload()">📷</button>
         </div>
         <div>ELECTRONORTE S.A.</div>
     </div>

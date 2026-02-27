@@ -159,8 +159,11 @@
     <nav class="menu-side-nav">
         <div class="sidebar-brand">
             <div class="sidebar-brand-logo-wrap">
-                <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
-                <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto">📷</button>
+                {% if has_profile_photo %}
+                    <img class="sidebar-brand-logo" src="{{ profile_photo_url }}" alt="ENSA">
+                {% else %}
+                    <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+                {% endif %}
             </div>
             <div>ELECTRONORTE S.A.</div>
         </div>

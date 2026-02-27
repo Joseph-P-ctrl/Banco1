@@ -100,7 +100,7 @@
         }
 
         .collapsed-topbar {
-            display: none;
+            display: flex;
             position: fixed;
             top: 0;
             left: 0;
@@ -133,7 +133,7 @@
         }
 
         .collapsed-userbar {
-            display: none;
+            display: block;
             position: fixed;
             top: 74px;
             left: 0;
@@ -238,6 +238,7 @@
             width: calc(100vw - 270px);
             max-width: none;
             margin-right: 0;
+            padding-top: 150px;
         }
 
         body.menu-hidden .content-with-menu {
@@ -246,14 +247,6 @@
             padding-left: 18px;
             padding-right: 18px;
             padding-top: 150px;
-        }
-
-        body.menu-hidden .collapsed-topbar {
-            display: flex;
-        }
-
-        body.menu-hidden .collapsed-userbar {
-            display: block;
         }
 
         .sidebar-brand {
@@ -418,7 +411,11 @@
 <body>
    <button type="button" class="menu-collapse-btn" title="Ocultar/mostrar menú" aria-label="Ocultar/mostrar menú" onclick="toggleMainSidebar()">☰</button>
    <header class="collapsed-topbar" aria-hidden="true">
-        <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+        {% if has_profile_photo %}
+            <img src="{{ profile_photo_url }}" alt="ENSA">
+        {% else %}
+            <img src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+        {% endif %}
         <div class="collapsed-topbar-brand">Ensa</div>
    </header>
    <div class="collapsed-userbar" aria-hidden="true"></div>
@@ -430,8 +427,11 @@
    <nav class="bg-body-tertiary py-2 menu-side-nav">
     <div class="sidebar-brand">
         <div class="sidebar-brand-logo-wrap">
-            <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
-            <button type="button" class="avatar-upload-btn" title="Subir foto" aria-label="Subir foto" onclick="openAvatarUpload()">📷</button>
+            {% if has_profile_photo %}
+                <img class="sidebar-brand-logo" src="{{ profile_photo_url }}" alt="ENSA">
+            {% else %}
+                <img class="sidebar-brand-logo" src="{{ url_for('static', filename='images/logos.jpeg') }}" alt="ENSA">
+            {% endif %}
         </div>
         <div>ELECTRONORTE S.A.</div>
     </div>

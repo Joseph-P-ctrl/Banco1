@@ -85,6 +85,15 @@ def _profile_photo_path(filename='profile_photo.png'):
     return os.path.join(_profile_photo_dir(), filename)
 
 
+def _profile_photo_context():
+    settings = load_general_settings()
+    photo_version = int(settings.get('perfil', {}).get('foto_version', 0) or 0)
+    return {
+        'has_profile_photo': os.path.exists(_profile_photo_path()),
+        'profile_photo_url': f"/foto_perfil_actual?v={photo_version}"
+    }
+
+
 def _allowed_image_extension(filename):
     lower_name = str(filename or '').strip().lower()
     return lower_name.endswith('.png') or lower_name.endswith('.jpg') or lower_name.endswith('.jpeg') or lower_name.endswith('.webp')
@@ -1789,7 +1798,7 @@ def menu():
     if tab not in tab_map:
         tab = 'home'
 
-    return render_template('menu.html', active_tab=tab, tab_map=tab_map)
+    return render_template('menu.html', active_tab=tab, tab_map=tab_map, **_profile_photo_context())
 
 def guardaMovimientos(movimientos):
     movimientos["Fecha"] = pd.to_datetime(movimientos["Fecha"], format="%d/%m/%Y").dt.strftime("%d/%m/%Y")
@@ -1838,6 +1847,8 @@ def basedatos():
     if flow_redirect is not None:
         return flow_redirect
 
+    profile_photo_context = _profile_photo_context()
+
     if request.method == 'POST':
         files    = request.files.getlist('file')
         
@@ -1845,28 +1856,28 @@ def basedatos():
             filtered_files = [x for x in files if x.filename!=""]
                         
             if len(filtered_files) < 1:
-                return render_template('base-datos.html', error_message= 'Debe subir por lo menos un archivo.')
+                return render_template('base-datos.html', error_message= 'Debe subir por lo menos un archivo.', **profile_photo_context)
 
             nombres = [f.filename.upper() for f in filtered_files]
             valid_patterns = ['RECAUDO', 'PREPAGO', 'TRABAJADOR', 'CLIENTE']
             invalid_files = [n for n in nombres if not any(pattern in n for pattern in valid_patterns)]
             if invalid_files:
-                return render_template('base-datos.html', error_message='Archivo(s) no reconocido(s): ' + ', '.join(invalid_files))
+                return render_template('base-datos.html', error_message='Archivo(s) no reconocido(s): ' + ', '.join(invalid_files), **profile_photo_context)
 
             mensaje_exito = 'Proceso exitosamente.'
             
             base_datos_service = BaseDatosService()  
             base_datos_service.GuardarAchivos(files)  
             session['required_next_step'] = 'home'
-            return render_template('base-datos.html', mensaje_exito=mensaje_exito)
+            return render_template('base-datos.html', mensaje_exito=mensaje_exito, **profile_photo_context)
                 
         except Exception as e:
             error_message = str(e)
-            return render_template('base-datos.html', error_message= error_message)
+            return render_template('base-datos.html', error_message= error_message, **profile_photo_context)
 
     else:
         nohay = 'Archivo subido correctamente.'
-        return render_template('base-datos.html')
+        return render_template('base-datos.html', **profile_photo_context)
     
 @app.route('/asiento', methods=['POST'])
 def asiento_procesar():
@@ -1878,6 +1889,8 @@ def asiento_procesar():
     if flow_redirect is not None:
         return flow_redirect
 
+    profile_photo_context = _profile_photo_context()
+
     logging.error('asiento_procesar: start')
     files = request.files.getlist('file')
     logging.error('asiento_procesar: received %d files', len(files))
@@ -1885,7 +1898,7 @@ def asiento_procesar():
     logging.error('asiento_procesar: filtered %d files', len(filtered_files))
     if len(filtered_files) <= 1:
         logging.error('asiento_procesar: not enough files, returning form')
-        return render_template('asiento.html', error_message= 'Debe subir ambos archivo.')
+        return render_template('asiento.html', error_message= 'Debe subir ambos archivo.', **profile_photo_context)
     else:
         try:
             asientoService = AsientoService()    
@@ -1941,15 +1954,15 @@ def asiento_procesar():
                 return send_file(ruta_archivo, as_attachment=True, download_name='asientos.xlsx')
             else: 
                 #si hubiera error se pinta la misma pagina y no se redirecciona
-                return render_template('asiento.html', error_message= 'No se encontro ningun asiento en el proceso')       
+                return render_template('asiento.html', error_message= 'No se encontro ningun asiento en el proceso', **profile_photo_context)       
             
         except Exception as e:
             error_message = str(e)
             logging.error('asiento_procesar: exception: %s', error_message)
-            return render_template('asiento.html', error_message= error_message)
+            return render_template('asiento.html', error_message= error_message, **profile_photo_context)
     # Fallback: ensure the view always returns a response
     logging.error('asiento_procesar: reached end of function without explicit return')
-    return render_template('asiento.html', error_message='Error inesperado en el procesamiento')
+    return render_template('asiento.html', error_message='Error inesperado en el procesamiento', **profile_photo_context)
 
 
 
@@ -1971,7 +1984,8 @@ def asiento_get():
         'asiento.html',
         show_result_mode=show_result_mode,
         asiento_emails=asiento_emails,
-        total_vouchers=len(vouchers_generados)
+        total_vouchers=len(vouchers_generados),
+        **_profile_photo_context()
     )
 
 
