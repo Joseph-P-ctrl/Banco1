@@ -489,6 +489,11 @@ async function handleAsientoSubmit(event) {
             credentials: 'same-origin'
         });
 
+        if (response.redirected) {
+            window.location.href = response.url;
+            return;
+        }
+
         const contentDisposition = response.headers.get('content-disposition') || '';
         const contentType = response.headers.get('content-type') || '';
         const isDownload = contentDisposition.toLowerCase().includes('attachment') ||
@@ -725,27 +730,20 @@ async function handleAsientoSubmit(event) {
 
                 </span>
                 {% if show_result_mode %}
+                <div class="d-flex justify-content-end mb-2">
+                    <a href="/download_asientos" class="btn btn-outline-primary btn-sm">Descargar</a>
+                </div>
                 <div class="card p-3 mt-3">
                     <h5>Correos detectados</h5>
-                    {% if total_vouchers is defined and total_vouchers > 0 %}
-                    <div class="alert alert-info mt-2" role="alert">
-                        <strong>📄 Vouchers disponibles:</strong> {{ total_vouchers }} voucher(s) se enviarán en formato HTML dentro del correo correspondiente.
-                    </div>
-                    {% endif %}
                     {% if asiento_emails %}
-                    <div class="mb-3 mt-2">
-                        <input type="text" id="searchBox" class="form-control" placeholder="🔍 Buscar correo..." onkeyup="filterAsientoEmails()">
-                        <small class="text-muted">Escribe para filtrar correos en tiempo real</small>
-                    </div>
-
                     <form action="/send_emails" method="POST">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>
                                 <strong>Total:</strong> <span id="emailCount">{{ asiento_emails|length }}</span> correos
-                                <span class="ms-2 text-muted" id="selectedSummary">Seleccionados: 0</span>
+                                <span class="ms-2 text-muted" id="selectedSummary">Seleccionados: {{ asiento_emails|length }}</span>
                             </div>
-                            <div>
-                                <strong>Página:</strong> 1 de 1
+                            <div class="d-flex flex-column align-items-end">
+                                <div><strong>Página:</strong> 1 de 1</div>
                             </div>
                         </div>
 
@@ -774,7 +772,6 @@ async function handleAsientoSubmit(event) {
 
                         <div class="d-flex justify-content-center gap-2 mt-3">
                             <a href="/asiento" class="btn btn-secondary">Regresar</a>
-                            <input type="hidden" name="manual_confirm" value="yes">
                             <input type="hidden" name="source" value="asiento">
                             <button type="submit" class="btn btn-success">Enviar seleccionados</button>
                         </div>

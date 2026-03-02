@@ -1381,12 +1381,7 @@ def is_company_name(nombre_cliente):
 
 
 def build_saludo_cliente(nombre_cliente):
-    nombre = str(nombre_cliente or '').strip()
-    if not nombre or nombre.lower() == 'cliente':
-        return 'Estimado Cliente,'
-    if is_company_name(nombre):
-        return 'Estimado Cliente,'
-    return f'Estimado {nombre},'
+    return 'Estimado Cliente,'
 
 
 def build_voucher_email_text(saludo):
@@ -1970,9 +1965,7 @@ def asiento_procesar():
                 else:
                     session.pop('asiento_email_warning', None)
                 session['required_next_step'] = 'correos'
-                # guardaAsientos ya escribió files/asientos.xlsx, descargamos directamente
-                ruta_archivo = files_path('asientos.xlsx')
-                return send_file(ruta_archivo, as_attachment=True, download_name='asientos.xlsx')
+                return redirect(url_for('asiento_get', resultado_correo=1))
             else: 
                 #si hubiera error se pinta la misma pagina y no se redirecciona
                 return render_template('asiento.html', error_message= 'No se encontro ningun asiento en el proceso', **profile_photo_context)       
@@ -3490,7 +3483,7 @@ def guardaAsientos(movimientosAsientos):
     workbook.save(ruta_archivo)
 
 
-@app.route('/download_asientos', methods=['POST'])
+@app.route('/download_asientos', methods=['GET', 'POST'])
 def dowload_asientos():
     ruta_archivo = files_path('asientos.xlsx')
     return send_file(ruta_archivo, as_attachment=True, download_name="Asiento.xlsx")
@@ -3513,10 +3506,6 @@ def send_emails():
     emails = session.get('asiento_emails', [])
     if not emails:
         return _redirect_correos_with_message('No hay correos para enviar')
-
-    manual_confirm = request.form.get('manual_confirm', '').strip().lower()
-    if manual_confirm != 'yes':
-        return _redirect_correos_with_message('Marca la confirmación de envío manual antes de enviar correos.')
 
     selected_emails = request.form.getlist('selected_emails')
     if not selected_emails:

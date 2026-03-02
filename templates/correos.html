@@ -2229,7 +2229,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
                             <strong id="totalLabel">Total:</strong> <span id="emailCount">{{ total_emails }}</span> <span id="emailsSuffix">correos</span>
-                            <span class="ms-2 text-muted" id="selectedSummary">Seleccionados: 0</span>
+                            <span class="ms-2 text-muted" id="selectedSummary">Seleccionados: {{ page_emails|length }}</span>
                         </div>
                         <div>
                             <span id="mailReadingModeLabel" class="mail-reading-mode-label me-2">Panel: Sin división</span>
@@ -2279,13 +2279,6 @@
                             </ul>
                         </nav>
                     {% endif %}
-
-                    <div class="form-check mb-3 text-start">
-                        <input class="form-check-input" type="checkbox" id="manual_confirm" name="manual_confirm" value="yes" required>
-                        <label id="manualConfirmLabel" class="form-check-label" for="manual_confirm">
-                            Confirmo que deseo enviar manualmente solo los correos seleccionados.
-                        </label>
-                    </div>
 
                     <button id="sendSelectedBtn" class="btn btn-success" type="submit">Enviar seleccionados</button>
                     <button id="sendArchiveBtn" class="btn btn-outline-primary ms-2 d-none" type="submit">Enviar y archivar</button>
