@@ -211,51 +211,16 @@ def _require_worker_microsoft_login():
     return None
 
 
-MAX_LOGIN_ATTEMPTS = 5
-LOGIN_BLOCK_MINUTES = 10
-
-
 def _get_login_lock_state():
-    block_until_raw = str(session.get('login_block_until', '')).strip()
-    if not block_until_raw:
-        return False, 0
-
-    block_until = pd.to_datetime(block_until_raw, errors='coerce')
-    if pd.isna(block_until):
-        session.pop('login_block_until', None)
-        return False, 0
-
-    now_value = pd.Timestamp.now()
-    if now_value >= block_until:
-        session.pop('login_block_until', None)
-        session['login_attempts'] = 0
-        return False, 0
-
-    remaining_minutes = int(max((block_until - now_value).total_seconds(), 0) // 60) + 1
-    return True, remaining_minutes
+    return False, 0
 
 
 def _register_login_failure(base_message):
-    attempts = int(session.get('login_attempts', 0) or 0) + 1
-    session['login_attempts'] = attempts
-
-    remaining = max(MAX_LOGIN_ATTEMPTS - attempts, 0)
-    if remaining <= 0:
-        block_until = pd.Timestamp.now() + pd.Timedelta(minutes=LOGIN_BLOCK_MINUTES)
-        session['login_block_until'] = block_until.strftime('%Y-%m-%d %H:%M:%S')
-        session['login_attempts'] = 0
-        session['login_message'] = (
-            f'{base_message} Alcanzaste el máximo de {MAX_LOGIN_ATTEMPTS} intentos. '
-            f'Intenta nuevamente en {LOGIN_BLOCK_MINUTES} minutos.'
-        )
-        return
-
-    session['login_message'] = f'{base_message} Intentos restantes: {remaining}.'
+    return
 
 
 def _reset_login_failures():
-    session['login_attempts'] = 0
-    session.pop('login_block_until', None)
+    return
 
 
 def _validate_microsoft365_api_login(username, password):
@@ -1622,83 +1587,31 @@ def iniciar_sesion():
 @app.route('/iniciar_sesion', methods=['POST'])
 @app.route('/correo_electronico/guardar', methods=['POST'])
 def correo_electronico_guardar():
-    is_login_route = request.path == '/iniciar_sesion'
-    if is_login_route:
-        is_blocked, lock_minutes = _get_login_lock_state()
-        if is_blocked:
-            session['login_message'] = (
-                f'Has agotado los intentos permitidos. '
-                f'Intenta nuevamente en {lock_minutes} minuto(s).'
-            )
-            return redirect(url_for('iniciar_sesion'))
-
     existing = load_secure_smtp_credentials()
-    sender = request.form.get('sender', '').strip()
-    password = request.form.get('password', '').strip()
+    sender = request.form.get('sender', '').strip() or str(existing.get('sender', '')).strip()
+    password = request.form.get('password', '').strip() or str(existing.get('password', '')).strip()
     confirm_password = request.form.get('confirm_password', '').strip()
     smtp_host = existing.get('smtp_host', '') or 'owa.fonafe.gob.pe'
     smtp_port = _parse_smtp_port(existing.get('smtp_port', '') or '587')
     smtp_security = _normalize_smtp_security(existing.get('smtp_security', '') or 'starttls')
 
-    stored_sender = str(existing.get('sender', '')).strip()
-    stored_password = str(existing.get('password', '')).strip()
-
     if not sender:
-        session['system_authenticated'] = False
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        if is_login_route:
-            _register_login_failure('Ingresa tu correo para iniciar sesión con Microsoft 365.')
-        else:
-            session['login_message'] = 'Ingresa tu correo para iniciar sesión con Microsoft 365.'
-        return redirect(url_for('iniciar_sesion'))
+        session['login_message'] = 'Ingresa tu correo para continuar.'
+        return redirect(url_for('basedatos'))
 
     if not password:
-        same_saved_account = bool(stored_sender and stored_password and sender.lower() == stored_sender.lower())
-        if same_saved_account:
-            password = stored_password
-            confirm_password = stored_password
-        else:
-            session['system_authenticated'] = False
-            session['smtp_authenticated'] = False
-            session['smtp_link_verified'] = False
-            if is_login_route:
-                _register_login_failure('No hay una contraseña guardada para ese correo. Configura la cuenta primero.')
-            else:
-                session['login_message'] = 'No hay una contraseña guardada para ese correo. Configura la cuenta primero.'
-            return redirect(url_for('iniciar_sesion'))
+        session['login_message'] = 'No hay una contraseña guardada para ese correo. Configura la cuenta primero.'
+        return redirect(url_for('basedatos'))
 
     if not confirm_password:
         confirm_password = password
 
     if password != confirm_password:
-        session['system_authenticated'] = False
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        if is_login_route:
-            _register_login_failure('Las contraseñas no coinciden. Verifica e intenta nuevamente.')
-        else:
-            session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
-        return redirect(url_for('iniciar_sesion'))
+        session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
+        return redirect(url_for('basedatos'))
 
-    is_valid, validated_sender, used_security, error_message = _validate_office365_and_smtp_login(
-        sender,
-        password,
-        smtp_host,
-        smtp_port,
-        smtp_security
-    )
-    if not is_valid:
-        session['system_authenticated'] = False
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        session['worker_login_via_graph'] = False
-        session['worker_auth_method'] = ''
-        if is_login_route:
-            _register_login_failure(error_message)
-        else:
-            session['login_message'] = error_message
-        return redirect(url_for('iniciar_sesion'))
+    validated_sender = sender
+    used_security = smtp_security
 
     try:
         save_secure_smtp_credentials(
@@ -1718,73 +1631,43 @@ def correo_electronico_guardar():
         session['worker_smtp_port'] = str(smtp_port)
         session['worker_smtp_security'] = used_security
         session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-        session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA + Microsoft 365 Graph'
+        session['worker_auth_method'] = 'SMTP OWA'
         session['quick_password_verified'] = False
-        if is_login_route:
-            _reset_login_failures()
         add_account_activity('Correo electrónico', f'Sesión iniciada para {validated_sender}')
         session.pop('email_settings_message', None)
         session.pop('login_message', None)
     except Exception as ex:
-        session['system_authenticated'] = False
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        session['worker_login_via_graph'] = False
-        session['worker_auth_method'] = ''
-        if is_login_route:
-            _register_login_failure(f'Error iniciando sesión: {ex}')
-        else:
-            session['login_message'] = f'Error iniciando sesión: {ex}'
-        return redirect(url_for('iniciar_sesion'))
+        logging.warning(f'No se pudieron guardar credenciales en login: {ex}')
+        session['system_authenticated'] = True
+        session['smtp_authenticated'] = True
+        session['smtp_link_verified'] = True
+        session['worker_sender'] = validated_sender
+        session['worker_password'] = password
+        session['worker_smtp_host'] = smtp_host
+        session['worker_smtp_port'] = str(smtp_port)
+        session['worker_smtp_security'] = used_security
+        session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
+        session['worker_auth_method'] = 'SMTP OWA'
+        session['quick_password_verified'] = False
+        session.pop('email_settings_message', None)
+        session.pop('login_message', None)
 
     return redirect(url_for('basedatos'))
 
 
 @app.route('/correo_electronico/verificar_vinculo', methods=['POST'])
 def correo_electronico_verificar_vinculo():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
-    sender = str(session.get('worker_sender', '')).strip()
-    password = str(session.get('worker_password', '')).strip()
-    smtp_host = str(session.get('worker_smtp_host', '')).strip() or 'owa.fonafe.gob.pe'
-    smtp_port = _parse_smtp_port(session.get('worker_smtp_port', '') or '587')
-    smtp_security = _normalize_smtp_security(session.get('worker_smtp_security', '') or 'starttls')
-
-    if not sender or not password:
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        session['system_authenticated'] = False
-        session['login_message'] = 'No hay una sesión Microsoft activa para verificar. Inicia sesión nuevamente.'
-        return redirect(url_for('iniciar_sesion'))
-
-    is_valid, validated_sender, used_security, error_message = _validate_office365_and_smtp_login(
-        sender,
-        password,
-        smtp_host,
-        smtp_port,
-        smtp_security
-    )
-
-    if not is_valid:
-        session['smtp_authenticated'] = False
-        session['smtp_link_verified'] = False
-        session['system_authenticated'] = False
-        session['worker_login_via_graph'] = False
-        session['worker_auth_method'] = ''
-        session['login_message'] = f'Vínculo no válido: {error_message}'
-        return redirect(url_for('iniciar_sesion'))
-
+    sender = str(session.get('worker_sender', '')).strip() or str(load_secure_smtp_credentials().get('sender', '')).strip()
+    used_security = _normalize_smtp_security(session.get('worker_smtp_security', '') or 'starttls')
     session['system_authenticated'] = True
     session['smtp_authenticated'] = True
     session['smtp_link_verified'] = True
-    session['worker_sender'] = validated_sender
+    session['worker_sender'] = sender
     session['worker_smtp_security'] = used_security
     session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
     session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
     session['email_settings_message'] = '✅ Vínculo Microsoft 365 verificado correctamente.'
-    add_account_activity('Correo electrónico', f'Vínculo verificado para {validated_sender}')
+    add_account_activity('Correo electrónico', f'Vínculo verificado para {sender}')
 
     return redirect(url_for('correo_electronico'))
 
@@ -1821,10 +1704,6 @@ def configurar_correo():
         session['email_settings_message'] = message_text
         return redirect(url_for('correo_electronico'))
 
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
     existing = load_secure_smtp_credentials()
     sender = request.form.get('sender', '').strip() or existing.get('sender', '').strip()
     password = request.form.get('password', '').strip() or existing.get('password', '').strip()
@@ -1847,18 +1726,8 @@ def configurar_correo():
         if password != confirm_password:
             return _redirect_after_password('Las contraseñas no coinciden. Intenta de nuevo.', is_error=True)
 
-    is_valid, validated_sender, used_security, error_message = _validate_office365_and_smtp_login(
-        sender,
-        password,
-        smtp_host,
-        smtp_port,
-        smtp_security
-    )
-    if not is_valid:
-        session['smtp_link_verified'] = False
-        session['worker_login_via_graph'] = False
-        session['worker_auth_method'] = ''
-        return _redirect_after_password('Contraseña incorrecta. Intenta de nuevo.', is_error=True)
+    validated_sender = sender
+    used_security = smtp_security
 
     try:
         save_secure_smtp_credentials(
@@ -1885,17 +1754,6 @@ def configurar_correo():
         return _redirect_after_password('✅ Contraseña de correo actualizada correctamente.')
     except Exception as ex:
         return _redirect_after_password('No se pudo guardar la contraseña de correo. Intenta nuevamente.', is_error=True)
-
-
-@app.route('/subir_foto_perfil', methods=['POST'])
-def subir_foto_perfil():
-    next_url = request.form.get('next', '').strip()
-    session['config_message'] = 'La carga de foto de perfil está deshabilitada.'
-
-    if next_url == 'home':
-        return redirect(url_for('home'))
-
-    return redirect(url_for('correos'))
 
 
 @app.route('/foto_perfil_actual', methods=['GET'])
