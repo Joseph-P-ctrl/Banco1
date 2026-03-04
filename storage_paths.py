@@ -5,8 +5,7 @@ import shutil
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCE_BD_DIR = os.path.join(BASE_DIR, 'BD')
 
-IS_VERCEL = os.environ.get('VERCEL') == '1' or bool(os.environ.get('VERCEL_ENV'))
-DATA_ROOT = os.environ.get('BANCOS_DATA_DIR') or ('/tmp/bancos_data' if IS_VERCEL else BASE_DIR)
+DATA_ROOT = os.environ.get('BANCOS_DATA_DIR') or BASE_DIR
 
 BD_DIR = os.path.join(DATA_ROOT, 'BD')
 FILES_DIR = os.path.join(DATA_ROOT, 'files')

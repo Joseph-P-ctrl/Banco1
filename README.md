@@ -1,4 +1,4 @@
-# Bancos - Deploy en Vercel
+# Bancos
 
 ## Ejecutar local
 
@@ -12,42 +12,10 @@ pip install -r requirements.txt
 3. Ejecutar app:
 
 ```bash
-python app.py
+python main.py
 ```
 
 ### Ejecutar en Windows (doble clic)
 
 También puede ejecutar `iniciar_app.bat` para abrir la aplicación sin usar comandos.
 
-## Deploy en Vercel
-
-Este proyecto ya incluye:
-
-- `vercel.json`
-- `api/index.py`
-- soporte de rutas de escritura para entorno serverless (`/tmp`) en `storage_paths.py`
-
-### Pasos
-
-1. Instalar Vercel CLI:
-
-```bash
-npm i -g vercel
-```
-
-2. Login:
-
-```bash
-vercel login
-```
-
-3. Deploy:
-
-```bash
-vercel --prod
-```
-
-## Nota importante
-
-En Vercel, los archivos generados/subidos se guardan en almacenamiento temporal del runtime (`/tmp`).
-Eso permite ejecutar el flujo, pero no es almacenamiento persistente entre ejecuciones o escalados.

@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.getcwd())
-from app import app
+from main import app
 
 client = app.test_client()
 files = {}
