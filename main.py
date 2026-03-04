@@ -742,20 +742,7 @@ def save_account_features(payload):
 
 
 def add_account_activity(action, detail=''):
-    payload = load_account_features()
-    activity_list = payload.get('activity', [])
-    timestamp = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-    activity_list.insert(0, {
-        'timestamp': timestamp,
-        'action': str(action or '').strip(),
-        'detail': str(detail or '').strip()
-    })
-
-    if len(activity_list) > 200:
-        activity_list = activity_list[:200]
-
-    payload['activity'] = activity_list
-    save_account_features(payload)
+    return
 
 
 def clear_account_activity(mode='all', keep_last=0):
@@ -768,68 +755,7 @@ def clear_account_activity(mode='all', keep_last=0):
 
 
 def _ensure_current_session_tracked():
-    route_path = request.path or ''
-    if route_path.startswith('/static') or route_path.startswith('/foto_perfil_actual'):
-        return
-
-    account_session_id = session.get('account_session_id', '')
-    if not account_session_id:
-        account_session_id = str(uuid.uuid4())
-        session['account_session_id'] = account_session_id
-
-    user_agent_text = _safe_user_agent()
-    ip_value = _client_ip()
-    now_text = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-
-    payload = load_account_features()
-    sessions_list = payload.get('sessions', [])
-
-    existing_index = -1
-    for index, item in enumerate(sessions_list):
-        if str(item.get('session_id', '')).strip() == account_session_id:
-            existing_index = index
-            break
-
-    if existing_index >= 0:
-        current = sessions_list[existing_index]
-        current['last_seen'] = now_text
-        current['ip'] = ip_value
-        current['user_agent'] = user_agent_text
-        current['os_family'] = 'Otro'
-        current['device_type'] = 'Computadora'
-        current['active'] = True
-        sessions_list[existing_index] = current
-    else:
-        sessions_list.insert(0, {
-            'session_id': account_session_id,
-            'first_seen': now_text,
-            'last_seen': now_text,
-            'ip': ip_value,
-            'user_agent': user_agent_text,
-            'os_family': 'Otro',
-            'device_type': 'Computadora',
-            'active': True
-        })
-
-    sanitized_sessions = []
-    now_value = pd.Timestamp.now()
-    for item in sessions_list:
-        last_seen_text = str(item.get('last_seen', '')).strip()
-        is_active = False
-        if last_seen_text:
-            try:
-                parsed_last_seen = pd.to_datetime(last_seen_text, format='%d/%m/%Y %H:%M:%S', errors='coerce')
-                if pd.isna(parsed_last_seen):
-                    raise ValueError('Fecha inválida')
-                delta = now_value - parsed_last_seen
-                is_active = delta.total_seconds() <= (7 * 24 * 3600)
-            except Exception:
-                is_active = bool(item.get('active', False))
-        item['active'] = is_active
-        sanitized_sessions.append(item)
-
-    payload['sessions'] = sanitized_sessions[:200]
-    save_account_features(payload)
+    return
 
 
 @app.before_request
@@ -1057,17 +983,6 @@ def build_voucher_data_without_pdf(df_movimientos, clientes_email_map=None):
         }
 
     return list(voucher_records_by_email.values())
-
-
-def is_company_name(nombre_cliente):
-    nombre = str(nombre_cliente or '').strip()
-    if not nombre:
-        return False
-
-    nombre_upper = nombre.upper()
-    has_company_word = any(word in nombre_upper for word in COMPANY_KEYWORDS)
-    has_digits = bool(re.search(r'\d', nombre_upper))
-    return has_company_word or has_digits
 
 
 def build_saludo_cliente(nombre_cliente):
@@ -2220,20 +2135,7 @@ def send_emails():
                     recipient_lower = recipient.strip().lower()
                     voucher_info = vouchers_por_email.get(recipient_lower)
 
-                    nombre_cliente = ''
-                    if voucher_info:
-                        nombre_cliente = str(voucher_info.get('nombre_cliente', '')).strip()
-
-                    if not nombre_cliente:
-                        local_part = recipient.split('@')[0]
-                        name_tokens = [token for token in re.split(r'[._\-]+', local_part) if token and not token.isdigit()]
-                        if name_tokens:
-                            nombre_cliente = ' '.join(token.capitalize() for token in name_tokens[:3])
-
-                    if not nombre_cliente:
-                        nombre_cliente = 'Cliente'
-
-                    saludo = build_saludo_cliente(nombre_cliente)
+                    saludo = build_saludo_cliente('Cliente')
                     body_text = build_voucher_email_text(saludo)
                     body_html = build_voucher_email_html(saludo, voucher_info)
 
