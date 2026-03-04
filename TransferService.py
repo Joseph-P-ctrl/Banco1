@@ -25,35 +25,28 @@ class TransferService:
 
     def _process_transfers_df(self, df_transferencias):
         print('inicio transferencias')
-        df_transferencias = df_transferencias.copy()
         if len(df_transferencias.columns) < 10:
             raise MyCustomException("Archivo Transferencias no reconocido")
         if "Ordenante" not in df_transferencias.columns:
             raise MyCustomException("Archivo Transferencias no detectado")
-        object_columns = df_transferencias.select_dtypes(include=["object"]).columns
-        for column_name in object_columns:
-            df_transferencias.loc[:, column_name] = df_transferencias[column_name].astype(str).str.strip()
-
-        df_transferencias.loc[:, "Monto abonado"] = pd.to_numeric(
-            df_transferencias["Monto abonado"].astype(str).str.replace(",", "", regex=False),
-            errors='coerce'
-        )
-        df_transferencias.loc[:, "Fecha de abono"] =  pd.to_datetime(df_transferencias["Fecha de abono"], dayfirst=True, errors='coerce')
+        # Strip spaces for all string columns in the DataFrame
+        df_transferencias = df_transferencias.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        df_transferencias["Monto abonado"] = df_transferencias["Monto abonado"].astype(str).str.replace(",", "")
+        df_transferencias["Monto abonado"] = df_transferencias["Monto abonado"].astype(str).str.replace(",", "")
+        df_transferencias["Fecha de abono"] =  pd.to_datetime(df_transferencias["Fecha de abono"], dayfirst=True, errors='coerce')
+        df_transferencias["Monto abonado"] = pd.to_numeric(df_transferencias["Monto abonado"],errors='coerce')
         print('transfer 1', df_transferencias)
           # Limpia la columna: quita espacios internos y externos
-        df_transferencias.loc[:, "Monto abonado - Moneda"] = (
+        df_transferencias["Monto abonado - Moneda"] = (
                 df_transferencias["Monto abonado - Moneda"]
                 .str.strip()           # elimina espacios al inicio y al final
                 .str.replace(" ", "")  # elimina espacios internos
             )
         df_transferencias = df_transferencias.loc[df_transferencias["Monto abonado - Moneda"]=="S/"].copy()
         print('transfer 2', df_transferencias)
-        self.movimientos = self.movimientos.copy()
-        self.movimientos.loc[:, "Fecha"] = pd.to_datetime(self.movimientos["Fecha"], dayfirst=True)
-        self.movimientos.loc[:, "Monto"] = pd.to_numeric(
-            self.movimientos["Monto"].astype(str).str.replace(",", "", regex=False),
-            errors='coerce'
-        )
+        self.movimientos["Fecha"] = pd.to_datetime(self.movimientos["Fecha"], dayfirst=True)
+        self.movimientos["Monto"] =  self.movimientos["Monto"].astype(str).str.replace(",", "")
+        self.movimientos["Monto"] =  pd.to_numeric(self.movimientos["Monto"],errors='coerce')
         print('transfer', df_transferencias)
         for index, row in df_transferencias.iterrows():
             fecha = row["Fecha de abono"]
