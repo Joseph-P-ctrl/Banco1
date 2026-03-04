@@ -5,7 +5,6 @@ from ProviderService import ProviderService
 from TransferService import TransferService
 from BaseDatosService import BaseDatosService
 from AsientoService import AsientoService
-from VoucherService import VoucherService
 from io import BytesIO
 from flask_session import Session
 from flask_caching import Cache
@@ -21,7 +20,7 @@ import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
-from storage_paths import ensure_data_dirs, bootstrap_bd_from_source, files_path, logs_path, SESSION_DIR, bd_path, vouchers_path
+from storage_paths import ensure_data_dirs, bootstrap_bd_from_source, files_path, logs_path, SESSION_DIR, bd_path
 
 # setup logging
 ensure_data_dirs()
@@ -142,6 +141,66 @@ def _should_retry_with_port_25(smtp_port, conn_ex):
         'timed out',
         'timeout',
     ))
+
+
+def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
+    sender_value = str(sender or '').strip()
+    password_value = str(password or '')
+    host_value = str(smtp_host or '').strip()
+    security_value = _normalize_smtp_security(smtp_security)
+    port_value = _parse_smtp_port(smtp_port)
+
+    if not sender_value or not password_value or not host_value:
+        return False, sender_value, security_value, port_value, 'Credenciales incompletas'
+
+    try:
+        smtp_conn = None
+        used_security = security_value
+        used_port = port_value
+
+        try:
+            if security_value == 'ssl':
+                smtp_conn = smtplib.SMTP_SSL(host_value, port_value, timeout=20)
+                smtp_conn.ehlo()
+            else:
+                smtp_conn = smtplib.SMTP(host_value, port_value, timeout=20)
+                smtp_conn.ehlo()
+                smtp_conn.starttls()
+                smtp_conn.ehlo()
+                used_security = 'starttls'
+        except Exception as conn_ex:
+            wrong_version = 'WRONG_VERSION_NUMBER' in str(conn_ex).upper()
+            can_retry_starttls = security_value in ('ssl', 'auto') and wrong_version
+            if can_retry_starttls:
+                smtp_conn = smtplib.SMTP(host_value, port_value, timeout=20)
+                smtp_conn.ehlo()
+                smtp_conn.starttls()
+                smtp_conn.ehlo()
+                used_security = 'starttls'
+            elif _should_retry_with_port_25(port_value, conn_ex):
+                smtp_conn = smtplib.SMTP(host_value, 25, timeout=20)
+                smtp_conn.ehlo()
+                smtp_conn.starttls()
+                smtp_conn.ehlo()
+                used_security = 'starttls'
+                used_port = 25
+            else:
+                return False, sender_value, security_value, port_value, str(conn_ex)
+
+        with smtp_conn as smtp:
+            try:
+                smtp.login(sender_value, password_value)
+            except smtplib.SMTPAuthenticationError as auth_ex:
+                corrected_sender, sender_corrected = normalize_sender_email(sender_value)
+                if sender_corrected and corrected_sender != sender_value:
+                    smtp.login(corrected_sender, password_value)
+                    sender_value = corrected_sender
+                else:
+                    return False, sender_value, used_security, used_port, str(auth_ex)
+
+        return True, sender_value, used_security, used_port, ''
+    except Exception as ex:
+        return False, sender_value, security_value, port_value, str(ex)
 
 
 def _require_worker_microsoft_login():
@@ -508,8 +567,7 @@ def build_voucher_data_without_pdf(df_movimientos, clientes_email_map=None):
             'nombre_cliente': nombre_cliente,
             'fecha': fecha_value,
             'descripcion': row.get('Descripción operación', row.get('descripcion', 'Operación bancaria')),
-            'operacion_numero': row.get('Operación - Número', row.get('operacion', 'N/A')),
-            'filepath': ''
+            'operacion_numero': row.get('Operación - Número', row.get('operacion', 'N/A'))
         }
 
     return list(voucher_records_by_email.values())
@@ -1200,13 +1258,25 @@ def configurar_correo():
 
     validated_sender = sender
     used_security = smtp_security
+    used_port = smtp_port
+
+    is_valid_login, validated_sender, used_security, used_port, validation_error = _validate_smtp_login(
+        sender,
+        password,
+        smtp_host,
+        smtp_port,
+        smtp_security
+    )
+    if not is_valid_login:
+        logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
+        return _redirect_after_password('La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.', is_error=True)
 
     try:
         save_secure_smtp_credentials(
             validated_sender,
             password,
             smtp_host_value=smtp_host,
-            smtp_port_value=str(smtp_port),
+            smtp_port_value=str(used_port),
             smtp_security_value=used_security,
             cc_value=cc_clean
         )
@@ -1217,7 +1287,7 @@ def configurar_correo():
         session['worker_sender'] = validated_sender
         session['worker_password'] = password
         session['worker_smtp_host'] = smtp_host
-        session['worker_smtp_port'] = str(smtp_port)
+        session['worker_smtp_port'] = str(used_port)
         session['worker_smtp_security'] = used_security
         session['worker_cc'] = cc_clean
         session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
@@ -1303,7 +1373,7 @@ def send_emails():
     # Log de diagnóstico
     logging.info(f'Total vouchers en sesión: {len(vouchers_generados)}')
     for v in vouchers_generados:
-        logging.info(f"Voucher disponible: email={v.get('email')}, ref={v.get('referencia')}, path={v.get('filepath')}")
+        logging.info(f"Voucher disponible: email={v.get('email')}, ref={v.get('referencia')}")
     
     # Crear diccionario para buscar voucher por email
     vouchers_por_email = {}
@@ -1555,63 +1625,6 @@ def send_emails():
 def cerrar_sesion():
     session.clear()
     return redirect(url_for('iniciar_sesion'))
-
-
-@app.route('/vouchers')
-def listar_vouchers():
-    """
-    Muestra la lista de vouchers generados en la sesión actual
-    """
-    vouchers = session.get('vouchers_generados', [])
-    return render_template('vouchers.html', vouchers=vouchers)
-
-
-@app.route('/voucher/<path:filename>')
-def descargar_voucher(filename):
-    """
-    Descarga un voucher específico
-    """
-    try:
-        filepath = vouchers_path(filename)
-        if os.path.exists(filepath):
-            return send_file(filepath, as_attachment=True, download_name=filename)
-        else:
-            return "Voucher no encontrado", 404
-    except Exception as e:
-        return f"Error descargando voucher: {str(e)}", 500
-
-
-@app.route('/vouchers/descargar_todos')
-def descargar_todos_vouchers():
-    """
-    Descarga todos los vouchers generados en un archivo ZIP
-    """
-    import zipfile
-    from io import BytesIO
-    
-    vouchers = session.get('vouchers_generados', [])
-    if not vouchers:
-        return "No hay vouchers para descargar", 404
-    
-    try:
-        # Crear archivo ZIP en memoria
-        zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for voucher in vouchers:
-                filepath = voucher['filepath']
-                if os.path.exists(filepath):
-                    filename = os.path.basename(filepath)
-                    zip_file.write(filepath, filename)
-        
-        zip_buffer.seek(0)
-        return send_file(
-            zip_buffer,
-            mimetype='application/zip',
-            as_attachment=True,
-            download_name='vouchers_asiento.zip'
-        )
-    except Exception as e:
-        return f"Error creando archivo ZIP: {str(e)}", 500
 
 
 
