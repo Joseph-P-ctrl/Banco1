@@ -1196,7 +1196,7 @@ def correo_electronico_verificar_vinculo():
     session['worker_smtp_security'] = used_security
     session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
     session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
-    session['email_settings_message'] = '✅ Vínculo Microsoft 365 verificado correctamente.'
+    session['email_settings_message'] = '✅ Vínculo de correo verificado correctamente.'
     add_account_activity('Correo electrónico', f'Vínculo verificado para {sender}')
 
     return redirect(url_for('correo_electronico'))
@@ -1383,7 +1383,7 @@ def send_emails():
             vouchers_por_email[email] = voucher
             logging.info(f"Voucher indexado para: {email}")
     
-    # Configuración para Microsoft 365 (Outlook)
+    # Configuración SMTP
     secure_smtp = load_secure_smtp_credentials()
     form_sender = request.form.get('sender', '').strip()
     form_password = request.form.get('password', '').strip()
@@ -1617,7 +1617,7 @@ def send_emails():
         return _redirect_correos_with_message(message)
     except Exception as ex:
         return _redirect_correos_with_message(
-            f'Error enviando por Outlook/Microsoft 365 ({smtp_host}:{used_port}, {used_security}): {ex}'
+            f'Error enviando por SMTP ({smtp_host}:{used_port}, {used_security}): {ex}'
         )
 
 
