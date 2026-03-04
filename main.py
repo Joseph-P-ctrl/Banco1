@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, send_file, session, redirect, url_for
 from AccountService import AccountService
 from InterbankService import InterbankService
 from ProviderService import ProviderService
@@ -13,13 +13,11 @@ from openpyxl import load_workbook
 import pandas as pd
 import os
 import openpyxl
-from openpyxl import Workbook
 import re
 import logging
 import traceback
 import json
 import smtplib
-import uuid
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
@@ -278,17 +276,6 @@ def sync_email_config_to_modules(sender_email):
     save_general_settings(settings)
 
 
-def get_connected_account_email():
-    secure_smtp = load_secure_smtp_credentials()
-    sender = str(secure_smtp.get('sender', '')).strip()
-    if sender:
-        return sender
-
-    settings = load_general_settings()
-    perfil = settings.get('perfil', {}) if isinstance(settings, dict) else {}
-    return str(perfil.get('correo_personal', '')).strip()
-
-
 def load_account_features():
     default_payload = {
         'password': {
@@ -355,15 +342,6 @@ def add_account_activity(action, detail=''):
     return
 
 
-def clear_account_activity(mode='all', keep_last=0):
-    payload = load_account_features()
-    if mode == 'last' and keep_last > 0:
-        payload['activity'] = payload.get('activity', [])[:keep_last]
-    else:
-        payload['activity'] = []
-    save_account_features(payload)
-
-
 def _ensure_current_session_tracked():
     return
 
@@ -376,35 +354,6 @@ def _before_every_request_account_tracking():
         logging.warning(f'No se pudo actualizar sesión de dispositivo: {ex}')
 
 
-def save_account_password(new_password):
-    if not new_password:
-        return
-
-    payload = load_account_features()
-    fernet = _get_fernet()
-    payload['password']['value_encrypted'] = fernet.encrypt(new_password.encode('utf-8')).decode('utf-8')
-    payload['password']['updated_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-    save_account_features(payload)
-
-
-def get_account_password_updated_at():
-    payload = load_account_features()
-    return str(payload.get('password', {}).get('updated_at', '')).strip()
-
-
-def get_account_password_value():
-    payload = load_account_features()
-    encrypted_value = str(payload.get('password', {}).get('value_encrypted', '')).strip()
-    if not encrypted_value:
-        return ''
-
-    try:
-        fernet = _get_fernet()
-        return fernet.decrypt(encrypted_value.encode('utf-8')).decode('utf-8')
-    except Exception:
-        return ''
-
-
 def extract_emails_from_df(df):
     emails = set()
     email_regex = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
@@ -413,28 +362,6 @@ def extract_emails_from_df(df):
             for m in email_regex.findall(str(val)):
                 emails.add(m)
     return sorted(emails)
-
-def extract_emails_without_voucher(df):
-    if df is None or len(df) == 0:
-        return []
-
-    candidate_cols = []
-    for col in df.columns:
-        normalized = str(col).strip().lower().replace('°', 'º')
-        if normalized in ['nº documento', 'nºdocumento', 'asientos', 'voucher contable']:
-            candidate_cols.append(col)
-        elif 'documento' in normalized or 'voucher' in normalized or 'asiento' in normalized:
-            candidate_cols.append(col)
-
-    if candidate_cols:
-        voucher_col = candidate_cols[0]
-        voucher_values = df[voucher_col]
-        empty_mask = voucher_values.isna() | (voucher_values.astype(str).str.strip() == '')
-        filtered_df = df.loc[empty_mask]
-    else:
-        filtered_df = df
-
-    return extract_emails_from_df(filtered_df)
 
 def normalize_reference(value):
     return str(value).strip().upper()
@@ -701,69 +628,6 @@ def save_emails_cache(emails):
     except Exception:
         pass
 
-def load_emails_cache():
-    try:
-        cache_path = files_path('emails_cache.json')
-        if not os.path.exists(cache_path):
-            return []
-        with open(cache_path, 'r', encoding='utf-8') as f:
-            payload = json.load(f)
-        emails = payload.get('emails', [])
-        if isinstance(emails, list):
-            return emails
-        return []
-    except Exception:
-        return []
-
-
-def count_vouchers_in_folder():
-    try:
-        base_dir = vouchers_path()
-        if not os.path.exists(base_dir):
-            return 0
-        total = 0
-        for filename in os.listdir(base_dir):
-            if filename.lower().endswith('.pdf'):
-                total += 1
-        return total
-    except Exception:
-        return 0
-
-
-def find_latest_voucher_for_email(recipient_email):
-    recipient = str(recipient_email or '').strip().lower()
-    if not recipient:
-        return None
-
-    encoded_email = recipient.replace('@', '_').replace('.', '_')
-    expected_suffix = f"_{encoded_email}.pdf"
-
-    try:
-        base_dir = vouchers_path()
-        if not os.path.exists(base_dir):
-            return None
-
-        candidate_paths = []
-        for filename in os.listdir(base_dir):
-            filename_lower = filename.lower()
-            if not filename_lower.endswith('.pdf'):
-                continue
-            if filename_lower.endswith(expected_suffix):
-                candidate_paths.append(os.path.join(base_dir, filename))
-
-        if not candidate_paths:
-            return None
-
-        latest_path = max(candidate_paths, key=os.path.getmtime)
-        return {
-            'email': recipient,
-            'referencia': None,
-            'filepath': latest_path,
-            'monto': None
-        }
-    except Exception:
-        return None
-
 def render_correos_page(emails=None, mensaje_exito=None, page=1, quick_password_message=None, force_quick_password=False):
     if emails is None:
         emails = []
@@ -813,36 +677,6 @@ def render_correos_page(emails=None, mensaje_exito=None, page=1, quick_password_
         has_profile_photo=has_profile_photo,
         profile_photo_url=f"/foto_perfil_actual?v={profile_photo_version}"
     )
-
-def extract_emails_from_excel_upload(file_storage):
-    emails = set()
-    email_regex = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-    try:
-        file_storage.stream.seek(0)
-        workbook = load_workbook(filename=BytesIO(file_storage.read()), data_only=True)
-        file_storage.stream.seek(0)
-
-        for ws in workbook.worksheets:
-            for row in ws.iter_rows():
-                for cell in row:
-                    if cell.value is not None:
-                        for m in email_regex.findall(str(cell.value)):
-                            emails.add(m)
-                    if cell.hyperlink and cell.hyperlink.target:
-                        target = str(cell.hyperlink.target)
-                        if target.lower().startswith('mailto:'):
-                            target = target[7:]
-                        target = target.split('?', 1)[0]
-                        for m in email_regex.findall(target):
-                            emails.add(m)
-    except Exception:
-        # If the file cannot be opened with openpyxl (e.g., unsupported format), fallback to df extraction only
-        try:
-            file_storage.stream.seek(0)
-        except Exception:
-            pass
-    return sorted(emails)
-
 
 def _enforce_step_flow(current_step: str):
     return None
