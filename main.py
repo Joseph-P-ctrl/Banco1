@@ -1719,45 +1719,8 @@ def correo_electronico():
     auth_redirect = _require_worker_microsoft_login()
     if auth_redirect is not None:
         return auth_redirect
-
-    add_account_activity('Correo electrónico', 'Apertura de panel')
-    secure_smtp = load_secure_smtp_credentials()
-    message = session.pop('email_settings_message', None)
-    session_sender = str(session.get('worker_sender', '')).strip()
-    session_smtp_host = str(session.get('worker_smtp_host', '')).strip()
-    session_smtp_port = str(session.get('worker_smtp_port', '')).strip()
-    session_smtp_security = str(session.get('worker_smtp_security', '')).strip().lower()
-    linked_microsoft = bool(session.get('smtp_link_verified', False) and session_sender)
-    auth_method = str(session.get('worker_auth_method', '')).strip() or (
-        'API Microsoft Graph' if session.get('worker_login_via_graph', False) else 'SMTP OWA'
-    )
-    auth_timestamp = str(session.get('worker_login_at', '')).strip()
-    settings = load_general_settings()
-    perfil = settings.get('perfil', {}) if isinstance(settings, dict) else {}
-    profile_display_name = str(perfil.get('nombre_mostrar', '')).strip() or _build_display_name_from_email(session_sender)
-    linked_profile = {
-        'display_name': profile_display_name,
-        'sender': session_sender,
-        'role': 'Administrador de su cuenta',
-        'status': 'Vinculado y verificado' if linked_microsoft else 'Autenticado - verificación pendiente',
-        'linked_at': str(session.get('worker_login_at', '')).strip()
-    }
-    return render_template(
-        'correo_electronico.html',
-        sender=session_sender or secure_smtp.get('sender', '') or get_connected_account_email(),
-        smtp_host=session_smtp_host or secure_smtp.get('smtp_host', '') or 'owa.fonafe.gob.pe',
-        smtp_port=session_smtp_port or secure_smtp.get('smtp_port', '') or '587',
-        smtp_security=session_smtp_security or secure_smtp.get('smtp_security', '') or 'starttls',
-        message=message,
-        linked_microsoft=linked_microsoft,
-        linked_sender=session_sender,
-        linked_profile=linked_profile,
-        auth_proof={
-            'verified': linked_microsoft,
-            'method': auth_method,
-            'timestamp': auth_timestamp
-        }
-    )
+    session.pop('email_settings_message', None)
+    return redirect(url_for('correos'))
 
 
 @app.route('/iniciar_sesion', methods=['GET'])
