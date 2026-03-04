@@ -109,30 +109,6 @@ def _client_ip():
     return str(request.remote_addr or '').strip() or 'desconocido'
 
 
-def _detect_os_family(user_agent_text):
-    ua = str(user_agent_text or '').lower()
-    if 'android' in ua:
-        return 'Android'
-    if 'windows' in ua:
-        return 'Windows'
-    if 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
-        return 'iOS'
-    if 'mac os' in ua or 'macintosh' in ua:
-        return 'macOS'
-    if 'linux' in ua:
-        return 'Linux'
-    return 'Otro'
-
-
-def _detect_device_type(user_agent_text):
-    ua = str(user_agent_text or '').lower()
-    if 'android' in ua or 'iphone' in ua or 'mobile' in ua:
-        return 'Móvil'
-    if 'ipad' in ua or 'tablet' in ua:
-        return 'Tablet'
-    return 'Computadora'
-
-
 def _relative_time_label(timestamp_value):
     if not timestamp_value:
         return 'Sin registro'
@@ -819,8 +795,8 @@ def _ensure_current_session_tracked():
         current['last_seen'] = now_text
         current['ip'] = ip_value
         current['user_agent'] = user_agent_text
-        current['os_family'] = _detect_os_family(user_agent_text)
-        current['device_type'] = _detect_device_type(user_agent_text)
+        current['os_family'] = 'Otro'
+        current['device_type'] = 'Computadora'
         current['active'] = True
         sessions_list[existing_index] = current
     else:
@@ -830,8 +806,8 @@ def _ensure_current_session_tracked():
             'last_seen': now_text,
             'ip': ip_value,
             'user_agent': user_agent_text,
-            'os_family': _detect_os_family(user_agent_text),
-            'device_type': _detect_device_type(user_agent_text),
+            'os_family': 'Otro',
+            'device_type': 'Computadora',
             'active': True
         })
 
@@ -1998,34 +1974,8 @@ def configurar_correo():
 
 @app.route('/subir_foto_perfil', methods=['POST'])
 def subir_foto_perfil():
-    image_file = request.files.get('profile_image')
     next_url = request.form.get('next', '').strip()
-    if image_file is None or image_file.filename == '':
-        session['config_message'] = 'Selecciona una imagen para subir.'
-        if next_url == 'home':
-            return redirect(url_for('home'))
-        return redirect(url_for('correos'))
-
-    if not _allowed_image_extension(image_file.filename):
-        session['config_message'] = 'Formato no válido. Usa PNG, JPG, JPEG o WEBP.'
-        if next_url == 'home':
-            return redirect(url_for('home'))
-        return redirect(url_for('correos'))
-
-    try:
-        os.makedirs(_profile_photo_dir(), exist_ok=True)
-        photo_path = _profile_photo_path()
-        image_file.save(photo_path)
-
-        settings = load_general_settings()
-        current_version = int(settings.get('perfil', {}).get('foto_version', 0) or 0)
-        settings['perfil']['foto_version'] = current_version + 1
-        save_general_settings(settings)
-        add_account_activity('Perfil', 'Foto de perfil actualizada')
-
-        session['config_message'] = '✅ Foto de perfil actualizada correctamente.'
-    except Exception as ex:
-        session['config_message'] = f'Error subiendo foto de perfil: {ex}'
+    session['config_message'] = 'La carga de foto de perfil está deshabilitada.'
 
     if next_url == 'home':
         return redirect(url_for('home'))

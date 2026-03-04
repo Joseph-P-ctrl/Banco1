@@ -1546,45 +1546,8 @@
         <div id="quickTitle" class="quick-title">Ajustes rápidos</div>
         <button type="button" class="quick-close" onclick="closeQuickSettings()">×</button>
     </div>
-    <div class="quick-body">
-        <button id="quickPasswordBtn" type="button" class="quick-btn-password" onclick="openQuickPasswordModal()">Configuración de correo</button>
-    </div>
+    <div class="quick-body"></div>
 </aside>
-
-<div id="quickPasswordOverlay" class="quick-password-overlay" onclick="closeQuickPasswordModal()"></div>
-<section id="quickPasswordModal" class="quick-password-modal" aria-label="Configuración de correo">
-    <button type="button" class="quick-password-close" aria-label="Cerrar" onclick="closeQuickPasswordModal()">×</button>
-    <form action="/configurar_correo" method="POST" class="quick-password-grid">
-        <div class="quick-password-left">
-            <div class="quick-password-name">
-                {{ general_settings.perfil.nombre_mostrar if general_settings is defined and general_settings.perfil.nombre_mostrar else 'cuenta de correo' }}
-            </div>
-            <div class="quick-password-email">
-                {{ smtp_config.sender if smtp_config is defined and smtp_config.sender else 'correo@empresa.com' }}
-            </div>
-        </div>
-
-        <div class="quick-password-right">
-            <div class="quick-password-right-title">Debes verificar que eres tú para poder continuar</div>
-            <input id="quickSenderInput" type="email" name="sender" class="form-control quick-password-field" placeholder="Ingresa tu correo" value="{{ smtp_config.sender if smtp_config is defined else '' }}" required>
-            <input type="hidden" name="return_to" value="correos">
-            {% if quick_password_message %}
-                <div class="alert alert-warning" style="font-size: 14px; padding: 10px 12px; margin-bottom: 10px;">{{ quick_password_message }}</div>
-            {% endif %}
-            <input id="quickPasswordInput" type="password" name="password" class="form-control quick-password-field" placeholder="Introduce tu contraseña" required>
-
-            <label class="quick-password-check" for="quickPasswordShow">
-                <input id="quickPasswordShow" type="checkbox" onclick="toggleQuickPasswordVisibility()" onchange="toggleQuickPasswordVisibility()">
-                <span>Mostrar contraseña</span>
-            </label>
-
-            <div class="quick-password-actions">
-                <button type="button" class="quick-password-cancel" onclick="closeQuickPasswordModal()">Cerrar</button>
-                <button type="submit" class="quick-password-next">GUARDAR</button>
-            </div>
-        </div>
-    </form>
-</section>
 
 <div id="fullSettingsOverlay" class="full-settings-overlay" onclick="closeFullSettings()"></div>
 <section id="fullSettingsModal" class="full-settings-modal" aria-label="Configuración completa">
@@ -2124,22 +2087,6 @@ function getUILanguageStrings(languageCode) {
             quickSettingsAria: 'Quick settings',
             quickTitle: 'Quick settings',
             quickViewAllBtn: 'See all settings',
-            quickDensityTitle: 'Density',
-            quickDensityDefault: 'Default',
-            quickDensityComfortable: 'Comfortable',
-            quickDensityCompact: 'Compact',
-            quickThemeTitle: 'Theme',
-            quickThemeViewAll: 'See all',
-            quickThemeDefaultTitle: 'Default theme',
-            quickThemeSoftTitle: 'Soft theme',
-            quickInboxTitle: 'Inbox type',
-            quickInboxDefault: 'Default',
-            quickInboxImportant: 'Important first',
-            quickInboxUnread: 'Unread first',
-            quickInboxStarred: 'Starred first',
-            quickInboxPriority: 'Priority',
-            quickInboxMultiple: 'Multiple inboxes',
-            quickPersonalize: 'Customize',
             quickReadingTitle: 'Reading pane',
             quickReadingNone: 'No split',
             quickReadingRight: 'To the right of the inbox',
@@ -2260,22 +2207,6 @@ function getUILanguageStrings(languageCode) {
             quickSettingsAria: 'Paramètres rapides',
             quickTitle: 'Paramètres rapides',
             quickViewAllBtn: 'Voir tous les paramètres',
-            quickDensityTitle: 'Densité',
-            quickDensityDefault: 'Par défaut',
-            quickDensityComfortable: 'Confortable',
-            quickDensityCompact: 'Compacte',
-            quickThemeTitle: 'Thème',
-            quickThemeViewAll: 'Voir tout',
-            quickThemeDefaultTitle: 'Thème par défaut',
-            quickThemeSoftTitle: 'Thème doux',
-            quickInboxTitle: 'Type de boîte de réception',
-            quickInboxDefault: 'Par défaut',
-            quickInboxImportant: 'Importants d’abord',
-            quickInboxUnread: 'Non lus d’abord',
-            quickInboxStarred: 'Suivis d’abord',
-            quickInboxPriority: 'Prioritaires',
-            quickInboxMultiple: 'Boîtes de réception multiples',
-            quickPersonalize: 'Personnaliser',
             quickReadingTitle: 'Volet de lecture',
             quickReadingNone: 'Sans division',
             quickReadingRight: 'À droite de la boîte de réception',
@@ -2395,22 +2326,6 @@ function getUILanguageStrings(languageCode) {
         quickSettingsAria: 'Ajustes rápidos',
         quickTitle: 'Ajustes rápidos',
         quickViewAllBtn: 'Ver todos los ajustes',
-        quickDensityTitle: 'Densidad',
-        quickDensityDefault: 'Predeterminada',
-        quickDensityComfortable: 'Cómoda',
-        quickDensityCompact: 'Compacta',
-        quickThemeTitle: 'Tema',
-        quickThemeViewAll: 'Ver todo',
-        quickThemeDefaultTitle: 'Tema predeterminado',
-        quickThemeSoftTitle: 'Tema suave',
-        quickInboxTitle: 'Tipo de bandeja de entrada',
-        quickInboxDefault: 'Predeterminada',
-        quickInboxImportant: 'Importantes primero',
-        quickInboxUnread: 'No leídos primero',
-        quickInboxStarred: 'Destacados primero',
-        quickInboxPriority: 'Prioritarios',
-        quickInboxMultiple: 'Varias bandejas de entrada',
-        quickPersonalize: 'Personalizar',
         quickReadingTitle: 'Panel de lectura',
         quickReadingNone: 'Sin división',
         quickReadingRight: 'A la derecha de la bandeja de entrada',
@@ -2558,22 +2473,8 @@ function applyLanguageToUI(languageCode) {
         quickSettingsPanel.setAttribute('aria-label', t.quickSettingsAria);
     }
 
-    const themeDefault = document.getElementById('themeDefault');
-    if (themeDefault) themeDefault.title = t.quickThemeDefaultTitle;
-
-    const themeSoft = document.getElementById('themeSoft');
-    if (themeSoft) themeSoft.title = t.quickThemeSoftTitle;
-
-    ['quickInboxDefaultCustomize', 'quickInboxPriorityCustomize', 'quickInboxMultipleCustomize'].forEach((id) => {
-        const element = document.getElementById(id);
-        if (element) element.textContent = t.quickPersonalize;
-    });
-
     const textIds = [
         'quickTitle', 'quickViewAllBtn',
-        'quickDensityTitle', 'quickDensityDefault', 'quickDensityComfortable', 'quickDensityCompact',
-        'quickThemeTitle', 'quickThemeViewAll',
-        'quickInboxTitle', 'quickInboxDefault', 'quickInboxImportant', 'quickInboxUnread', 'quickInboxStarred', 'quickInboxPriority', 'quickInboxMultiple',
         'quickReadingTitle', 'quickReadingNone', 'quickReadingRight', 'quickReadingBottom',
         'quickConversationTitle', 'quickConversationLabel',
         'fullSettingsTitle', 'fullSettingsTabGeneral', 'fullSettingsTabForwarding',
@@ -2737,12 +2638,6 @@ function initConfigFromQuery() {
     const params = new URLSearchParams(window.location.search);
     const openConfig = params.get('open_config');
     const panel = params.get('panel');
-    const openQuickPassword = params.get('open_quick_password');
-    const forceQuickPassword = {{ 'true' if force_quick_password else 'false' }};
-
-    if (openQuickPassword === '1' || forceQuickPassword) {
-        openQuickPasswordModal();
-    }
 
     if (openConfig === '1') {
         openConfigModal();
@@ -2764,64 +2659,6 @@ function openQuickSettings() {
 function closeQuickSettings() {
     document.getElementById('quickSettingsOverlay').style.display = 'none';
     document.getElementById('quickSettingsPanel').classList.remove('open');
-    document.body.style.overflow = '';
-}
-
-function openQuickPasswordModal() {
-    closeQuickSettings();
-    const overlay = document.getElementById('quickPasswordOverlay');
-    const modal = document.getElementById('quickPasswordModal');
-    const senderInput = document.getElementById('quickSenderInput');
-    const passwordInput = document.getElementById('quickPasswordInput');
-    const showPassword = document.getElementById('quickPasswordShow');
-    if (overlay) overlay.style.display = 'block';
-    if (modal) modal.style.display = 'block';
-    if (senderInput) {
-        senderInput.focus();
-    }
-    if (passwordInput && showPassword) {
-        toggleQuickPasswordVisibility();
-    }
-    document.body.style.overflow = 'hidden';
-}
-
-function isQuickPasswordModalOpen() {
-    const modal = document.getElementById('quickPasswordModal');
-    return !!(modal && modal.style.display === 'block');
-}
-
-function trapQuickPasswordOutsideClick(event) {
-    if (!isQuickPasswordModalOpen()) {
-        return;
-    }
-
-    const modal = document.getElementById('quickPasswordModal');
-    if (!modal) {
-        return;
-    }
-
-    if (!modal.contains(event.target)) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-}
-
-function toggleQuickPasswordVisibility() {
-    const quickPasswordShow = document.getElementById('quickPasswordShow');
-    const quickPasswordInput = document.getElementById('quickPasswordInput');
-
-    if (!quickPasswordShow || !quickPasswordInput) {
-        return;
-    }
-
-    quickPasswordInput.type = quickPasswordShow.checked ? 'text' : 'password';
-}
-
-function closeQuickPasswordModal() {
-    const overlay = document.getElementById('quickPasswordOverlay');
-    const modal = document.getElementById('quickPasswordModal');
-    if (overlay) overlay.style.display = 'none';
-    if (modal) modal.style.display = 'none';
     document.body.style.overflow = '';
 }
 
@@ -2989,110 +2826,6 @@ function applyColorMode(mode) {
     localStorage.setItem('uiColorMode', mode);
 }
 
-function setDensity(mode) {
-    document.body.classList.remove('qs-density-comfortable', 'qs-density-compact');
-    const densityDefault = document.getElementById('densityDefault');
-    const densityComfortable = document.getElementById('densityComfortable');
-    const densityCompact = document.getElementById('densityCompact');
-
-    if (mode === 'comfortable') {
-        document.body.classList.add('qs-density-comfortable');
-        if (densityComfortable) densityComfortable.checked = true;
-    } else if (mode === 'compact') {
-        document.body.classList.add('qs-density-compact');
-        if (densityCompact) densityCompact.checked = true;
-    } else {
-        if (densityDefault) densityDefault.checked = true;
-    }
-
-    localStorage.setItem('quickDensity', mode);
-}
-
-function setThemeMode(mode) {
-    const themeDefault = document.getElementById('themeDefault');
-    const themeSoft = document.getElementById('themeSoft');
-    if (themeDefault) themeDefault.classList.remove('active');
-    if (themeSoft) themeSoft.classList.remove('active');
-
-    if (document.body.classList.contains('qs-dark-mode')) {
-        applyColorMode('light');
-    }
-
-    if (mode === 'soft') {
-        if (themeSoft) themeSoft.classList.add('active');
-        document.body.classList.add('qs-soft-mode');
-    } else {
-        if (themeDefault) themeDefault.classList.add('active');
-        document.body.classList.remove('qs-soft-mode');
-    }
-
-    localStorage.setItem('quickThemeMode', mode);
-}
-
-function setInboxType(mode) {
-    const mapping = {
-        default: 'inboxDefault',
-        important: 'inboxImportant',
-        unread: 'inboxUnread',
-        starred: 'inboxStarred',
-        priority: 'inboxPriority',
-        multiple: 'inboxMultiple'
-    };
-
-    const targetId = mapping[mode] || 'inboxDefault';
-    const target = document.getElementById(targetId);
-    if (target) {
-        target.checked = true;
-    }
-
-    localStorage.setItem('quickInboxType', mode);
-    applyInboxTypeToMail(mode);
-}
-
-function applyInboxTypeToMail(mode) {
-    const importantKeywords = ['gerencia', 'admin', 'rrhh', 'facturacion', 'tesoreria', 'soporte', 'unprg', 'distriluz'];
-
-    const scoreByMode = (email) => {
-        const value = (email || '').toLowerCase();
-        const isChecked = !!document.querySelector(`input[name="selected_emails"][value="${email}"]`)?.checked;
-
-        if (mode === 'important') {
-            return importantKeywords.some((k) => value.includes(k)) ? 0 : 1;
-        }
-        if (mode === 'unread') {
-            return isChecked ? 1 : 0;
-        }
-        if (mode === 'starred') {
-            return value.includes('vip') || value.includes('director') ? 0 : 1;
-        }
-        if (mode === 'priority') {
-            return importantKeywords.some((k) => value.includes(k)) || value.includes('vip') ? 0 : 1;
-        }
-        if (mode === 'multiple') {
-            const domain = value.split('@')[1] || '';
-            return domain;
-        }
-        return 0;
-    };
-
-    if (mode === 'default') {
-        restoreOriginalMailOrder();
-        return;
-    }
-
-    sortMailRows((a, b) => {
-        const aEmail = a.dataset.email || '';
-        const bEmail = b.dataset.email || '';
-        const aScore = scoreByMode(aEmail);
-        const bScore = scoreByMode(bEmail);
-
-        if (typeof aScore === 'string' || typeof bScore === 'string') {
-            return String(aScore).localeCompare(String(bScore)) || aEmail.localeCompare(bEmail);
-        }
-        return aScore - bScore || aEmail.localeCompare(bEmail);
-    });
-}
-
 function setReadingMode(mode) {
     const readingNone = document.getElementById('readingNone');
     const readingRight = document.getElementById('readingRight');
@@ -3160,15 +2893,6 @@ function initQuickSettings() {
         quickBtn.addEventListener('click', openQuickSettings);
     }
 
-    const savedDensity = localStorage.getItem('quickDensity') || 'default';
-    setDensity(savedDensity);
-
-    const savedTheme = localStorage.getItem('quickThemeMode') || 'default';
-    setThemeMode(savedTheme);
-
-    const savedInboxType = localStorage.getItem('quickInboxType') || 'default';
-    setInboxType(savedInboxType);
-
     const savedReadingMode = localStorage.getItem('quickReadingMode') || 'none';
     setReadingMode(savedReadingMode);
 
@@ -3183,12 +2907,6 @@ function initQuickSettings() {
     applyColorMode(savedColorMode);
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && isQuickPasswordModalOpen()) {
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-        }
-
         if (event.key === 'Escape') {
             closeFullSettings();
             closeQuickSettings();
@@ -3335,16 +3053,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initGeneralLiveEffects();
     initSettingsPasswordToggle();
     initDefaultEmailSelection();
-
-    const quickPasswordShow = document.getElementById('quickPasswordShow');
-    if (quickPasswordShow) {
-        quickPasswordShow.addEventListener('change', toggleQuickPasswordVisibility);
-        quickPasswordShow.addEventListener('click', toggleQuickPasswordVisibility);
-    }
-
-    document.addEventListener('mousedown', trapQuickPasswordOutsideClick, true);
-    document.addEventListener('click', trapQuickPasswordOutsideClick, true);
-    document.addEventListener('touchstart', trapQuickPasswordOutsideClick, true);
 });
 </script>
 
