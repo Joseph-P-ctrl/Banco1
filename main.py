@@ -466,26 +466,8 @@ def load_general_settings():
             'notificaciones_activas': True
         },
         'perfil': {
-            'nombre_mostrar': '',
-            'cargo': '',
-            'telefono': '',
             'foto_version': 0,
-            'genero': '',
-            'correo_personal': '',
-            'correo_alterno': '',
-            'fecha_nacimiento': '',
-            'idioma': 'Español (España)',
-            'direccion_casa': '',
-            'direccion_trabajo': '',
-            'otras_direcciones': ''
-        },
-        'seguridad': {
-            'doble_factor': False,
-            'cerrar_sesiones': True
-        },
-        'privacidad': {
-            'compartir_datos': False,
-            'analytics': False
+            'correo_personal': ''
         },
         'contactos': {
             'correo_soporte': '',
@@ -578,59 +560,7 @@ def load_account_features():
         'sessions': [],
         'security': {
             'skip_password_when_possible': False,
-            'enhanced_browsing': False,
-            'recovery_phone': '',
-            'recovery_email': '',
-            'two_factor_phone': '',
-            'backup_codes': 0,
-            'device_prompt_count': 0
-        },
-        'third_party_apps': [],
-        'contacts_share': {
-            'family': {
-                'enabled': False,
-                'invites_remaining': 5,
-                'group_name': 'Mi grupo familiar'
-            },
-            'preferences': {
-                'sync_interactions': True,
-                'sync_device_contacts': True,
-                'share_location': False,
-                'profile_visible': True
-            },
-            'contacts': [
-                {
-                    'id': 1,
-                    'name': 'Contacto soporte',
-                    'email': '',
-                    'phone': '',
-                    'source': 'Manual',
-                    'blocked': False
-                }
-            ],
-            'profiles': [
-                {
-                    'id': 1,
-                    'name': 'Perfil principal',
-                    'description': 'Visible para servicios internos'
-                }
-            ]
-        },
-        'privacy_center': {
-            'search_personalization': True,
-            'play_personalization': True,
-            'web_activity': True,
-            'play_history': True,
-            'youtube_history': True,
-            'maps_timeline': False,
-            'ads_personalized': True,
-            'partner_ads': False,
-            'legacy_plan_created': False,
-            'delete_account_requested_at': '',
-            'service_emails_enabled': True,
-            'fit_data_enabled': True,
-            'voice_match_enabled': False,
-            'download_requests': 0
+            'enhanced_browsing': False
         }
     }
 
@@ -646,7 +576,7 @@ def load_account_features():
             return default_payload
 
         merged = default_payload.copy()
-        for key in ['password', 'devices', 'activity', 'sessions', 'security', 'third_party_apps', 'contacts_share', 'privacy_center']:
+        for key in ['password', 'devices', 'activity', 'sessions', 'security']:
             value = payload.get(key)
             if key == 'password' and isinstance(value, dict):
                 password_payload = default_payload['password'].copy()
@@ -662,38 +592,6 @@ def load_account_features():
                 security_payload = default_payload['security'].copy()
                 security_payload.update(value)
                 merged['security'] = security_payload
-            elif key == 'third_party_apps' and isinstance(value, list):
-                merged['third_party_apps'] = value
-            elif key == 'contacts_share' and isinstance(value, dict):
-                contacts_default = default_payload['contacts_share']
-                merged_contacts = {
-                    'family': contacts_default['family'].copy(),
-                    'preferences': contacts_default['preferences'].copy(),
-                    'contacts': contacts_default['contacts'][:],
-                    'profiles': contacts_default['profiles'][:]
-                }
-
-                family_value = value.get('family', {})
-                if isinstance(family_value, dict):
-                    merged_contacts['family'].update(family_value)
-
-                preferences_value = value.get('preferences', {})
-                if isinstance(preferences_value, dict):
-                    merged_contacts['preferences'].update(preferences_value)
-
-                contacts_value = value.get('contacts', [])
-                if isinstance(contacts_value, list):
-                    merged_contacts['contacts'] = contacts_value
-
-                profiles_value = value.get('profiles', [])
-                if isinstance(profiles_value, list):
-                    merged_contacts['profiles'] = profiles_value
-
-                merged['contacts_share'] = merged_contacts
-            elif key == 'privacy_center' and isinstance(value, dict):
-                privacy_payload = default_payload['privacy_center'].copy()
-                privacy_payload.update(value)
-                merged['privacy_center'] = privacy_payload
 
         return merged
     except Exception as ex:

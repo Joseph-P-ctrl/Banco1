@@ -590,10 +590,6 @@ document.addEventListener('DOMContentLoaded', function () {
     </header>
     <div class="collapsed-userbar" aria-hidden="true"></div>
     <button type="button" class="corner-theme-btn" title="Modo claro/oscuro" aria-label="Modo claro/oscuro" onclick="toggleColorMode()">🌙</button>
-    <form id="avatarUploadForm" action="/subir_foto_perfil" method="POST" enctype="multipart/form-data" style="display:none;">
-        <input type="hidden" name="next" value="home">
-        <input id="avatarUploadInput" type="file" name="profile_image" accept=".png,.jpg,.jpeg,.webp" onchange="submitAvatarUpload()">
-    </form>
     <div id="mailSettingsOverlay" class="mail-settings-overlay"></div>
     <section id="mailSettingsModal" class="mail-settings-modal" aria-label="Configuración de correo">
         <h5>Configuración de correo</h5>
