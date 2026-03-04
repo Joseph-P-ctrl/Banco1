@@ -20,9 +20,6 @@ import traceback
 import json
 import smtplib
 import uuid
-import urllib.parse
-import urllib.request
-from urllib.error import HTTPError, URLError
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
@@ -90,50 +87,6 @@ def _profile_photo_context():
     }
 
 
-def _allowed_image_extension(filename):
-    lower_name = str(filename or '').strip().lower()
-    return lower_name.endswith('.png') or lower_name.endswith('.jpg') or lower_name.endswith('.jpeg') or lower_name.endswith('.webp')
-
-
-def _safe_user_agent():
-    try:
-        return str(request.user_agent.string or '').strip()
-    except Exception:
-        return ''
-
-
-def _client_ip():
-    forwarded_for = request.headers.get('X-Forwarded-For', '').strip()
-    if forwarded_for:
-        return forwarded_for.split(',')[0].strip()
-    return str(request.remote_addr or '').strip() or 'desconocido'
-
-
-def _relative_time_label(timestamp_value):
-    if not timestamp_value:
-        return 'Sin registro'
-    try:
-        last_seen = pd.to_datetime(timestamp_value, format='%d/%m/%Y %H:%M:%S', errors='coerce')
-        if pd.isna(last_seen):
-            return str(timestamp_value)
-        now_value = pd.Timestamp.now()
-        diff = now_value - last_seen
-        total_seconds = max(int(diff.total_seconds()), 0)
-
-        if total_seconds < 60:
-            return 'Hace unos segundos'
-        if total_seconds < 3600:
-            minutes = total_seconds // 60
-            return f'Hace {minutes} min'
-        if total_seconds < 86400:
-            hours = total_seconds // 3600
-            return f'Hace {hours} hora(s)'
-        days = total_seconds // 86400
-        return f'Hace {days} día(s)'
-    except Exception:
-        return str(timestamp_value)
-
-
 def _get_fernet():
     env_key = os.environ.get('OUTLOOK_CREDENTIALS_KEY', '').strip()
     if env_key:
@@ -163,17 +116,6 @@ def normalize_sender_email(sender_value):
         return corrected, True
 
     return sender_clean, False
-
-
-def _build_display_name_from_email(email_value):
-    email_text = str(email_value or '').strip().lower()
-    if not email_text or '@' not in email_text:
-        return 'Usuario'
-    local_part = email_text.split('@', 1)[0]
-    tokens = [token for token in re.split(r'[._\-]+', local_part) if token and not token.isdigit()]
-    if not tokens:
-        return 'Usuario'
-    return ' '.join(token.capitalize() for token in tokens[:4])
 
 
 def _normalize_smtp_security(security_value):
@@ -209,201 +151,6 @@ def _require_worker_microsoft_login():
     session['smtp_authenticated'] = True
     session['quick_password_verified'] = True
     return None
-
-
-def _get_login_lock_state():
-    return False, 0
-
-
-def _register_login_failure(base_message):
-    return
-
-
-def _reset_login_failures():
-    return
-
-
-def _validate_microsoft365_api_login(username, password):
-    settings = load_general_settings()
-    microsoft365_settings = settings.get('microsoft365', {}) if isinstance(settings, dict) else {}
-
-    tenant_id = (
-        os.environ.get('M365_TENANT_ID', '').strip()
-        or os.environ.get('MICROSOFT_TENANT_ID', '').strip()
-        or str(microsoft365_settings.get('tenant_id', '')).strip()
-        or 'common'
-    )
-    client_id = (
-        os.environ.get('M365_CLIENT_ID', '').strip()
-        or os.environ.get('MICROSOFT_CLIENT_ID', '').strip()
-        or str(microsoft365_settings.get('client_id', '')).strip()
-    )
-    client_secret = (
-        os.environ.get('M365_CLIENT_SECRET', '').strip()
-        or os.environ.get('MICROSOFT_CLIENT_SECRET', '').strip()
-        or str(microsoft365_settings.get('client_secret', '')).strip()
-    )
-    scope = (
-        os.environ.get('M365_SCOPE', '').strip()
-        or os.environ.get('MICROSOFT_SCOPE', '').strip()
-        or str(microsoft365_settings.get('scope', '')).strip()
-        or 'https://graph.microsoft.com/User.Read openid profile email'
-    )
-
-    if not client_id:
-        return False, 'API Microsoft 365 no configurada. Falta M365_CLIENT_ID (o MICROSOFT_CLIENT_ID).'
-
-    token_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
-    payload = {
-        'client_id': client_id,
-        'grant_type': 'password',
-        'username': username,
-        'password': password,
-        'scope': scope
-    }
-    if client_secret:
-        payload['client_secret'] = client_secret
-
-    encoded_payload = urllib.parse.urlencode(payload).encode('utf-8')
-    token_request = urllib.request.Request(
-        token_url,
-        data=encoded_payload,
-        headers={'Content-Type': 'application/x-www-form-urlencoded'}
-    )
-
-    try:
-        with urllib.request.urlopen(token_request, timeout=30) as token_response:
-            token_data = json.loads(token_response.read().decode('utf-8'))
-    except HTTPError as http_ex:
-        try:
-            error_payload = json.loads(http_ex.read().decode('utf-8'))
-            error_text = error_payload.get('error_description') or error_payload.get('error') or str(http_ex)
-        except Exception:
-            error_text = str(http_ex)
-        return False, f'Error API Microsoft 365: {error_text}'
-    except URLError as url_ex:
-        return False, f'No se pudo conectar a Microsoft 365 API: {url_ex}'
-    except Exception as ex:
-        return False, f'Error validando API Microsoft 365: {ex}'
-
-    access_token = str(token_data.get('access_token', '')).strip()
-    if not access_token:
-        return False, 'Microsoft 365 API no devolvió token de acceso para esta cuenta.'
-
-    me_request = urllib.request.Request(
-        'https://graph.microsoft.com/v1.0/me',
-        headers={'Authorization': f'Bearer {access_token}'}
-    )
-
-    try:
-        with urllib.request.urlopen(me_request, timeout=20) as me_response:
-            me_data = json.loads(me_response.read().decode('utf-8'))
-            if not me_data.get('id'):
-                return False, 'Microsoft 365 API respondió sin identidad de usuario.'
-    except Exception as ex:
-        return False, f'No se pudo validar perfil en Microsoft 365 API: {ex}'
-
-    return True, ''
-
-
-def _is_microsoft365_graph_configured():
-    settings = load_general_settings()
-    microsoft365_settings = settings.get('microsoft365', {}) if isinstance(settings, dict) else {}
-
-    client_id = (
-        os.environ.get('M365_CLIENT_ID', '').strip()
-        or os.environ.get('MICROSOFT_CLIENT_ID', '').strip()
-        or str(microsoft365_settings.get('client_id', '')).strip()
-    )
-    return bool(client_id)
-
-
-def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
-    used_security = _normalize_smtp_security(smtp_security)
-    smtp_conn = None
-
-    try:
-        if used_security == 'ssl':
-            smtp_conn = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30)
-            smtp_conn.ehlo()
-        else:
-            smtp_conn = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
-            smtp_conn.ehlo()
-            smtp_conn.starttls()
-            smtp_conn.ehlo()
-    except Exception as conn_ex:
-        wrong_version = 'WRONG_VERSION_NUMBER' in str(conn_ex).upper()
-        can_retry_starttls = used_security in ('ssl', 'auto') and wrong_version
-        if can_retry_starttls:
-            smtp_conn = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
-            smtp_conn.ehlo()
-            smtp_conn.starttls()
-            smtp_conn.ehlo()
-            used_security = 'starttls'
-        elif _should_retry_with_port_25(smtp_port, conn_ex):
-            smtp_conn = smtplib.SMTP(smtp_host, 25, timeout=30)
-            smtp_conn.ehlo()
-            smtp_conn.starttls()
-            smtp_conn.ehlo()
-            used_security = 'starttls'
-        else:
-            return False, sender, used_security, f'No se pudo conectar al servidor SMTP ({smtp_host}:{smtp_port}): {conn_ex}'
-
-    with smtp_conn as smtp:
-        try:
-            smtp.login(sender, password)
-            return True, sender, used_security, ''
-        except smtplib.SMTPAuthenticationError:
-            corrected_sender, sender_corrected = normalize_sender_email(sender)
-            if sender_corrected and corrected_sender != sender:
-                try:
-                    smtp.login(corrected_sender, password)
-                    return True, corrected_sender, used_security, ''
-                except smtplib.SMTPAuthenticationError:
-                    pass
-
-            return (
-                False,
-                sender,
-                used_security,
-                'No se pudieron validar tus credenciales de correo. Verifica usuario y contraseña e inténtalo nuevamente.'
-            )
-        except Exception as login_ex:
-            return False, sender, used_security, f'No se pudo autenticar en SMTP: {login_ex}'
-
-
-def _validate_office365_and_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
-    smtp_ok, validated_sender, used_security, smtp_error = _validate_smtp_login(
-        sender,
-        password,
-        smtp_host,
-        smtp_port,
-        smtp_security
-    )
-    if not smtp_ok:
-        return False, validated_sender, used_security, smtp_error
-
-    graph_configured = _is_microsoft365_graph_configured()
-    if not graph_configured:
-        session['worker_login_via_graph'] = False
-        session['worker_graph_verified'] = False
-        session['worker_auth_method'] = 'SMTP OWA'
-        session['worker_graph_warning'] = 'Microsoft 365 Graph no está configurado. Se inició sesión con SMTP.'
-        return True, validated_sender, used_security, ''
-
-    graph_ok, graph_error = _validate_microsoft365_api_login(validated_sender, password)
-    if not graph_ok:
-        session['worker_login_via_graph'] = False
-        session['worker_graph_verified'] = False
-        session['worker_auth_method'] = 'SMTP OWA'
-        session['worker_graph_warning'] = 'Conexión SMTP correcta, pero Microsoft 365 no validó: ' + graph_error
-        return True, validated_sender, used_security, ''
-
-    session['worker_login_via_graph'] = True
-    session['worker_graph_verified'] = True
-    session.pop('worker_graph_warning', None)
-    session['worker_auth_method'] = 'SMTP OWA + Microsoft 365 Graph'
-    return True, validated_sender, used_security, ''
 
 
 def save_secure_smtp_credentials(sender_value, password_value, smtp_host_value=None, smtp_port_value=None, smtp_security_value=None, cc_value=None):
@@ -656,13 +403,6 @@ def get_account_password_value():
         return fernet.decrypt(encrypted_value.encode('utf-8')).decode('utf-8')
     except Exception:
         return ''
-
-
-def _sanitize_int(value, default_value=0):
-    try:
-        return int(str(value).strip())
-    except Exception:
-        return int(default_value)
 
 
 def extract_emails_from_df(df):
