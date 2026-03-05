@@ -148,6 +148,72 @@ def should_retry_with_port_25(smtp_port, conn_ex):
     ))
 
 
+def _is_auth_not_supported_error(ex):
+    error_text = str(ex or '').lower()
+    return 'smtp auth extension not supported' in error_text or 'auth not supported' in error_text
+
+
+def _connect_smtp_client(host_value, security_mode, port_value, timeout_seconds):
+    if security_mode == 'ssl':
+        smtp_conn = smtplib.SMTP_SSL(host_value, port_value, timeout=timeout_seconds)
+        smtp_conn.ehlo()
+        return smtp_conn
+
+    smtp_conn = smtplib.SMTP(host_value, port_value, timeout=timeout_seconds)
+    smtp_conn.ehlo()
+    smtp_conn.starttls()
+    smtp_conn.ehlo()
+    return smtp_conn
+
+
+def _build_smtp_attempts(security_value, port_value):
+    attempts = []
+
+    def add_attempt(mode, port):
+        item = (mode, int(port))
+        if item not in attempts:
+            attempts.append(item)
+
+    preferred_security = normalize_smtp_security(security_value)
+    preferred_port = parse_smtp_port(port_value)
+
+    if preferred_security == 'auto':
+        add_attempt('starttls', preferred_port)
+    else:
+        add_attempt(preferred_security, preferred_port)
+
+    add_attempt('ssl', 465)
+    add_attempt('starttls', 587)
+    add_attempt('starttls', 25)
+
+    return attempts
+
+
+def _open_authenticated_smtp_connection(host_value, sender_value, password_value, security_value, port_value, timeout_seconds):
+    attempts = _build_smtp_attempts(security_value, port_value)
+    last_error = None
+
+    for security_mode, candidate_port in attempts:
+        smtp_conn = None
+        try:
+            smtp_conn = _connect_smtp_client(host_value, security_mode, candidate_port, timeout_seconds)
+
+            if not smtp_conn.has_extn('auth'):
+                raise smtplib.SMTPNotSupportedError('SMTP AUTH extension not supported by server.')
+
+            smtp_conn.login(sender_value, password_value)
+            return smtp_conn, security_mode, candidate_port, ''
+        except Exception as attempt_ex:
+            last_error = attempt_ex
+            if smtp_conn is not None:
+                try:
+                    smtp_conn.quit()
+                except Exception:
+                    pass
+
+    return None, '', 0, str(last_error or 'No se pudo autenticar en SMTP')
+
+
 def validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
     sender_value, _ = normalize_sender_email(sender)
     password_value = str(password or '')
@@ -159,44 +225,21 @@ def validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
         return False, sender_value, security_value, port_value, 'Credenciales incompletas'
 
     try:
-        smtp_conn = None
-        used_security = security_value
-        used_port = port_value
+        smtp_conn, used_security, used_port, connect_error = _open_authenticated_smtp_connection(
+            host_value,
+            sender_value,
+            password_value,
+            security_value,
+            port_value,
+            timeout_seconds=20
+        )
+        if smtp_conn is None:
+            return False, sender_value, security_value, port_value, connect_error
 
         try:
-            if security_value == 'ssl':
-                smtp_conn = smtplib.SMTP_SSL(host_value, port_value, timeout=20)
-                smtp_conn.ehlo()
-            else:
-                smtp_conn = smtplib.SMTP(host_value, port_value, timeout=20)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-        except Exception as conn_ex:
-            wrong_version = 'WRONG_VERSION_NUMBER' in str(conn_ex).upper()
-            can_retry_starttls = security_value in ('ssl', 'auto') and wrong_version
-            if can_retry_starttls:
-                smtp_conn = smtplib.SMTP(host_value, port_value, timeout=20)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-            elif should_retry_with_port_25(port_value, conn_ex):
-                smtp_conn = smtplib.SMTP(host_value, 25, timeout=20)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-                used_port = 25
-            else:
-                return False, sender_value, security_value, port_value, str(conn_ex)
-
-        with smtp_conn as smtp:
-            try:
-                smtp.login(sender_value, password_value)
-            except smtplib.SMTPAuthenticationError as auth_ex:
-                return False, sender_value, used_security, used_port, str(auth_ex)
+            smtp_conn.quit()
+        except Exception:
+            pass
 
         return True, sender_value, used_security, used_port, ''
     except Exception as ex:
@@ -994,55 +1037,25 @@ def send_emails_handler(require_worker_microsoft_login_func, load_general_settin
     used_port = smtp_port
 
     try:
-        smtp_conn = None
-        try:
-            if smtp_security == 'ssl':
-                smtp_conn = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30)
-                smtp_conn.ehlo()
-                used_security = 'ssl'
-                used_port = smtp_port
-            else:
-                smtp_conn = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-                used_port = smtp_port
-        except Exception as conn_ex:
-            wrong_version = 'WRONG_VERSION_NUMBER' in str(conn_ex).upper()
-            can_retry_starttls = smtp_security in ('ssl', 'auto') and wrong_version
-            if can_retry_starttls:
-                logging.warning(
-                    f"SMTP SSL no compatible en {smtp_host}:{smtp_port} ({conn_ex}). Reintentando con STARTTLS."
+        smtp_conn, used_security, used_port, connect_error = _open_authenticated_smtp_connection(
+            smtp_host,
+            sender,
+            password,
+            smtp_security,
+            smtp_port,
+            timeout_seconds=30
+        )
+        if smtp_conn is None:
+            if _is_auth_not_supported_error(connect_error):
+                return redirect_correos_with_message(
+                    'El servidor SMTP no permite autenticación en el modo/puerto configurado. '
+                    'Prueba con SSL (465) o STARTTLS (587).'
                 )
-                smtp_conn = smtplib.SMTP(smtp_host, smtp_port, timeout=30)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-                used_port = smtp_port
-            elif should_retry_with_port_25(smtp_port, conn_ex):
-                logging.warning(
-                    f"SMTP {smtp_host}:{smtp_port} rechazó conexión ({conn_ex}). Reintentando por puerto 25 con STARTTLS."
-                )
-                smtp_conn = smtplib.SMTP(smtp_host, 25, timeout=30)
-                smtp_conn.ehlo()
-                smtp_conn.starttls()
-                smtp_conn.ehlo()
-                used_security = 'starttls'
-                used_port = 25
-            else:
-                raise
+            return redirect_correos_with_message(
+                f'Error enviando por SMTP ({smtp_host}:{smtp_port}, {smtp_security}): {connect_error}'
+            )
 
         with smtp_conn as smtp:
-            try:
-                smtp.login(sender, password)
-            except smtplib.SMTPAuthenticationError:
-                return redirect_correos_with_message(
-                    'No se pudieron validar tus credenciales de correo. '
-                    'Verifica usuario/clave en credenciales SMTP o confirma con TI que la cuenta tenga SMTP AUTH habilitado en owa.fonafe.gob.pe. '
-                    'No se envió ningún correo.'
-                )
 
             if should_save_smtp and sender and password and (used_port != smtp_port or used_security != smtp_security):
                 try:
