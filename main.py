@@ -1109,26 +1109,32 @@ def iniciar_sesion():
 @app.route('/correo_electronico/guardar', methods=['POST'])
 def correo_electronico_guardar():
     existing = load_secure_smtp_credentials()
-    sender = request.form.get('sender', '').strip() or str(existing.get('sender', '')).strip()
+    sender = request.form.get('sender', '').strip()
     sender, _ = normalize_sender_email(sender)
-    password = request.form.get('password', '').strip() or str(existing.get('password', '')).strip()
+    password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
     smtp_host = existing.get('smtp_host', '') or 'owa.fonafe.gob.pe'
     smtp_port = _parse_smtp_port(existing.get('smtp_port', '') or '587')
     smtp_security = _normalize_smtp_security(existing.get('smtp_security', '') or 'starttls')
 
     if not sender:
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
         session['login_message'] = 'Ingresa tu correo para continuar.'
         return redirect(url_for('basedatos'))
 
     if not password:
-        session['login_message'] = 'No hay una contraseña guardada para ese correo. Configura la cuenta primero.'
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
+        session['login_message'] = 'Ingresa tu contraseña para continuar.'
         return redirect(url_for('basedatos'))
 
     if not confirm_password:
         confirm_password = password
 
     if password != confirm_password:
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
         session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
         return redirect(url_for('basedatos'))
 
@@ -1149,6 +1155,8 @@ def correo_electronico_guardar():
         session['smtp_authenticated'] = False
         session['smtp_link_verified'] = False
         session['quick_password_verified'] = False
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
         session['login_message'] = 'La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.'
         return redirect(url_for('basedatos'))
 
@@ -1245,9 +1253,9 @@ def configurar_correo():
         return redirect(url_for('correo_electronico'))
 
     existing = load_secure_smtp_credentials()
-    sender = request.form.get('sender', '').strip() or existing.get('sender', '').strip()
+    sender = request.form.get('sender', '').strip()
     sender, _ = normalize_sender_email(sender)
-    password = request.form.get('password', '').strip() or existing.get('password', '').strip()
+    password = request.form.get('password', '').strip()
     confirm_password_raw = request.form.get('confirm_password', None)
     confirm_password = '' if confirm_password_raw is None else str(confirm_password_raw).strip()
     cc_value = request.form.get('cc', '').strip() or existing.get('cc', '').strip()
@@ -1259,12 +1267,18 @@ def configurar_correo():
     cc_clean = ', '.join(dict.fromkeys(item for item in cc_clean_items if item))
 
     if not sender or not password:
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
         return _redirect_after_password('Completa remitente y contraseña para continuar.', is_error=True)
 
     if confirm_password_raw is not None:
         if not confirm_password:
+            session.pop('worker_sender', None)
+            session.pop('worker_password', None)
             return _redirect_after_password('Repite la contraseña para continuar.', is_error=True)
         if password != confirm_password:
+            session.pop('worker_sender', None)
+            session.pop('worker_password', None)
             return _redirect_after_password('Las contraseñas no coinciden. Intenta de nuevo.', is_error=True)
 
     validated_sender = sender
@@ -1280,6 +1294,8 @@ def configurar_correo():
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
+        session.pop('worker_sender', None)
+        session.pop('worker_password', None)
         return _redirect_after_password('La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.', is_error=True)
 
     try:
