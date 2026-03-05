@@ -558,6 +558,14 @@ def foto_perfil_actual():
         return '', 404
     return send_file(photo_path)
 
+
+@app.route('/favicon.ico', methods=['GET'])
+def favicon():
+    favicon_path = os.path.join(app.static_folder, 'images', 'favicon', 'favicon.ico')
+    if not os.path.exists(favicon_path):
+        return '', 404
+    return send_file(favicon_path)
+
 @app.route('/upload', methods=['POST','GET'])
 def upload():
     
