@@ -194,12 +194,7 @@ def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
             try:
                 smtp.login(sender_value, password_value)
             except smtplib.SMTPAuthenticationError as auth_ex:
-                corrected_sender, sender_corrected = normalize_sender_email(sender_value)
-                if sender_corrected and corrected_sender != sender_value:
-                    smtp.login(corrected_sender, password_value)
-                    sender_value = corrected_sender
-                else:
-                    return False, sender_value, used_security, used_port, str(auth_ex)
+                return False, sender_value, used_security, used_port, str(auth_ex)
 
         return True, sender_value, used_security, used_port, ''
     except Exception as ex:
@@ -1500,28 +1495,12 @@ def send_emails():
         with smtp_conn as smtp:
             try:
                 smtp.login(sender, password)
-            except smtplib.SMTPAuthenticationError as auth_ex:
-                corrected_sender, sender_corrected = normalize_sender_email(sender)
-                if sender_corrected and corrected_sender != sender:
-                    try:
-                        smtp.login(corrected_sender, password)
-                        sender = corrected_sender
-                        logging.warning(
-                            'Se corrigió remitente con dominio typo para autenticación SMTP: %s',
-                            sender
-                        )
-                    except smtplib.SMTPAuthenticationError:
-                        return _redirect_correos_with_message(
-                            'No se pudieron validar tus credenciales de correo. '
-                            'Usa tu usuario corporativo; el sistema aplica automáticamente @distriluz.com.pe. '
-                            'No se envió ningún correo.'
-                        )
-                else:
-                    return _redirect_correos_with_message(
-                        'No se pudieron validar tus credenciales de correo. '
-                        'Verifica usuario/clave en credenciales SMTP o confirma con TI que la cuenta tenga SMTP AUTH habilitado en owa.fonafe.gob.pe. '
-                        'No se envió ningún correo.'
-                    )
+            except smtplib.SMTPAuthenticationError:
+                return _redirect_correos_with_message(
+                    'No se pudieron validar tus credenciales de correo. '
+                    'Verifica usuario/clave en credenciales SMTP o confirma con TI que la cuenta tenga SMTP AUTH habilitado en owa.fonafe.gob.pe. '
+                    'No se envió ningún correo.'
+                )
 
             if should_save_smtp and sender and password and (used_port != smtp_port or used_security != smtp_security):
                 try:
