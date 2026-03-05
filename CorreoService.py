@@ -1146,3 +1146,63 @@ def send_emails_handler(require_worker_microsoft_login_func, load_general_settin
         return redirect_correos_with_message(
             f'Error enviando por SMTP ({smtp_host}:{used_port}, {used_security}): {ex}'
         )
+
+
+def register_correo_routes(
+    app,
+    require_worker_microsoft_login_func,
+    enforce_step_flow_func,
+    load_general_settings_func,
+    save_general_settings_func,
+    profile_photo_path_func,
+    add_account_activity_func,
+):
+    @app.route('/correos', methods=['GET', 'POST'])
+    def correos():
+        return correos_handler(
+            require_worker_microsoft_login_func=require_worker_microsoft_login_func,
+            enforce_step_flow_func=enforce_step_flow_func,
+            load_general_settings_func=load_general_settings_func,
+            profile_photo_path_func=profile_photo_path_func,
+        )
+
+    @app.route('/correo_electronico', methods=['GET'])
+    def correo_electronico():
+        return correo_electronico_handler(
+            require_worker_microsoft_login_func=require_worker_microsoft_login_func
+        )
+
+    @app.route('/iniciar_sesion', methods=['GET'])
+    def iniciar_sesion():
+        return redirect(url_for('basedatos'))
+
+    @app.route('/iniciar_sesion', methods=['POST'])
+    @app.route('/correo_electronico/guardar', methods=['POST'])
+    def correo_electronico_guardar():
+        return correo_electronico_guardar_handler(
+            add_account_activity_func=add_account_activity_func,
+            load_general_settings_func=load_general_settings_func,
+            save_general_settings_func=save_general_settings_func,
+        )
+
+    @app.route('/correo_electronico/verificar_vinculo', methods=['POST'])
+    def correo_electronico_verificar_vinculo():
+        return correo_electronico_verificar_vinculo_handler(
+            add_account_activity_func=add_account_activity_func
+        )
+
+    @app.route('/configurar_correo', methods=['POST'])
+    def configurar_correo():
+        return configurar_correo_handler(
+            add_account_activity_func=add_account_activity_func,
+            load_general_settings_func=load_general_settings_func,
+            save_general_settings_func=save_general_settings_func,
+        )
+
+    @app.route('/send_emails', methods=['POST'])
+    def send_emails():
+        return send_emails_handler(
+            require_worker_microsoft_login_func=require_worker_microsoft_login_func,
+            load_general_settings_func=load_general_settings_func,
+            save_general_settings_func=save_general_settings_func,
+        )

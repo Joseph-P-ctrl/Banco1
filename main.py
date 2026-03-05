@@ -505,50 +505,15 @@ def asiento_get():
     )
 
 
-@app.route('/correos', methods=['GET','POST'])
-def correos():
-    return correo_service.correos_handler(
-        require_worker_microsoft_login_func=_require_worker_microsoft_login,
-        enforce_step_flow_func=_enforce_step_flow,
-        load_general_settings_func=load_general_settings,
-        profile_photo_path_func=_profile_photo_path
-    )
-
-
-@app.route('/correo_electronico', methods=['GET'])
-def correo_electronico():
-    return correo_service.correo_electronico_handler(
-        require_worker_microsoft_login_func=_require_worker_microsoft_login
-    )
-
-
-@app.route('/iniciar_sesion', methods=['GET'])
-def iniciar_sesion():
-    return redirect(url_for('basedatos'))
-
-
-@app.route('/iniciar_sesion', methods=['POST'])
-@app.route('/correo_electronico/guardar', methods=['POST'])
-def correo_electronico_guardar():
-    return correo_service.correo_electronico_guardar_handler(
-        add_account_activity_func=add_account_activity,
-        load_general_settings_func=load_general_settings,
-        save_general_settings_func=save_general_settings
-    )
-
-@app.route('/correo_electronico/verificar_vinculo', methods=['POST'])
-def correo_electronico_verificar_vinculo():
-    return correo_service.correo_electronico_verificar_vinculo_handler(
-        add_account_activity_func=add_account_activity
-    )
-
-@app.route('/configurar_correo', methods=['POST'])
-def configurar_correo():
-    return correo_service.configurar_correo_handler(
-        add_account_activity_func=add_account_activity,
-        load_general_settings_func=load_general_settings,
-        save_general_settings_func=save_general_settings
-    )
+correo_service.register_correo_routes(
+    app=app,
+    require_worker_microsoft_login_func=_require_worker_microsoft_login,
+    enforce_step_flow_func=_enforce_step_flow,
+    load_general_settings_func=load_general_settings,
+    save_general_settings_func=save_general_settings,
+    profile_photo_path_func=_profile_photo_path,
+    add_account_activity_func=add_account_activity,
+)
 
 
 @app.route('/foto_perfil_actual', methods=['GET'])
@@ -602,15 +567,6 @@ def guardaAsientos(movimientosAsientos):
 def dowload_asientos():
     ruta_archivo = files_path('asientos.xlsx')
     return send_file(ruta_archivo, as_attachment=True, download_name="Asiento.xlsx")
-
-
-@app.route('/send_emails', methods=['POST'])
-def send_emails():
-    return correo_service.send_emails_handler(
-        require_worker_microsoft_login_func=_require_worker_microsoft_login,
-        load_general_settings_func=load_general_settings,
-        save_general_settings_func=save_general_settings
-    )
 
 
 @app.route('/cerrar_sesion', methods=['GET'])
