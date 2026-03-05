@@ -599,17 +599,17 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="mb-2">
                 <label class="form-label" for="mailSenderInput">Correo</label>
                 <div class="position-relative">
-                    <input id="mailSenderInput" type="email" name="sender" class="form-control" value="{{ session.get('worker_sender', '') }}" required style="padding-right: 230px;">
+                    <input id="mailSenderInput" type="text" name="sender" class="form-control" value="{{ session.get('last_sender_attempt', '') if (quick_password_message|default('')) else '' }}" required style="padding-right: 230px;" autocomplete="off">
                     <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
                 </div>
             </div>
             <div class="mb-2">
                 <label class="form-label" for="mailPasswordInput">Contraseña</label>
-                <input id="mailPasswordInput" type="password" name="password" class="form-control" required>
+                <input id="mailPasswordInput" type="password" name="password" class="form-control" required autocomplete="new-password">
             </div>
             <div class="mb-2">
                 <label class="form-label" for="mailConfirmPasswordInput">Repetir contraseña</label>
-                <input id="mailConfirmPasswordInput" type="password" name="confirm_password" class="form-control" required>
+                <input id="mailConfirmPasswordInput" type="password" name="confirm_password" class="form-control" required autocomplete="new-password">
             </div>
             {% if quick_password_message|default('') %}
             <div class="alert alert-warning py-2 px-3 mb-2">{{ quick_password_message }}</div>
@@ -620,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
             <div class="mb-2">
                 <label class="form-label" for="mailCcInput">CC (correo en copia)</label>
-                <input id="mailCcInput" type="text" name="cc" class="form-control" value="{{ session.get('worker_cc', '') }}" placeholder="correo1@dominio.com, correo2@dominio.com">
+                <input id="mailCcInput" type="text" name="cc" class="form-control" value="" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
             </div>
             <div class="mail-settings-actions">
                 <button type="button" class="btn btn-outline-secondary" onclick="closeMailSettingsModal()">Cerrar</button>

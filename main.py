@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_file, session, redirect, url_for
+from flask import Flask, render_template, request, send_file, session, redirect, url_for, jsonify
 from AccountService import AccountService
 from InterbankService import InterbankService
 from ProviderService import ProviderService
@@ -8,7 +8,6 @@ from AsientoService import AsientoService
 from io import BytesIO
 from flask_session import Session
 from flask_caching import Cache
-from openpyxl import load_workbook
 import pandas as pd
 import os
 import openpyxl
@@ -52,6 +51,15 @@ def _smtp_key_path():
 
 def _smtp_credentials_path():
     return files_path('smtp_credentials.json')
+
+
+def _clear_secure_smtp_credentials():
+    cred_path = _smtp_credentials_path()
+    if os.path.exists(cred_path):
+        try:
+            os.remove(cred_path)
+        except Exception as ex:
+            logging.warning(f'No se pudo eliminar credenciales SMTP: {ex}')
 
 
 def _general_settings_path():
@@ -447,7 +455,6 @@ def load_clientes_email_map_from_bd():
         config_path = bd_path('config.json')
         if not os.path.exists(config_path):
             return {}
-        import json
         with open(config_path, 'r', encoding='utf-8') as file:
             config = json.load(file)
         clientes_file_name = config.get('CLIENTES')
@@ -918,7 +925,6 @@ def basedatos():
             return render_template('base-datos.html', error_message= error_message, **profile_photo_context)
 
     else:
-        nohay = 'Archivo subido correctamente.'
         return render_template(
             'base-datos.html',
             mensaje_exito=config_message,
@@ -1109,8 +1115,9 @@ def iniciar_sesion():
 @app.route('/correo_electronico/guardar', methods=['POST'])
 def correo_electronico_guardar():
     existing = load_secure_smtp_credentials()
-    sender = request.form.get('sender', '').strip()
-    sender, _ = normalize_sender_email(sender)
+    sender_input = request.form.get('sender', '').strip()
+    sender_local = sender_input.split('@', 1)[0].strip()
+    sender, _ = normalize_sender_email(sender_input)
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
     smtp_host = existing.get('smtp_host', '') or 'owa.fonafe.gob.pe'
@@ -1120,12 +1127,14 @@ def correo_electronico_guardar():
     if not sender:
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session.pop('last_sender_attempt', None)
         session['login_message'] = 'Ingresa tu correo para continuar.'
         return redirect(url_for('basedatos'))
 
     if not password:
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session['last_sender_attempt'] = sender_local
         session['login_message'] = 'Ingresa tu contraseña para continuar.'
         return redirect(url_for('basedatos'))
 
@@ -1135,6 +1144,7 @@ def correo_electronico_guardar():
     if password != confirm_password:
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session['last_sender_attempt'] = sender_local
         session['login_message'] = 'Las contraseñas no coinciden. Verifica e intenta nuevamente.'
         return redirect(url_for('basedatos'))
 
@@ -1151,12 +1161,14 @@ def correo_electronico_guardar():
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en correo_electronico_guardar: {validation_error}')
+        _clear_secure_smtp_credentials()
         session['system_authenticated'] = False
         session['smtp_authenticated'] = False
         session['smtp_link_verified'] = False
         session['quick_password_verified'] = False
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session['last_sender_attempt'] = sender_local
         session['login_message'] = 'La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.'
         return redirect(url_for('basedatos'))
 
@@ -1180,6 +1192,7 @@ def correo_electronico_guardar():
         session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
         session['worker_auth_method'] = 'SMTP OWA'
         session['quick_password_verified'] = False
+        session.pop('last_sender_attempt', None)
         add_account_activity('Correo electrónico', f'Sesión iniciada para {validated_sender}')
         session.pop('email_settings_message', None)
         session.pop('login_message', None)
@@ -1227,8 +1240,16 @@ def configurar_correo():
     redirect_to_home = return_to == 'home'
     redirect_to_basedatos = return_to == 'basedatos'
     redirect_to_asiento = return_to == 'asiento'
+    is_js_request = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     def _redirect_after_password(message_text, is_error=False):
+        if is_js_request:
+            return jsonify({
+                'ok': not is_error,
+                'is_error': is_error,
+                'message': message_text
+            }), (400 if is_error else 200)
+
         if redirect_to_correos:
             if is_error:
                 session['quick_password_message'] = message_text
@@ -1253,8 +1274,9 @@ def configurar_correo():
         return redirect(url_for('correo_electronico'))
 
     existing = load_secure_smtp_credentials()
-    sender = request.form.get('sender', '').strip()
-    sender, _ = normalize_sender_email(sender)
+    sender_input = request.form.get('sender', '').strip()
+    sender_local = sender_input.split('@', 1)[0].strip()
+    sender, _ = normalize_sender_email(sender_input)
     password = request.form.get('password', '').strip()
     confirm_password_raw = request.form.get('confirm_password', None)
     confirm_password = '' if confirm_password_raw is None else str(confirm_password_raw).strip()
@@ -1269,16 +1291,19 @@ def configurar_correo():
     if not sender or not password:
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session['last_sender_attempt'] = sender_local
         return _redirect_after_password('Completa remitente y contraseña para continuar.', is_error=True)
 
     if confirm_password_raw is not None:
         if not confirm_password:
             session.pop('worker_sender', None)
             session.pop('worker_password', None)
+            session['last_sender_attempt'] = sender_local
             return _redirect_after_password('Repite la contraseña para continuar.', is_error=True)
         if password != confirm_password:
             session.pop('worker_sender', None)
             session.pop('worker_password', None)
+            session['last_sender_attempt'] = sender_local
             return _redirect_after_password('Las contraseñas no coinciden. Intenta de nuevo.', is_error=True)
 
     validated_sender = sender
@@ -1294,8 +1319,10 @@ def configurar_correo():
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
+        _clear_secure_smtp_credentials()
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
+        session['last_sender_attempt'] = sender_local
         return _redirect_after_password('La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.', is_error=True)
 
     try:
@@ -1319,9 +1346,10 @@ def configurar_correo():
         session['worker_cc'] = cc_clean
         session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
         session['quick_password_verified'] = True
+        session.pop('last_sender_attempt', None)
         add_account_activity('Contraseña de correo', f'Sesión iniciada para {validated_sender}')
         return _redirect_after_password('✅ Contraseña de correo actualizada correctamente.')
-    except Exception as ex:
+    except Exception:
         return _redirect_after_password('No se pudo guardar la contraseña de correo. Intenta nuevamente.', is_error=True)
 
 
