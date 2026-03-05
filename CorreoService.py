@@ -21,13 +21,45 @@ def _smtp_credentials_path():
     return files_path('smtp_credentials.json')
 
 
+def _legacy_files_dir():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'files')
+
+
+def _smtp_key_paths():
+    candidates = [
+        _smtp_key_path(),
+        os.path.join(_legacy_files_dir(), 'smtp_credentials.key')
+    ]
+    unique = []
+    for path in candidates:
+        if path and path not in unique:
+            unique.append(path)
+    return unique
+
+
+def _smtp_credentials_paths():
+    candidates = [
+        _smtp_credentials_path(),
+        os.path.join(_legacy_files_dir(), 'smtp_credentials.json')
+    ]
+    unique = []
+    for path in candidates:
+        if path and path not in unique:
+            unique.append(path)
+    return unique
+
+
+def _existing_paths(paths):
+    return [path for path in paths if path and os.path.exists(path)]
+
+
 def clear_secure_smtp_credentials():
-    cred_path = _smtp_credentials_path()
-    if os.path.exists(cred_path):
-        try:
-            os.remove(cred_path)
-        except Exception as ex:
-            logging.warning(f'No se pudo eliminar credenciales SMTP: {ex}')
+    for cred_path in _smtp_credentials_paths():
+        if os.path.exists(cred_path):
+            try:
+                os.remove(cred_path)
+            except Exception as ex:
+                logging.warning(f'No se pudo eliminar credenciales SMTP: {ex}')
 
 
 def _get_fernet():
@@ -46,6 +78,27 @@ def _get_fernet():
             key_file.write(key)
 
     return Fernet(key)
+
+
+def _fernet_candidates_for_load():
+    candidates = []
+
+    env_key = os.environ.get('OUTLOOK_CREDENTIALS_KEY', '').strip()
+    if env_key:
+        try:
+            candidates.append(Fernet(env_key.encode('utf-8')))
+        except Exception:
+            pass
+
+    for key_path in _existing_paths(_smtp_key_paths()):
+        try:
+            with open(key_path, 'rb') as key_file:
+                key = key_file.read().strip()
+            candidates.append(Fernet(key))
+        except Exception:
+            continue
+
+    return candidates
 
 
 def normalize_sender_email(sender_value):
@@ -169,38 +222,49 @@ def save_secure_smtp_credentials(sender_value, password_value, smtp_host_value=N
             payload['cc'] = existing_cc
     else:
         payload['cc'] = str(cc_value).strip().lower()
-    with open(_smtp_credentials_path(), 'w', encoding='utf-8') as out_file:
+    cred_path = _smtp_credentials_path()
+    os.makedirs(os.path.dirname(cred_path), exist_ok=True)
+    with open(cred_path, 'w', encoding='utf-8') as out_file:
         json.dump(payload, out_file, ensure_ascii=False)
 
 
 def load_secure_smtp_credentials():
-    cred_path = _smtp_credentials_path()
-    if not os.path.exists(cred_path):
+    cred_paths = _existing_paths(_smtp_credentials_paths())
+    if not cred_paths:
         return {}
 
-    try:
-        with open(cred_path, 'r', encoding='utf-8') as in_file:
-            payload = json.load(in_file)
-
-        sender_encrypted = payload.get('sender_encrypted', '')
-        password_encrypted = payload.get('password_encrypted', '')
-        if not sender_encrypted or not password_encrypted:
-            return {}
-
-        fernet = _get_fernet()
-        sender_value = fernet.decrypt(sender_encrypted.encode('utf-8')).decode('utf-8')
-        password_value = fernet.decrypt(password_encrypted.encode('utf-8')).decode('utf-8')
-        return {
-            'sender': sender_value,
-            'password': password_value,
-            'smtp_host': str(payload.get('smtp_host', '')).strip(),
-            'smtp_port': str(payload.get('smtp_port', '')).strip(),
-            'smtp_security': str(payload.get('smtp_security', '')).strip().lower(),
-            'cc': str(payload.get('cc', '')).strip().lower()
-        }
-    except Exception as ex:
-        logging.error(f'No se pudo leer credenciales SMTP cifradas: {ex}')
+    fernet_candidates = _fernet_candidates_for_load()
+    if not fernet_candidates:
         return {}
+
+    for cred_path in cred_paths:
+        try:
+            with open(cred_path, 'r', encoding='utf-8') as in_file:
+                payload = json.load(in_file)
+
+            sender_encrypted = payload.get('sender_encrypted', '')
+            password_encrypted = payload.get('password_encrypted', '')
+            if not sender_encrypted or not password_encrypted:
+                continue
+
+            for fernet in fernet_candidates:
+                try:
+                    sender_value = fernet.decrypt(sender_encrypted.encode('utf-8')).decode('utf-8')
+                    password_value = fernet.decrypt(password_encrypted.encode('utf-8')).decode('utf-8')
+                    return {
+                        'sender': sender_value,
+                        'password': password_value,
+                        'smtp_host': str(payload.get('smtp_host', '')).strip(),
+                        'smtp_port': str(payload.get('smtp_port', '')).strip(),
+                        'smtp_security': str(payload.get('smtp_security', '')).strip().lower(),
+                        'cc': str(payload.get('cc', '')).strip().lower()
+                    }
+                except Exception:
+                    continue
+        except Exception as ex:
+            logging.error(f'No se pudo leer credenciales SMTP cifradas: {ex}')
+
+    return {}
 
 
 def extract_single_email(value):
@@ -773,20 +837,14 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     cc_clean = ', '.join(dict.fromkeys(item for item in cc_clean_items if item))
 
     if not sender or not password:
-        session.pop('worker_sender', None)
-        session.pop('worker_password', None)
         session['last_sender_attempt'] = sender_local
         return redirect_after_password('Completa remitente y contraseña para continuar.', is_error=True)
 
     if confirm_password_raw is not None:
         if not confirm_password:
-            session.pop('worker_sender', None)
-            session.pop('worker_password', None)
             session['last_sender_attempt'] = sender_local
             return redirect_after_password('Repite la contraseña para continuar.', is_error=True)
         if password != confirm_password:
-            session.pop('worker_sender', None)
-            session.pop('worker_password', None)
             session['last_sender_attempt'] = sender_local
             return redirect_after_password('Las contraseñas no coinciden. Intenta de nuevo.', is_error=True)
 
@@ -803,8 +861,6 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
-        session.pop('worker_sender', None)
-        session.pop('worker_password', None)
         session['last_sender_attempt'] = sender_local
         return redirect_after_password('La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.', is_error=True)
 
