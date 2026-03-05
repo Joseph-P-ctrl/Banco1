@@ -1215,23 +1215,6 @@ def correo_electronico_guardar():
     return redirect(url_for('basedatos'))
 
 
-@app.route('/correo_electronico/verificar_vinculo', methods=['POST'])
-def correo_electronico_verificar_vinculo():
-    sender = str(session.get('worker_sender', '')).strip() or str(load_secure_smtp_credentials().get('sender', '')).strip()
-    sender, _ = normalize_sender_email(sender)
-    used_security = _normalize_smtp_security(session.get('worker_smtp_security', '') or 'starttls')
-    session['system_authenticated'] = True
-    session['smtp_authenticated'] = True
-    session['smtp_link_verified'] = True
-    session['worker_sender'] = sender
-    session['worker_smtp_security'] = used_security
-    session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
-    session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
-    session['email_settings_message'] = '✅ Vínculo de correo verificado correctamente.'
-    add_account_activity('Correo electrónico', f'Vínculo verificado para {sender}')
-
-    return redirect(url_for('correo_electronico'))
-
 
 @app.route('/configurar_correo', methods=['POST'])
 def configurar_correo():
