@@ -15,6 +15,7 @@ import logging
 import traceback
 import json
 from dotenv import load_dotenv
+from functools import wraps
 from storage_paths import ensure_data_dirs, bootstrap_bd_from_source, files_path, logs_path, SESSION_DIR
 import CorreoService as correo_service
 
@@ -202,16 +203,29 @@ def _before_every_request_account_tracking():
 def _enforce_step_flow(current_step: str):
     return None
 
+
+def _require_access(step=None):
+    def _decorator(func):
+        @wraps(func)
+        def _wrapped(*args, **kwargs):
+            auth_redirect = _require_worker_microsoft_login()
+            if auth_redirect is not None:
+                return auth_redirect
+
+            if step:
+                flow_redirect = _enforce_step_flow(step)
+                if flow_redirect is not None:
+                    return flow_redirect
+
+            return func(*args, **kwargs)
+
+        return _wrapped
+
+    return _decorator
+
 @app.route('/', methods=['POST','GET'])
+@_require_access('home')
 def home():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
-    flow_redirect = _enforce_step_flow('home')
-    if flow_redirect is not None:
-        return flow_redirect
-
     if request.method == 'GET' and request.args.get('reset') == '1':
         session.pop('home_processing_result', None)
         session.pop('home_success_message', None)
@@ -294,11 +308,8 @@ def home():
 
 
 @app.route('/menu', methods=['GET'])
+@_require_access()
 def menu():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
     tab = request.args.get('tab', 'home').strip().lower()
     tab_map = {
         'home': '/',
@@ -349,15 +360,8 @@ def guardaRecaudos(recaudos):
     workbook.save(ruta_archivo)
 
 @app.route('/basedatos', methods=['POST','GET'])
+@_require_access('basedatos')
 def basedatos():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
-    flow_redirect = _enforce_step_flow('basedatos')
-    if flow_redirect is not None:
-        return flow_redirect
-
     profile_photo_context = _profile_photo_context()
     config_message = session.pop('config_message', None)
     quick_password_message = session.pop('quick_password_message', None)
@@ -399,15 +403,8 @@ def basedatos():
         )
     
 @app.route('/asiento', methods=['POST'])
+@_require_access('asiento')
 def asiento_procesar():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
-    flow_redirect = _enforce_step_flow('asiento')
-    if flow_redirect is not None:
-        return flow_redirect
-
     profile_photo_context = _profile_photo_context()
 
     logging.error('asiento_procesar: start')
@@ -484,15 +481,8 @@ def asiento_procesar():
 
 
 @app.route('/asiento', methods=['GET'])
+@_require_access('asiento')
 def asiento_get():
-    auth_redirect = _require_worker_microsoft_login()
-    if auth_redirect is not None:
-        return auth_redirect
-
-    flow_redirect = _enforce_step_flow('asiento')
-    if flow_redirect is not None:
-        return flow_redirect
-
     show_result_mode = request.args.get('resultado_correo', '0') == '1'
     asiento_emails = session.get('asiento_emails', [])
     vouchers_generados = session.get('vouchers_generados', [])
