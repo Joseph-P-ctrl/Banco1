@@ -648,7 +648,6 @@ def correo_electronico_guardar_handler(add_account_activity_func, load_general_s
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en correo_electronico_guardar: {validation_error}')
-        clear_secure_smtp_credentials()
         session['system_authenticated'] = False
         session['smtp_authenticated'] = False
         session['smtp_link_verified'] = False
@@ -804,7 +803,6 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     )
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
-        clear_secure_smtp_credentials()
         session.pop('worker_sender', None)
         session.pop('worker_password', None)
         session['last_sender_attempt'] = sender_local
@@ -929,13 +927,6 @@ def send_emails_handler(require_worker_microsoft_login_func, load_general_settin
             logging.warning(f'No se pudo persistir configuración SMTP desde envío manual: {save_ex}')
 
     if not sender or not password:
-        clear_secure_smtp_credentials()
-        session.pop('worker_sender', None)
-        session.pop('worker_password', None)
-        session.pop('worker_smtp_host', None)
-        session.pop('worker_smtp_port', None)
-        session.pop('worker_smtp_security', None)
-        session.pop('worker_cc', None)
         return redirect_correos_with_message(
             'Falta configurar correo remitente y clave SMTP. Ingresa Usuario y Contraseña en el panel de envío y vuelve a intentar.'
         )
