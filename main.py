@@ -1134,13 +1134,30 @@ def correo_electronico_guardar():
 
     validated_sender = sender
     used_security = smtp_security
+    used_port = smtp_port
+
+    is_valid_login, validated_sender, used_security, used_port, validation_error = _validate_smtp_login(
+        sender,
+        password,
+        smtp_host,
+        smtp_port,
+        smtp_security
+    )
+    if not is_valid_login:
+        logging.warning(f'Validación SMTP fallida en correo_electronico_guardar: {validation_error}')
+        session['system_authenticated'] = False
+        session['smtp_authenticated'] = False
+        session['smtp_link_verified'] = False
+        session['quick_password_verified'] = False
+        session['login_message'] = 'La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.'
+        return redirect(url_for('basedatos'))
 
     try:
         save_secure_smtp_credentials(
             validated_sender,
             password,
             smtp_host_value=smtp_host,
-            smtp_port_value=str(smtp_port),
+            smtp_port_value=str(used_port),
             smtp_security_value=used_security
         )
         sync_email_config_to_modules(validated_sender)
@@ -1150,7 +1167,7 @@ def correo_electronico_guardar():
         session['worker_sender'] = validated_sender
         session['worker_password'] = password
         session['worker_smtp_host'] = smtp_host
-        session['worker_smtp_port'] = str(smtp_port)
+        session['worker_smtp_port'] = str(used_port)
         session['worker_smtp_security'] = used_security
         session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
         session['worker_auth_method'] = 'SMTP OWA'
@@ -1166,7 +1183,7 @@ def correo_electronico_guardar():
         session['worker_sender'] = validated_sender
         session['worker_password'] = password
         session['worker_smtp_host'] = smtp_host
-        session['worker_smtp_port'] = str(smtp_port)
+        session['worker_smtp_port'] = str(used_port)
         session['worker_smtp_security'] = used_security
         session['worker_login_at'] = pd.Timestamp.now().strftime('%d/%m/%Y %H:%M:%S')
         session['worker_auth_method'] = 'SMTP OWA'
