@@ -49,16 +49,21 @@ def _get_fernet():
 
 
 def normalize_sender_email(sender_value):
-    sender_clean = str(sender_value or '').strip()
+    sender_clean = str(sender_value or '').strip().lower()
     if not sender_clean:
         return '', False
 
-    local_part = sender_clean.split('@', 1)[0].strip()
-    if not local_part:
-        return '', False
+    if '@' in sender_clean:
+        local_part, domain_part = sender_clean.split('@', 1)
+        local_part = local_part.strip()
+        domain_part = domain_part.strip()
+        if not local_part or not domain_part:
+            return '', False
+        normalized_sender = f"{local_part}@{domain_part}"
+    else:
+        normalized_sender = f"{sender_clean}{REQUIRED_SENDER_DOMAIN}"
 
-    normalized_sender = f"{local_part}{REQUIRED_SENDER_DOMAIN}".lower()
-    was_changed = normalized_sender != sender_clean.lower()
+    was_changed = normalized_sender != sender_clean
     return normalized_sender, was_changed
 
 
