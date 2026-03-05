@@ -50,6 +50,8 @@ COMPANY_KEYWORDS = {
     'SERVICIOS', 'AREA', 'OFICINA'
 }
 
+REQUIRED_SENDER_DOMAIN = '@distriluz.com.pe'
+
 
 def _smtp_key_path():
     return files_path('smtp_credentials.key')
@@ -104,15 +106,16 @@ def _get_fernet():
 
 def normalize_sender_email(sender_value):
     sender_clean = str(sender_value or '').strip()
-    sender_lower = sender_clean.lower()
-    typo_domain = '@distrluz.com.pe'
-    corrected_domain = '@distriluz.com.pe'
+    if not sender_clean:
+        return '', False
 
-    if sender_lower.endswith(typo_domain):
-        corrected = sender_clean[:-len(typo_domain)] + corrected_domain
-        return corrected, True
+    local_part = sender_clean.split('@', 1)[0].strip()
+    if not local_part:
+        return '', False
 
-    return sender_clean, False
+    normalized_sender = f"{local_part}{REQUIRED_SENDER_DOMAIN}".lower()
+    was_changed = normalized_sender != sender_clean.lower()
+    return normalized_sender, was_changed
 
 
 def _normalize_smtp_security(security_value):
@@ -144,7 +147,7 @@ def _should_retry_with_port_25(smtp_port, conn_ex):
 
 
 def _validate_smtp_login(sender, password, smtp_host, smtp_port, smtp_security):
-    sender_value = str(sender or '').strip()
+    sender_value, _ = normalize_sender_email(sender)
     password_value = str(password or '')
     host_value = str(smtp_host or '').strip()
     security_value = _normalize_smtp_security(smtp_security)
@@ -1119,6 +1122,7 @@ def iniciar_sesion():
 def correo_electronico_guardar():
     existing = load_secure_smtp_credentials()
     sender = request.form.get('sender', '').strip() or str(existing.get('sender', '')).strip()
+    sender, _ = normalize_sender_email(sender)
     password = request.form.get('password', '').strip() or str(existing.get('password', '')).strip()
     confirm_password = request.form.get('confirm_password', '').strip()
     smtp_host = existing.get('smtp_host', '') or 'owa.fonafe.gob.pe'
@@ -1188,6 +1192,7 @@ def correo_electronico_guardar():
 @app.route('/correo_electronico/verificar_vinculo', methods=['POST'])
 def correo_electronico_verificar_vinculo():
     sender = str(session.get('worker_sender', '')).strip() or str(load_secure_smtp_credentials().get('sender', '')).strip()
+    sender, _ = normalize_sender_email(sender)
     used_security = _normalize_smtp_security(session.get('worker_smtp_security', '') or 'starttls')
     session['system_authenticated'] = True
     session['smtp_authenticated'] = True
@@ -1236,6 +1241,7 @@ def configurar_correo():
 
     existing = load_secure_smtp_credentials()
     sender = request.form.get('sender', '').strip() or existing.get('sender', '').strip()
+    sender, _ = normalize_sender_email(sender)
     password = request.form.get('password', '').strip() or existing.get('password', '').strip()
     confirm_password_raw = request.form.get('confirm_password', None)
     confirm_password = '' if confirm_password_raw is None else str(confirm_password_raw).strip()
@@ -1399,6 +1405,7 @@ def send_emails():
     session_cc = str(session.get('worker_cc', '')).strip()
 
     sender = form_sender or session_sender or os.environ.get('OUTLOOK_SENDER', '').strip() or secure_smtp.get('sender', '').strip()
+    sender, _ = normalize_sender_email(sender)
     password = form_password or session_password or os.environ.get('OUTLOOK_PASSWORD', '').strip() or secure_smtp.get('password', '').strip()
     cc_raw = request.form.get('cc', '').strip() or session_cc or secure_smtp.get('cc', '').strip()
     subject_env = os.environ.get('OUTLOOK_SUBJECT', '').strip()
@@ -1506,7 +1513,7 @@ def send_emails():
                     except smtplib.SMTPAuthenticationError:
                         return _redirect_correos_with_message(
                             'No se pudieron validar tus credenciales de correo. '
-                            'El usuario guardado tiene dominio typo. Usa tu correo con @distriluz.com.pe en las credenciales SMTP. '
+                            'Usa tu usuario corporativo; el sistema aplica automáticamente @distriluz.com.pe. '
                             'No se envió ningún correo.'
                         )
                 else:
