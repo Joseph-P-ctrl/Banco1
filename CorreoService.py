@@ -868,9 +868,7 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     sender_input = request.form.get('sender', '').strip()
     sender_local = sender_input.split('@', 1)[0].strip()
     sender, _ = normalize_sender_email(sender_input)
-    password = request.form.get('password', '').strip()
-    confirm_password_raw = request.form.get('confirm_password', None)
-    confirm_password = '' if confirm_password_raw is None else str(confirm_password_raw).strip()
+    password_input = request.form.get('password', '').strip()
     cc_value = request.form.get('cc', '').strip() or existing.get('cc', '').strip()
     smtp_host = request.form.get('smtp_host', '').strip() or existing.get('smtp_host', '').strip() or 'owa.fonafe.gob.pe'
     smtp_port = parse_smtp_port(request.form.get('smtp_port', '').strip() or existing.get('smtp_port', '').strip() or '587')
@@ -879,17 +877,32 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     cc_clean_items = [extract_single_email(item) for item in re.split(r'[;,]+', str(cc_value)) if str(item).strip()]
     cc_clean = ', '.join(dict.fromkeys(item for item in cc_clean_items if item))
 
-    if not sender or not password:
+    if not sender:
         session['last_sender_attempt'] = sender_local
-        return redirect_after_password('Completa remitente y contraseña para continuar.', is_error=True)
+        return redirect_after_password('Completa el correo remitente para continuar.', is_error=True)
 
-    if confirm_password_raw is not None:
-        if not confirm_password:
-            session['last_sender_attempt'] = sender_local
-            return redirect_after_password('Repite la contraseña para continuar.', is_error=True)
-        if password != confirm_password:
-            session['last_sender_attempt'] = sender_local
-            return redirect_after_password('Las contraseñas no coinciden. Intenta de nuevo.', is_error=True)
+    existing_sender, _ = normalize_sender_email(existing.get('sender', ''))
+    existing_password = str(existing.get('password', '')).strip()
+    session_password = str(session.get('worker_password', '')).strip()
+    env_password = os.environ.get('OUTLOOK_PASSWORD', '').strip()
+
+    resolved_password = password_input or existing_password or session_password or env_password
+    sender_changed = bool(existing_sender and sender and sender != existing_sender)
+
+    if sender_changed and not password_input:
+        session['last_sender_attempt'] = sender_local
+        return redirect_after_password(
+            'Para cambiar el correo remitente, ingresa la contraseña una sola vez y guarda nuevamente.',
+            is_error=True
+        )
+
+    if not resolved_password:
+        sync_email_config_to_modules(sender, load_general_settings_func, save_general_settings_func)
+        session['worker_sender'] = sender
+        session['worker_cc'] = cc_clean
+        session.pop('last_sender_attempt', None)
+        add_account_activity_func('Configuración de correo', f'CC actualizado para {sender}')
+        return redirect_after_password('✅ Correo y copia (CC) actualizados correctamente.')
 
     validated_sender = sender
     used_security = smtp_security
@@ -897,7 +910,7 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
 
     is_valid_login, validated_sender, used_security, used_port, validation_error = validate_smtp_login(
         sender,
-        password,
+        resolved_password,
         smtp_host,
         smtp_port,
         smtp_security
@@ -905,12 +918,12 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
     if not is_valid_login:
         logging.warning(f'Validación SMTP fallida en configurar_correo: {validation_error}')
         session['last_sender_attempt'] = sender_local
-        return redirect_after_password('La contraseña es incorrecta. Verifica tus credenciales e intenta nuevamente.', is_error=True)
+        return redirect_after_password('No se pudo validar la conexión SMTP con ese correo. Revisa remitente y clave.', is_error=True)
 
     try:
         save_secure_smtp_credentials(
             validated_sender,
-            password,
+            resolved_password,
             smtp_host_value=smtp_host,
             smtp_port_value=str(used_port),
             smtp_security_value=used_security,
@@ -921,7 +934,7 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
         session['smtp_authenticated'] = True
         session['smtp_link_verified'] = True
         session['worker_sender'] = validated_sender
-        session['worker_password'] = password
+        session['worker_password'] = resolved_password
         session['worker_smtp_host'] = smtp_host
         session['worker_smtp_port'] = str(used_port)
         session['worker_smtp_security'] = used_security
@@ -929,10 +942,10 @@ def configurar_correo_handler(add_account_activity_func, load_general_settings_f
         session['worker_auth_method'] = str(session.get('worker_auth_method', '')).strip() or 'SMTP OWA'
         session['quick_password_verified'] = True
         session.pop('last_sender_attempt', None)
-        add_account_activity_func('Contraseña de correo', f'Sesión iniciada para {validated_sender}')
-        return redirect_after_password('✅ Contraseña de correo actualizada correctamente.')
+        add_account_activity_func('Configuración de correo', f'Configuración actualizada para {validated_sender}')
+        return redirect_after_password('✅ Configuración de correo actualizada correctamente.')
     except Exception:
-        return redirect_after_password('No se pudo guardar la contraseña de correo. Intenta nuevamente.', is_error=True)
+        return redirect_after_password('No se pudo guardar la configuración de correo. Intenta nuevamente.', is_error=True)
 
 
 def send_emails_handler(require_worker_microsoft_login_func, load_general_settings_func, save_general_settings_func):

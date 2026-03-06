@@ -487,6 +487,9 @@ def asiento_get():
     asiento_emails = session.get('asiento_emails', [])
     vouchers_generados = session.get('vouchers_generados', [])
     secure_smtp = correo_service.load_secure_smtp_credentials()
+    secure_sender = str(secure_smtp.get('sender', '')).strip()
+    mail_sender = str(session.get('worker_sender', '')).strip() or secure_sender
+    mail_sender_local = mail_sender.split('@', 1)[0].strip() if mail_sender else ''
     mail_cc = str(session.get('worker_cc', '')).strip() or str(secure_smtp.get('cc', '')).strip()
     page_message = session.pop('config_message', None)
     quick_password_message = session.pop('quick_password_message', None)
@@ -497,6 +500,7 @@ def asiento_get():
         show_result_mode=show_result_mode,
         asiento_emails=asiento_emails,
         total_vouchers=len(vouchers_generados),
+        mail_sender=mail_sender_local,
         mail_cc=mail_cc,
         mensaje_exito=page_message,
         quick_password_message=quick_password_message,

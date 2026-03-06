@@ -1720,25 +1720,17 @@
                 <div id="panel-correo" class="settings-panel active">
                     <h5 class="mb-3">Configuración de correo</h5>
                     <form id="correoConfigForm" data-endpoint="/configurar_correo">
+                        <input type="hidden" name="return_to" value="correos">
                         <div class="mb-2">
                             <label class="form-label">Usuario</label>
                             <div class="position-relative">
-                                <input type="text" class="form-control" name="sender" value="{{ session.get('last_sender_attempt', '') if (quick_password_message|default('')) else '' }}" placeholder="usuario" style="padding-right: 230px;" autocomplete="off">
+                                <input type="text" class="form-control" name="sender" value="{{ smtp_config.sender.split('@')[0] if smtp_config.sender else session.get('last_sender_attempt', '') }}" placeholder="usuario" style="padding-right: 230px;" autocomplete="off">
                                 <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
                             </div>
                         </div>
                         <div class="mb-2">
-                            <label class="form-label">Contraseña</label>
-                            <div class="input-group">
-                                <input id="emailPasswordInput" type="password" class="form-control" name="password" placeholder="••••••••" autocomplete="new-password">
-                                <button id="emailPasswordToggleBtn" type="button" class="btn btn-outline-secondary" onclick="toggleEmailPasswordProtection()">Ver clave</button>
-                            </div>
-                            <small id="emailPasswordHelp" class="text-muted">Déjalo vacío para mantener la contraseña actual.</small><br>
-                            <small id="emailPasswordState" class="text-muted">🔒 Clave protegida</small>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">Repetir contraseña</label>
-                            <input id="emailConfirmPasswordInput" type="password" class="form-control" name="confirm_password" placeholder="••••••••" autocomplete="new-password">
+                            <label class="form-label">CC (correo en copia)</label>
+                            <input type="text" class="form-control" name="cc" value="{{ smtp_config.cc|default('') }}" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
                             <small id="emailConfigError" class="text-danger d-none"></small>
                         </div>
                         <div class="d-flex justify-content-end mt-3">
@@ -1906,45 +1898,17 @@ if (floatingAlert && floatingAlert.dataset.autoDismiss === '1') {
     setTimeout(closeFloatingAlert, 2200);
 }
 
-function toggleEmailPasswordProtection() {
-    const input = document.getElementById('emailPasswordInput');
-    const confirmInput = document.getElementById('emailConfirmPasswordInput');
-    const button = document.getElementById('emailPasswordToggleBtn');
-    const state = document.getElementById('emailPasswordState');
-
-    if (!input || !button || !state) {
-        return;
-    }
-
-    const isProtected = input.type === 'password';
-    if (isProtected) {
-        input.type = 'text';
-        if (confirmInput) confirmInput.type = 'text';
-        button.textContent = 'Proteger clave';
-        state.textContent = '👁️ Clave visible';
-    } else {
-        input.type = 'password';
-        if (confirmInput) confirmInput.type = 'password';
-        button.textContent = 'Ver clave';
-        state.textContent = '🔒 Clave protegida';
-    }
-}
-
 function validateCorreoPassword(formElement) {
     if (!formElement) {
         return true;
     }
 
-    const passwordInput = formElement.querySelector('input[name="password"]');
-    const confirmInput = formElement.querySelector('input[name="confirm_password"]');
+    const senderInput = formElement.querySelector('input[name="sender"]');
     const errorElement = formElement.querySelector('#emailConfigError');
 
     const clearValidationState = () => {
-        if (passwordInput) {
-            passwordInput.classList.remove('is-invalid');
-        }
-        if (confirmInput) {
-            confirmInput.classList.remove('is-invalid');
+        if (senderInput) {
+            senderInput.classList.remove('is-invalid');
         }
         if (errorElement) {
             errorElement.textContent = '';
@@ -1968,23 +1932,13 @@ function validateCorreoPassword(formElement) {
 
     clearValidationState();
 
-    if (!passwordInput) {
+    if (!senderInput) {
         return true;
     }
 
-    const passwordValue = String(passwordInput.value || '').trim();
-    if (!passwordValue) {
-        return showValidationError('Ingresa la contraseña para continuar.', passwordInput, passwordInput);
-    }
-
-    if (confirmInput) {
-        const confirmValue = String(confirmInput.value || '').trim();
-        if (!confirmValue) {
-            return showValidationError('Repite la contraseña para continuar.', confirmInput, confirmInput);
-        }
-        if (passwordValue !== confirmValue) {
-            return showValidationError('Las contraseñas no coinciden. Intenta de nuevo.', confirmInput, confirmInput);
-        }
+    const senderValue = String(senderInput.value || '').trim();
+    if (!senderValue) {
+        return showValidationError('Ingresa el correo remitente para continuar.', senderInput, senderInput);
     }
 
     return true;

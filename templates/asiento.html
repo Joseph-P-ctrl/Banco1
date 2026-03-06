@@ -598,20 +598,6 @@ async function handleAsientoSubmit(event) {
         if (modal) modal.style.display = 'none';
     }
 
-    function toggleMailPasswordVisibility() {
-        const passwordInput = document.getElementById('mailPasswordInput');
-        const confirmPasswordInput = document.getElementById('mailConfirmPasswordInput');
-        const showPassword = document.getElementById('mailPasswordShow');
-        if (!passwordInput || !showPassword) {
-            return;
-        }
-        const inputType = showPassword.checked ? 'text' : 'password';
-        passwordInput.type = inputType;
-        if (confirmPasswordInput) {
-            confirmPasswordInput.type = inputType;
-        }
-    }
-
     function toggleMainSidebar() {
         const hidden = !document.body.classList.contains('menu-hidden');
         document.body.classList.toggle('menu-hidden', hidden);
@@ -646,25 +632,13 @@ async function handleAsientoSubmit(event) {
             <div class="mb-2">
                 <label class="form-label" for="mailSenderInput">Correo</label>
                 <div class="position-relative">
-                    <input id="mailSenderInput" type="text" name="sender" class="form-control" value="{{ session.get('last_sender_attempt', '') if (quick_password_message|default('')) else '' }}" required style="padding-right: 230px;" autocomplete="off">
+                    <input id="mailSenderInput" type="text" name="sender" class="form-control" value="{{ mail_sender|default(session.get('last_sender_attempt', '')) }}" required style="padding-right: 230px;" autocomplete="off">
                     <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
                 </div>
             </div>
             <div class="mb-2">
-                <label class="form-label" for="mailPasswordInput">Contraseña</label>
-                 <input id="mailPasswordInput" type="password" name="password" class="form-control" required autocomplete="new-password">
-            </div>
-            <div class="mb-2">
-                <label class="form-label" for="mailConfirmPasswordInput">Repetir contraseña</label>
-                 <input id="mailConfirmPasswordInput" type="password" name="confirm_password" class="form-control" required autocomplete="new-password">
-            </div>
-            <div class="form-check mt-1 mb-2">
-                <input class="form-check-input" type="checkbox" id="mailPasswordShow" onchange="toggleMailPasswordVisibility()">
-                <label class="form-check-label" for="mailPasswordShow">Mostrar contraseña</label>
-            </div>
-            <div class="mb-2">
                 <label class="form-label" for="mailCcInput">CC (correo en copia)</label>
-                 <input id="mailCcInput" type="text" name="cc" class="form-control" value="" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
+                 <input id="mailCcInput" type="text" name="cc" class="form-control" value="{{ mail_cc|default('') }}" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
             </div>
             {% if quick_password_message|default('') %}
             <div class="alert alert-warning py-2 px-3 mb-2">{{ quick_password_message }}</div>
