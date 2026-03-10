@@ -79,7 +79,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: min(460px, 92vw);
+            width: min(560px, 94vw);
+            max-height: 90vh;
+            overflow-y: auto;
             background: #ffffff;
             border-radius: 12px;
             box-shadow: 0 18px 42px rgba(15, 23, 42, 0.28);
@@ -599,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="mb-2">
                 <label class="form-label" for="mailSenderInput">Correo</label>
                 <div class="position-relative">
-                    <input id="mailSenderInput" type="text" name="sender" class="form-control" value="{{ session.get('last_sender_attempt', '') if (quick_password_message|default('')) else '' }}" required style="padding-right: 230px;" autocomplete="off">
+                    <input id="mailSenderInput" type="text" name="sender" class="form-control" value="" required style="padding-right: 230px;" autocomplete="off">
                     <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
                 </div>
             </div>

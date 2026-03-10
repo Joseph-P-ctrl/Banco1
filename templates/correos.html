@@ -1397,13 +1397,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: min(860px, 94vw);
-            max-height: 92vh;
+            width: min(560px, 94vw);
+            max-height: 90vh;
+            overflow-y: auto;
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
             z-index: 10003;
             display: none;
+            padding: 18px;
+            text-align: left;
         }
 
         .config-modal-header {
@@ -1701,47 +1704,38 @@
 
 <div id="configOverlay" class="config-modal-overlay" onclick="closeConfigModal()"></div>
 <div id="configModal" class="config-modal" role="dialog" aria-modal="true" aria-label="Configuración">
-    <div class="config-modal-header">
-        <span>Configuración</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeConfigModal()">Cerrar</button>
-    </div>
-    <div class="config-modal-body">
-        <div class="settings-layout">
-            <aside class="settings-sidebar">
-                <div class="settings-title">Cuenta</div>
-
-                <button type="button" class="settings-nav-item active" data-panel="correo" onclick="showSettingsPanel('correo', this)">
-                    <span class="settings-icon icon-violet">✉️</span>
-                    Configuración de correo
-                </button>
-            </aside>
-
-            <section class="settings-content">
-                <div id="panel-correo" class="settings-panel active">
-                    <h5 class="mb-3">Configuración de correo</h5>
-                    <form id="correoConfigForm" data-endpoint="/configurar_correo">
-                        <input type="hidden" name="return_to" value="correos">
-                        <div class="mb-2">
-                            <label class="form-label">Usuario</label>
-                            <div class="position-relative">
-                                <input type="text" class="form-control" name="sender" value="{{ smtp_config.sender.split('@')[0] if smtp_config.sender else session.get('last_sender_attempt', '') }}" placeholder="usuario" style="padding-right: 230px;" autocomplete="off">
-                                <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">CC (correo en copia)</label>
-                            <input type="text" class="form-control" name="cc" value="{{ smtp_config.cc|default('') }}" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
-                            <small id="emailConfigError" class="text-danger d-none"></small>
-                        </div>
-                        <div class="d-flex justify-content-end mt-3">
-                            <button id="saveCorreoConfigBtn" type="button" class="btn btn-success">Guardar correo</button>
-                        </div>
-                    </form>
-                </div>
-
-            </section>
+    <h5 class="mb-3">Configuración de correo</h5>
+    <form id="correoConfigForm" data-endpoint="/configurar_correo">
+        <input type="hidden" name="return_to" value="correos">
+        <div class="mb-2">
+            <label class="form-label" for="correoSenderInput">Correo</label>
+            <div class="position-relative">
+                <input id="correoSenderInput" type="text" class="form-control" name="sender" value="" placeholder="usuario" style="padding-right: 230px;" autocomplete="off">
+                <span class="text-muted position-absolute top-50 end-0 translate-middle-y me-3">@distriluz.com.pe</span>
+            </div>
         </div>
-    </div>
+        <div class="mb-2">
+            <label class="form-label" for="correoPasswordInput">Contraseña</label>
+            <input id="correoPasswordInput" type="password" class="form-control" name="password" autocomplete="new-password">
+        </div>
+        <div class="mb-2">
+            <label class="form-label" for="correoConfirmPasswordInput">Repetir contraseña</label>
+            <input id="correoConfirmPasswordInput" type="password" class="form-control" name="confirm_password" autocomplete="new-password">
+        </div>
+        <div class="form-check mt-1 mb-2">
+            <input class="form-check-input" type="checkbox" id="correoPasswordShow" onchange="toggleCorreoPasswordVisibility()">
+            <label class="form-check-label" for="correoPasswordShow">Mostrar contraseña</label>
+        </div>
+        <div class="mb-2">
+            <label class="form-label" for="correoCcInput">CC (correo en copia)</label>
+            <input id="correoCcInput" type="text" class="form-control" name="cc" value="" placeholder="correo1@dominio.com, correo2@dominio.com" autocomplete="off">
+            <small id="emailConfigError" class="text-danger d-none"></small>
+        </div>
+        <div class="d-flex justify-content-end mt-3 gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="closeConfigModal()">Cerrar</button>
+            <button id="saveCorreoConfigBtn" type="button" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
 </div>
 
 <nav class="bg-body-tertiary py-2 menu-side-nav">
@@ -1904,11 +1898,19 @@ function validateCorreoPassword(formElement) {
     }
 
     const senderInput = formElement.querySelector('input[name="sender"]');
+    const passwordInput = formElement.querySelector('input[name="password"]');
+    const confirmPasswordInput = formElement.querySelector('input[name="confirm_password"]');
     const errorElement = formElement.querySelector('#emailConfigError');
 
     const clearValidationState = () => {
         if (senderInput) {
             senderInput.classList.remove('is-invalid');
+        }
+        if (passwordInput) {
+            passwordInput.classList.remove('is-invalid');
+        }
+        if (confirmPasswordInput) {
+            confirmPasswordInput.classList.remove('is-invalid');
         }
         if (errorElement) {
             errorElement.textContent = '';
@@ -1941,7 +1943,36 @@ function validateCorreoPassword(formElement) {
         return showValidationError('Ingresa el correo remitente para continuar.', senderInput, senderInput);
     }
 
+    const passwordValue = String(passwordInput?.value || '').trim();
+    const confirmPasswordValue = String(confirmPasswordInput?.value || '').trim();
+
+    if (!passwordValue) {
+        return showValidationError('Ingresa la contraseña para continuar.', passwordInput, passwordInput);
+    }
+
+    if (!confirmPasswordValue) {
+        return showValidationError('Repite la contraseña para continuar.', confirmPasswordInput, confirmPasswordInput);
+    }
+
+    if (passwordValue !== confirmPasswordValue) {
+        return showValidationError('Las contraseñas no coinciden. Verifica e intenta nuevamente.', confirmPasswordInput, confirmPasswordInput);
+    }
+
     return true;
+}
+
+function toggleCorreoPasswordVisibility() {
+    const passwordInput = document.getElementById('correoPasswordInput');
+    const confirmPasswordInput = document.getElementById('correoConfirmPasswordInput');
+    const show = document.getElementById('correoPasswordShow')?.checked;
+    const typeValue = show ? 'text' : 'password';
+
+    if (passwordInput) {
+        passwordInput.type = typeValue;
+    }
+    if (confirmPasswordInput) {
+        confirmPasswordInput.type = typeValue;
+    }
 }
 
 function bridgeCorreoConfigPost(formElement) {
