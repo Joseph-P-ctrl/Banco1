@@ -2709,25 +2709,6 @@ function closeConfigModal() {
     document.getElementById('configModal').style.display = 'none';
 }
 
-function showSettingsPanel(panelName, buttonElement) {
-    document.querySelectorAll('.settings-panel').forEach((panel) => {
-        panel.classList.remove('active');
-    });
-
-    const targetPanel = document.getElementById(`panel-${panelName}`);
-    if (targetPanel) {
-        targetPanel.classList.add('active');
-    }
-
-    document.querySelectorAll('.settings-nav-item').forEach((item) => {
-        item.classList.remove('active');
-    });
-
-    if (buttonElement) {
-        buttonElement.classList.add('active');
-    }
-}
-
 function openAvatarUpload() {
     const fileInput = document.getElementById('avatarUploadInput');
     if (fileInput) {
@@ -2745,16 +2726,9 @@ function submitAvatarUpload() {
 function initConfigFromQuery() {
     const params = new URLSearchParams(window.location.search);
     const openConfig = params.get('open_config');
-    const panel = params.get('panel');
 
     if (openConfig === '1') {
         openConfigModal();
-        if (panel) {
-            const navButton = document.querySelector(`.settings-nav-item[data-panel="${panel}"]`);
-            if (navButton) {
-                showSettingsPanel(panel, navButton);
-            }
-        }
     }
 }
 
