@@ -17,6 +17,5 @@ EXPOSE 5000
 # Set the environment variables (if needed)
 # ENV ENV_VAR_NAME value
 
-# Define the command to start the Flask application
-#CMD ["python", "main.py", "--host=0.0.0.0"]
-CMD ["gunicorn"  , "--bind", "0.0.0.0:5000", "main:app"]
+# Define the command to start the Flask application with robust Gunicorn settings
+CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:5000", "--workers", "2", "--worker-class", "gthread", "--threads", "4", "--timeout", "180", "--graceful-timeout", "30", "--keep-alive", "5", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info"]
